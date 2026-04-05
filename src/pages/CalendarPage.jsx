@@ -778,7 +778,7 @@ export default function CalendarPage() {
                 ref={calendarRef}
                 plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
                 initialView="timeGridWorkWeek"
-                weekends={ALLOW_WEEKENDS}
+                weekends={true}
                 views={{
                   timeGridWorkWeek: {
                     type: 'timeGrid',
