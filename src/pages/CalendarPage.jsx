@@ -1,5 +1,6 @@
 import { useState, useRef, useCallback, useMemo, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
+import { isAdmin } from '../utils/roles'
 import FullCalendar from '@fullcalendar/react'
 import dayGridPlugin from '@fullcalendar/daygrid'
 import timeGridPlugin from '@fullcalendar/timegrid'
@@ -50,7 +51,7 @@ export default function CalendarPage() {
   const CONSTRAINT_END   = `${pad(BOOKING_END_HOUR)}:00`
   const canDelete = (event) => {
     if (!CAN_CREATE_ROLES.includes(auth.role)) return false
-    if (auth.role === 'admin') return true
+    if (isAdmin(auth.role)) return true
     // standard: only own bookings that have not yet ended
     const isPast = new Date(event?.end || event?.endStr) <= new Date()
     if (isPast) return false
@@ -138,7 +139,7 @@ export default function CalendarPage() {
   function canEdit(event) {
     if (!CAN_CREATE_ROLES.includes(auth.role)) return false
     if (EDIT_OTHERS_ROLE === 'all') return true
-    if (auth.role === 'admin') return true
+    if (isAdmin(auth.role)) return true
     // standard: only own bookings
     return event?.extendedProps?.bookedBy === auth.name
   }
@@ -158,8 +159,8 @@ export default function CalendarPage() {
     return events.map(ev => {
       const isPast = new Date(ev.end) <= now
       // Admins can always edit; standard users cannot touch past events
-      const editable = auth.role === 'admin' ? canEdit(ev) : (!isPast && canEdit(ev))
-      return { ...ev, editable, classNames: isPast && auth.role !== 'admin' ? ['fc-event-past'] : [] }
+      const editable = isAdmin(auth.role) ? canEdit(ev) : (!isPast && canEdit(ev))
+      return { ...ev, editable, classNames: isPast && !isAdmin(auth.role) ? ['fc-event-past'] : [] }
     })
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [events, auth.role, auth.name])
@@ -372,7 +373,7 @@ export default function CalendarPage() {
       setShowLoginModal(true)
       return
     }
-    if (auth.role !== 'admin') {
+    if (!isAdmin(auth.role)) {
       if (!ALLOW_WEEKEND_BOOKINGS) {
         const day = info.start.getDay()
         if (day === 0 || day === 6) {
@@ -393,7 +394,7 @@ export default function CalendarPage() {
   }
 
   const handleEventDrop = async (info) => {
-    if (auth.role !== 'admin' && new Date(info.event.end) <= new Date()) {
+    if (!isAdmin(auth.role) && new Date(info.event.end) <= new Date()) {
       info.revert()
       showToast("Past bookings cannot be moved.", 'error')
       return
@@ -419,7 +420,7 @@ export default function CalendarPage() {
   }
 
   const handleEventResize = async (info) => {
-    if (auth.role !== 'admin' && new Date(info.event.end) <= new Date()) {
+    if (!isAdmin(auth.role) && new Date(info.event.end) <= new Date()) {
       info.revert()
       showToast("Past bookings cannot be resized.", 'error')
       return
@@ -771,8 +772,8 @@ export default function CalendarPage() {
 
             <div className={[
               'fc-wrapper',
-              auth.role !== 'admin' ? 'fc-wrapper--standard' : '',
-              auth.role !== 'admin' && new Date().getHours() >= BOOKING_END_HOUR ? 'fc-wrapper--today-closed' : '',
+              !isAdmin(auth.role) ? 'fc-wrapper--standard' : '',
+              !isAdmin(auth.role) && new Date().getHours() >= BOOKING_END_HOUR ? 'fc-wrapper--today-closed' : '',
             ].filter(Boolean).join(' ')}>
               <FullCalendar
                 ref={calendarRef}
@@ -789,7 +790,7 @@ export default function CalendarPage() {
                 }}
                 headerToolbar={false}
                 dayHeaderContent={(arg) => {
-                  if (auth.role === 'admin') return <span>{arg.text}</span>
+                  if (isAdmin(auth.role)) return <span>{arg.text}</span>
                   const now = new Date()
                   const todayMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate())
                   const tomorrowMidnight = new Date(todayMidnight.getTime() + 86400000)
@@ -837,7 +838,7 @@ export default function CalendarPage() {
                   : { startTime: CONSTRAINT_START, endTime: CONSTRAINT_END, daysOfWeek: [1,2,3,4,5] }
                 }
                 selectAllow={(selectInfo) => {
-                  if (auth.role === 'admin') return true
+                  if (isAdmin(auth.role)) return true
                   // Block weekends when not allowed
                   if (!ALLOW_WEEKEND_BOOKINGS) {
                     const day = selectInfo.start.getDay()
@@ -867,7 +868,7 @@ export default function CalendarPage() {
                 }}
                 dateClick={(info) => {
                   if (REQUIRE_LOGIN_FOR_CALENDAR && auth.role === 'none') { setShowLoginModal(true); return }
-                  if (auth.role !== 'admin') {
+                  if (!isAdmin(auth.role)) {
                     // Block weekend clicks
                     if (!ALLOW_WEEKEND_BOOKINGS) {
                       const day = info.date.getDay()
@@ -976,7 +977,7 @@ export default function CalendarPage() {
                   onChange={e => setFilterUser(e.target.value)}
                 />
               </label>
-              {auth.role === 'admin' && (
+              {isAdmin(auth.role) && (
                 <button className="list-export-btn" onClick={exportToExcel} title="Export all reservations to Excel">
                   ⬇ Export Excel
                 </button>
@@ -1082,7 +1083,7 @@ export default function CalendarPage() {
       {showEventDetails && selectedEvent && (
         <EventDetailsModal
           event={selectedEvent}
-          canEdit={canEdit(selectedEvent) && (auth.role === 'admin' || new Date(selectedEvent?.end || selectedEvent?.extendedProps?.end) > new Date())}
+          canEdit={canEdit(selectedEvent) && (isAdmin(auth.role) || new Date(selectedEvent?.end || selectedEvent?.extendedProps?.end) > new Date())}
           canDelete={canDelete(selectedEvent)}
           isRecurring={!!selectedEvent?.extendedProps?.recurrenceGroupId}
           onEdit={() => handleEditRequest(selectedEvent)}

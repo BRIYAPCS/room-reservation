@@ -33,7 +33,7 @@ const appConfig = {
   businessDays:            [1, 2, 3, 4, 5],
 
   // ── Permissions ──────────────────────────────────────────────
-  canCreateRoles:          ['admin', 'standard'],
+  canCreateRoles:          ['superadmin', 'admin', 'standard'],
   editOthersRole:          'admin',
   deleteRole:              'admin',
 }

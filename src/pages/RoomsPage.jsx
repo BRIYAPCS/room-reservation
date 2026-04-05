@@ -112,7 +112,7 @@ export default function RoomsPage() {
           <BriyaFullLogo />
         </div>
         <div className="rooms-header-right">
-          {auth.role === 'admin' && rooms.length > 0 && (
+          {auth.role === 'superadmin' && rooms.length > 0 && (
             <button className="sort-order-btn" onClick={() => setShowSort(true)} title="Reorder rooms">
               ⇅ Sort
             </button>

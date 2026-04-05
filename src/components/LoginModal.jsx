@@ -222,11 +222,11 @@ export default function LoginModal({ onClose, onDismiss, required = false }) {
             <div className="lm-icon-wrap lm-icon-blue">
               <PersonIcon />
             </div>
-            <h2 className="lm-title">{pendingRole === 'admin' ? 'Admin Name' : 'Your Name'}</h2>
+            <h2 className="lm-title">{pendingRole === 'superadmin' ? 'Super Admin Name' : pendingRole === 'admin' ? 'Admin Name' : 'Your Name'}</h2>
             <p className="lm-subtitle">
               {nameFromDevice
                 ? 'Remembered from this device — confirm or change'
-                : pendingRole === 'admin'
+                : (pendingRole === 'admin' || pendingRole === 'superadmin')
                   ? 'Enter your name — changes you make will be attributed to you'
                   : 'Enter your name to identify your bookings'}
             </p>
@@ -270,7 +270,12 @@ export default function LoginModal({ onClose, onDismiss, required = false }) {
             <h2 className="lm-title">Account</h2>
 
             <div className="lm-status-body">
-              {auth.role === 'admin' ? (
+              {auth.role === 'superadmin' ? (
+                <>
+                  <span className="lm-badge lm-badge-admin">⭐⭐ Super Admin</span>
+                  <p className="lm-user-name">{auth.name}</p>
+                </>
+              ) : auth.role === 'admin' ? (
                 <>
                   <span className="lm-badge lm-badge-admin">⭐ Administrator</span>
                   <p className="lm-user-name">{auth.name}</p>

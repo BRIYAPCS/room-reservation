@@ -88,7 +88,7 @@ export default function HomePage() {
           <BriyaFullLogo />
         </div>
         <div className="home-header-right">
-          {auth.role === 'admin' && sites.length > 0 && (
+          {auth.role === 'superadmin' && sites.length > 0 && (
             <button className="sort-order-btn" onClick={() => setShowSort(true)} title="Reorder sites">
               ⇅ Sort
             </button>

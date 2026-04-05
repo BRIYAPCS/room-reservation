@@ -65,9 +65,9 @@ export default function UserAvatar({ onLoginClick, theme = 'dark' }) {
   let label
   let wrapClass = `avatar-wrap avatar-wrap--${theme}`
 
-  if (auth.role === 'admin') {
+  if (auth.role === 'superadmin' || auth.role === 'admin') {
     icon = <AdminIcon color={color} />
-    label = auth.name || 'Admin'
+    label = auth.name || (auth.role === 'superadmin' ? 'Super Admin' : 'Admin')
     wrapClass += ' avatar-wrap--admin'
   } else if (auth.role === 'standard') {
     icon = <StandardIcon color={color} />
@@ -86,7 +86,7 @@ export default function UserAvatar({ onLoginClick, theme = 'dark' }) {
       title={auth.role !== 'none' ? `Signed in as ${auth.name}` : 'Sign in'}
     >
       {icon}
-      <span className={`avatar-label avatar-label--${theme}${auth.role === 'admin' ? ' avatar-label--admin' : ''}`}>
+      <span className={`avatar-label avatar-label--${theme}${(auth.role === 'admin' || auth.role === 'superadmin') ? ' avatar-label--admin' : ''}`}>
         {label}
       </span>
     </div>

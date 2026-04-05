@@ -6,13 +6,15 @@ const AuthContext = createContext(null)
 const SESSION_KEY = 'room_reservation_auth'
 // Separate device-memory keys per role so admin and standard don't overwrite each other
 const DEVICE_KEYS = {
-  standard: 'briya_standard_name',
-  admin:    'briya_admin_name',
+  standard:   'briya_standard_name',
+  admin:      'briya_admin_name',
+  superadmin: 'briya_superadmin_name',
 }
 // Cookie names mirror the localStorage keys
 const COOKIE_KEYS = {
-  standard: 'briya_std_name',
-  admin:    'briya_adm_name',
+  standard:   'briya_std_name',
+  admin:      'briya_adm_name',
+  superadmin: 'briya_sadm_name',
 }
 const COOKIE_MAX_AGE = 365 * 24 * 60 * 60 // 1 year in seconds
 
@@ -98,9 +100,9 @@ export function AuthProvider({ children }) {
     sessionStorage.removeItem(SESSION_KEY)
   }
 
-  // Only ADMIN can delete — STANDARD cannot, regardless of ownership
+  // ADMIN and SUPERADMIN can delete — STANDARD cannot, regardless of ownership
   function canDelete() {
-    return auth.role === 'admin'
+    return auth.role === 'admin' || auth.role === 'superadmin'
   }
 
   return (
