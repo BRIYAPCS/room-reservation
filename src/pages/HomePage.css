@@ -22,7 +22,22 @@
   display: flex;
   justify-content: flex-end;
   align-items: center;
+  gap: 10px;
 }
+
+.sort-order-btn {
+  background: rgba(255,255,255,0.2);
+  border: 1.5px solid rgba(255,255,255,0.5);
+  color: #fff;
+  border-radius: 6px;
+  padding: 7px 13px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.2s;
+}
+.sort-order-btn:hover { background: rgba(255,255,255,0.32); }
 
 .header-logo {
   display: flex;

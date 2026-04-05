@@ -6,8 +6,10 @@ import UserAvatar from '../components/UserAvatar'
 import LoginModal from '../components/LoginModal'
 import WeatherWidget from '../components/WeatherWidget'
 import VisitorCounter from '../components/VisitorCounter'
-import { getSite, getRooms, getReservations } from '../services/api'
+import SortModal from '../components/SortModal'
+import { getSite, getRooms, getReservations, reorderRooms } from '../services/api'
 import { useConfig } from '../context/ConfigContext'
+import { useAuth } from '../context/AuthContext'
 import comingSoon from '../ComingSoon.jpg'
 import { getImageUrl } from '../utils/image'
 import './RoomsPage.css'
@@ -26,9 +28,11 @@ const SPINNER_STYLE = `@keyframes spin { to { transform: rotate(360deg) } }`
 export default function RoomsPage() {
   const { siteId } = useParams()
   const navigate = useNavigate()
+  const { auth } = useAuth()
   const [site,      setSite]      = useState(null)
   const [rooms,     setRooms]     = useState([])
   const [showLogin, setShowLogin] = useState(false)
+  const [showSort,  setShowSort]  = useState(false)
   const [pageReady, setPageReady] = useState(false)
   const { weatherEnabled, visitorCounterEnabled } = useConfig()
 
@@ -108,6 +112,11 @@ export default function RoomsPage() {
           <BriyaFullLogo />
         </div>
         <div className="rooms-header-right">
+          {auth.role === 'admin' && rooms.length > 0 && (
+            <button className="sort-order-btn" onClick={() => setShowSort(true)} title="Reorder rooms">
+              ⇅ Sort
+            </button>
+          )}
           <UserAvatar theme="dark" onLoginClick={() => setShowLogin(true)} />
         </div>
       </header>
@@ -163,6 +172,19 @@ export default function RoomsPage() {
       </footer>
 
       {visitorCounterEnabled && <VisitorCounter />}
+
+      {showSort && (
+        <SortModal
+          title={`Sort Rooms — ${site?.name}`}
+          items={rooms.map(r => ({ id: r.id, name: r.name }))}
+          onSave={async ordered => {
+            await reorderRooms(siteId, ordered)
+            const updated = await getRooms(siteId).catch(() => rooms)
+            setRooms(updated)
+          }}
+          onClose={() => setShowSort(false)}
+        />
+      )}
 
       {showLogin && (
         <LoginModal

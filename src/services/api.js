@@ -44,6 +44,12 @@ export const getSites = () =>
 export const getSite = (siteId) =>
   request(`/sites/${siteId}`)
 
+export const reorderSites = (items) =>
+  request('/sites/reorder', { method: 'PUT', body: JSON.stringify(items) })
+
+export const reorderRooms = (siteCode, items) =>
+  request(`/rooms/reorder/${siteCode}`, { method: 'PUT', body: JSON.stringify(items) })
+
 // Rooms
 export const getRooms = async (siteSlug) => {
   try {

@@ -5,8 +5,10 @@ import UserAvatar from '../components/UserAvatar'
 import LoginModal from '../components/LoginModal'
 import WeatherWidget from '../components/WeatherWidget'
 import VisitorCounter from '../components/VisitorCounter'
-import { getSites, getHealth, getRooms } from '../services/api'
+import SortModal from '../components/SortModal'
+import { getSites, getHealth, getRooms, reorderSites } from '../services/api'
 import { useConfig } from '../context/ConfigContext'
+import { useAuth } from '../context/AuthContext'
 import comingSoon from '../ComingSoon.jpg'
 import { getImageUrl } from '../utils/image'
 import './HomePage.css'
@@ -23,7 +25,9 @@ const SPINNER_STYLE = `@keyframes spin { to { transform: rotate(360deg) } }`
 
 export default function HomePage() {
   const navigate = useNavigate()
+  const { auth } = useAuth()
   const [showLogin,  setShowLogin]  = useState(false)
+  const [showSort,   setShowSort]   = useState(false)
   const [sites,      setSites]      = useState([])
   const [pageReady,  setPageReady]  = useState(false)
   const { weatherEnabled, visitorCounterEnabled } = useConfig()
@@ -84,6 +88,11 @@ export default function HomePage() {
           <BriyaFullLogo />
         </div>
         <div className="home-header-right">
+          {auth.role === 'admin' && sites.length > 0 && (
+            <button className="sort-order-btn" onClick={() => setShowSort(true)} title="Reorder sites">
+              ⇅ Sort
+            </button>
+          )}
           <UserAvatar theme="dark" onLoginClick={() => setShowLogin(true)} />
         </div>
       </header>
@@ -166,6 +175,20 @@ export default function HomePage() {
       </footer>
 
       {visitorCounterEnabled && <VisitorCounter />}
+
+      {showSort && (
+        <SortModal
+          title="Sort Sites"
+          items={sites.map(s => ({ id: s.id, name: s.name }))}
+          onSave={async ordered => {
+            await reorderSites(ordered)
+            // Re-fetch so the list reflects new order immediately
+            const updated = await getSites().catch(() => sites)
+            setSites(updated)
+          }}
+          onClose={() => setShowSort(false)}
+        />
+      )}
 
       {showLogin && (
         <LoginModal
