@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
-import briyaIcon from '/briya_logo.png'
 import './Breadcrumb.css'
+
+const briyaIcon = `${import.meta.env.BASE_URL}briya_logo.png`
 
 /**
  * items — array of { label, path? }
