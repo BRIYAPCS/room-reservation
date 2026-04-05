@@ -137,7 +137,7 @@ export default function RoomsPage() {
                 src={room.image_url ? getImageUrl(room.image_url) : comingSoon}
                 alt={room.name}
                 className="room-card-img"
-                loading="lazy"
+                loading="eager"
                 decoding="async"
                 onLoad={onImageSettled}
                 onError={e => {
