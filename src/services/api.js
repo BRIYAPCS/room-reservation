@@ -47,6 +47,12 @@ export const getSite = (siteId) =>
 export const reorderSites = (items) =>
   request('/sites/reorder', { method: 'PUT', body: JSON.stringify(items) })
 
+export const createSite = (data) =>
+  request('/sites', { method: 'POST', body: JSON.stringify(data) })
+
+export const deleteSite = (siteId) =>
+  request(`/sites/${siteId}`, { method: 'DELETE' })
+
 export const reorderRooms = (siteCode, items) =>
   request(`/rooms/reorder/${siteCode}`, { method: 'PUT', body: JSON.stringify(items) })
 

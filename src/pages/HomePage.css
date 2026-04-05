@@ -90,6 +90,12 @@
   width: 100%;
 }
 
+/* Wrapper needed so the delete button sits outside the card button */
+.site-card-wrap {
+  position: relative;
+  width: 100%;
+}
+
 .site-card {
   background: none;
   border: none;
@@ -101,8 +107,47 @@
   transition: transform 0.18s, box-shadow 0.18s;
   padding: 0;
   width: 100%;
-  /* Help the browser isolate paint work per card */
   contain: layout style;
+}
+
+/* Delete button — top-right corner of the site card */
+.site-delete-btn {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  z-index: 10;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: rgba(220, 38, 38, 0.88);
+  border: 2px solid rgba(255,255,255,0.7);
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  transition: background 0.15s, transform 0.15s;
+  opacity: 0;
+}
+
+.site-card-wrap:hover .site-delete-btn,
+.site-card-wrap:focus-within .site-delete-btn {
+  opacity: 1;
+}
+
+.site-delete-btn:hover:not(:disabled) {
+  background: rgba(185, 28, 28, 1);
+  transform: scale(1.12);
+}
+
+.site-delete-btn:disabled { opacity: 0.5; cursor: default; }
+
+/* On touch devices always show the delete button */
+@media (hover: none) {
+  .site-delete-btn { opacity: 1; }
 }
 
 .site-card:hover {
