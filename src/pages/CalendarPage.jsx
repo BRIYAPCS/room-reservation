@@ -372,10 +372,20 @@ export default function CalendarPage() {
       setShowLoginModal(true)
       return
     }
-    if (!ALLOW_PAST_BOOKINGS && auth.role !== 'admin' && info.end <= new Date()) {
-      calendarRef.current?.getApi().unselect()
-      showToast('This time has already passed and cannot be booked.', 'error')
-      return
+    if (auth.role !== 'admin') {
+      if (!ALLOW_WEEKEND_BOOKINGS) {
+        const day = info.start.getDay()
+        if (day === 0 || day === 6) {
+          calendarRef.current?.getApi().unselect()
+          showToast('Bookings are not allowed on weekends.', 'error')
+          return
+        }
+      }
+      if (!ALLOW_PAST_BOOKINGS && info.end <= new Date()) {
+        calendarRef.current?.getApi().unselect()
+        showToast('This time has already passed and cannot be booked.', 'error')
+        return
+      }
     }
     setNewBookingTimes({ start: toLocalISO(info.start), end: toLocalISO(info.end) })
     setSelectedDate(info.startStr.split('T')[0])
@@ -827,9 +837,15 @@ export default function CalendarPage() {
                   : { startTime: CONSTRAINT_START, endTime: CONSTRAINT_END, daysOfWeek: [1,2,3,4,5] }
                 }
                 selectAllow={(selectInfo) => {
-                  if (ALLOW_PAST_BOOKINGS) return true
                   if (auth.role === 'admin') return true
-                  return selectInfo.end > new Date()
+                  // Block weekends when not allowed
+                  if (!ALLOW_WEEKEND_BOOKINGS) {
+                    const day = selectInfo.start.getDay()
+                    if (day === 0 || day === 6) return false
+                  }
+                  // Block past slots
+                  if (!ALLOW_PAST_BOOKINGS && selectInfo.end <= new Date()) return false
+                  return true
                 }}
 
                 /* ── Business hours highlight ── */
@@ -851,11 +867,22 @@ export default function CalendarPage() {
                 }}
                 dateClick={(info) => {
                   if (REQUIRE_LOGIN_FOR_CALENDAR && auth.role === 'none') { setShowLoginModal(true); return }
-                  if (!ALLOW_PAST_BOOKINGS && auth.role !== 'admin') {
-                    const slotEnd = new Date(info.date.getTime() + SLOT_DURATION_MINUTES * 60000)
-                    if (slotEnd <= new Date()) {
-                      showToast('This time has already passed and cannot be booked.', 'error')
-                      return
+                  if (auth.role !== 'admin') {
+                    // Block weekend clicks
+                    if (!ALLOW_WEEKEND_BOOKINGS) {
+                      const day = info.date.getDay()
+                      if (day === 0 || day === 6) {
+                        showToast('Bookings are not allowed on weekends.', 'error')
+                        return
+                      }
+                    }
+                    // Block past clicks
+                    if (!ALLOW_PAST_BOOKINGS) {
+                      const slotEnd = new Date(info.date.getTime() + SLOT_DURATION_MINUTES * 60000)
+                      if (slotEnd <= new Date()) {
+                        showToast('This time has already passed and cannot be booked.', 'error')
+                        return
+                      }
                     }
                   }
                   const date = resolveBookingDate(info.dateStr.split('T')[0])
