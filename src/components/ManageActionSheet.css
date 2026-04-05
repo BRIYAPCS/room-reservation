@@ -1,0 +1,82 @@
+.mas-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1100;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  backdrop-filter: blur(2px);
+}
+
+.mas-sheet {
+  background: #fff;
+  width: 100%;
+  max-width: 480px;
+  border-radius: 20px 20px 0 0;
+  padding: 12px 16px 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  animation: mas-slide-up 0.25s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes mas-slide-up {
+  from { transform: translateY(100%); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+
+.mas-handle {
+  width: 40px;
+  height: 4px;
+  background: #d1d9e3;
+  border-radius: 2px;
+  align-self: center;
+  margin-bottom: 4px;
+}
+
+.mas-name {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #1a2f4a;
+  text-align: center;
+  margin: 0 0 4px;
+  padding: 0 8px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mas-btn {
+  width: 100%;
+  padding: 14px;
+  border: none;
+  border-radius: 10px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.mas-btn--edit {
+  background: #eaf4fb;
+  color: #0d70a5;
+}
+.mas-btn--edit:hover { background: #d0eaf7; }
+
+.mas-btn--delete {
+  background: #fff5f5;
+  color: #c53030;
+}
+.mas-btn--delete:hover { background: #fed7d7; }
+
+.mas-btn--cancel {
+  background: #f0f3f7;
+  color: #4a5568;
+  margin-top: 4px;
+}
+.mas-btn--cancel:hover { background: #e2e8f0; }
+
+@media (prefers-reduced-motion: reduce) {
+  .mas-sheet { animation: none; }
+}

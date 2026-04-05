@@ -9,6 +9,7 @@ import VisitorCounter from '../components/VisitorCounter'
 import SortModal from '../components/SortModal'
 import AddRoomModal from '../components/AddRoomModal'
 import EditCardModal from '../components/EditCardModal'
+import ManageActionSheet from '../components/ManageActionSheet'
 import { getSite, getRooms, getReservations, reorderRooms, createRoom, updateRoom, deleteRoom } from '../services/api'
 import { useConfig } from '../context/ConfigContext'
 import { useAuth } from '../context/AuthContext'
@@ -36,7 +37,9 @@ export default function RoomsPage() {
   const [showLogin,   setShowLogin]   = useState(false)
   const [showSort,    setShowSort]    = useState(false)
   const [showAddRoom, setShowAddRoom] = useState(false)
-  const [editingRoom, setEditingRoom] = useState(null) // room object being edited
+  const [editingRoom, setEditingRoom] = useState(null)
+  const [sheetRoom,   setSheetRoom]   = useState(null) // mobile action sheet
+  const [manageMode,  setManageMode]  = useState(false)
   const [deletingId,  setDeletingId]  = useState(null)
   const [pageReady,   setPageReady]   = useState(false)
   const { weatherEnabled, visitorCounterEnabled } = useConfig()
@@ -119,13 +122,24 @@ export default function RoomsPage() {
         <div className="rooms-header-right">
           {auth.role === 'superadmin' && (
             <>
-              <button className="sort-order-btn" onClick={() => setShowAddRoom(true)} title="Add room">
-                + Room
+              <button
+                className={`sort-order-btn${manageMode ? ' sort-order-btn--active' : ''}`}
+                onClick={() => setManageMode(m => !m)}
+                title={manageMode ? 'Exit manage mode' : 'Manage rooms'}
+              >
+                {manageMode ? '✓ Managing' : '⚙ Manage'}
               </button>
-              {rooms.length > 1 && (
-                <button className="sort-order-btn" onClick={() => setShowSort(true)} title="Reorder rooms">
-                  ⇅ Sort
-                </button>
+              {!manageMode && (
+                <>
+                  <button className="sort-order-btn" onClick={() => setShowAddRoom(true)} title="Add room">
+                    + Room
+                  </button>
+                  {rooms.length > 1 && (
+                    <button className="sort-order-btn" onClick={() => setShowSort(true)} title="Reorder rooms">
+                      ⇅ Sort
+                    </button>
+                  )}
+                </>
               )}
             </>
           )}
@@ -149,14 +163,17 @@ export default function RoomsPage() {
           {rooms.map((room, index) => (
             <div
               key={room.id}
-              className={`room-card-wrap rp-anim rp-anim-card${pageReady ? ' rp-entered' : ''}`}
+              className={`room-card-wrap rp-anim rp-anim-card${pageReady ? ' rp-entered' : ''}${manageMode ? ' room-card-wrap--manage' : ''}`}
               style={pageReady ? { animationDelay: `${0.28 + index * 0.06}s` } : undefined}
             >
               <button
                 className="room-card"
-                onMouseEnter={() => prefetchReservations(siteId, room.id)}
-                onFocus={() => prefetchReservations(siteId, room.id)}
-                onClick={() => navigate(`/calendar/${siteId}/${room.id}`)}
+                onMouseEnter={() => { if (!manageMode) prefetchReservations(siteId, room.id) }}
+                onFocus={() => { if (!manageMode) prefetchReservations(siteId, room.id) }}
+                onClick={() => {
+                  if (manageMode) { setSheetRoom(room); return }
+                  navigate(`/calendar/${siteId}/${room.id}`)
+                }}
               >
                 <img
                   src={room.image_url ? getImageUrl(room.image_url) : comingSoon}
@@ -257,6 +274,26 @@ export default function RoomsPage() {
             ))
           }}
           onClose={() => setEditingRoom(null)}
+        />
+      )}
+
+      {sheetRoom && (
+        <ManageActionSheet
+          name={sheetRoom.name}
+          onEdit={() => setEditingRoom(sheetRoom)}
+          onDelete={async () => {
+            if (!window.confirm(`Remove "${sheetRoom.name}" from ${site.name}?\n\nThis hides the room — existing bookings are preserved.`)) return
+            setDeletingId(sheetRoom.id)
+            try {
+              await deleteRoom(siteId, sheetRoom.id)
+              setRooms(prev => prev.filter(r => r.id !== sheetRoom.id))
+            } catch {
+              alert('Failed to remove room. Please try again.')
+            } finally {
+              setDeletingId(null)
+            }
+          }}
+          onClose={() => setSheetRoom(null)}
         />
       )}
 

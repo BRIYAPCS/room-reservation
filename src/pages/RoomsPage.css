@@ -40,6 +40,20 @@
   transition: background 0.2s;
 }
 .sort-order-btn:hover { background: rgba(255,255,255,0.32); }
+.sort-order-btn--active {
+  background: rgba(255,255,255,0.92);
+  color: #1186c4;
+  border-color: #fff;
+}
+.sort-order-btn--active:hover { background: #fff; }
+
+/* Manage mode card — dashed outline so user knows cards are in edit mode */
+.room-card-wrap--manage .room-card {
+  outline: 2.5px dashed rgba(255,255,255,0.7);
+  outline-offset: 2px;
+}
+.room-card-wrap--manage .room-edit-btn,
+.room-card-wrap--manage .room-delete-btn { opacity: 1; }
 
 .back-btn {
   background: rgba(255,255,255,0.2);

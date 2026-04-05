@@ -8,6 +8,7 @@ import VisitorCounter from '../components/VisitorCounter'
 import SortModal from '../components/SortModal'
 import AddSiteModal from '../components/AddSiteModal'
 import EditCardModal from '../components/EditCardModal'
+import ManageActionSheet from '../components/ManageActionSheet'
 import { getSites, getHealth, getRooms, reorderSites, createSite, updateSite, deleteSite } from '../services/api'
 import { useConfig } from '../context/ConfigContext'
 import { useAuth } from '../context/AuthContext'
@@ -28,13 +29,15 @@ const SPINNER_STYLE = `@keyframes spin { to { transform: rotate(360deg) } }`
 export default function HomePage() {
   const navigate = useNavigate()
   const { auth } = useAuth()
-  const [showLogin,   setShowLogin]   = useState(false)
-  const [showSort,    setShowSort]    = useState(false)
-  const [showAddSite, setShowAddSite] = useState(false)
-  const [editingSite, setEditingSite] = useState(null) // site object being edited
-  const [deletingId,  setDeletingId]  = useState(null)
-  const [sites,       setSites]       = useState([])
-  const [pageReady,   setPageReady]   = useState(false)
+  const [showLogin,    setShowLogin]    = useState(false)
+  const [showSort,     setShowSort]     = useState(false)
+  const [showAddSite,  setShowAddSite]  = useState(false)
+  const [editingSite,  setEditingSite]  = useState(null)
+  const [sheetSite,    setSheetSite]    = useState(null) // mobile action sheet
+  const [manageMode,   setManageMode]   = useState(false)
+  const [deletingId,   setDeletingId]   = useState(null)
+  const [sites,        setSites]        = useState([])
+  const [pageReady,    setPageReady]    = useState(false)
   const { weatherEnabled, visitorCounterEnabled } = useConfig()
 
   const pendingRef = useRef(0)
@@ -95,13 +98,24 @@ export default function HomePage() {
         <div className="home-header-right">
           {auth.role === 'superadmin' && (
             <>
-              <button className="sort-order-btn" onClick={() => setShowAddSite(true)} title="Add site">
-                + Site
+              <button
+                className={`sort-order-btn${manageMode ? ' sort-order-btn--active' : ''}`}
+                onClick={() => setManageMode(m => !m)}
+                title={manageMode ? 'Exit manage mode' : 'Manage sites'}
+              >
+                {manageMode ? '✓ Managing' : '⚙ Manage'}
               </button>
-              {sites.length > 1 && (
-                <button className="sort-order-btn" onClick={() => setShowSort(true)} title="Reorder sites">
-                  ⇅ Sort
-                </button>
+              {!manageMode && (
+                <>
+                  <button className="sort-order-btn" onClick={() => setShowAddSite(true)} title="Add site">
+                    + Site
+                  </button>
+                  {sites.length > 1 && (
+                    <button className="sort-order-btn" onClick={() => setShowSort(true)} title="Reorder sites">
+                      ⇅ Sort
+                    </button>
+                  )}
+                </>
               )}
             </>
           )}
@@ -115,18 +129,22 @@ export default function HomePage() {
 
         <div className="site-grid">
           {sites.map((site, index) => (
-            <div key={site.id} className="site-card-wrap">
+            <div key={site.id} className={`site-card-wrap${manageMode ? ' site-card-wrap--manage' : ''}`}>
               <button
                 className="site-card"
                 onMouseEnter={e => {
+                  if (manageMode) return
                   prefetchRooms(site.code)
                   const img = e.currentTarget.querySelector('img')
                   if (img && site.image_url && (!img.complete || img.naturalWidth === 0)) {
                     img.src = getImageUrl(site.image_url) + '?t=' + Date.now()
                   }
                 }}
-                onFocus={() => prefetchRooms(site.code)}
-                onClick={() => { navigate(`/rooms/${site.code}`) }}
+                onFocus={() => { if (!manageMode) prefetchRooms(site.code) }}
+                onClick={() => {
+                  if (manageMode) { setSheetSite(site); return }
+                  navigate(`/rooms/${site.code}`)
+                }}
               >
                 <img
                   src={comingSoon}
@@ -251,6 +269,26 @@ export default function HomePage() {
             ))
           }}
           onClose={() => setEditingSite(null)}
+        />
+      )}
+
+      {sheetSite && (
+        <ManageActionSheet
+          name={sheetSite.name}
+          onEdit={() => setEditingSite(sheetSite)}
+          onDelete={async () => {
+            if (!window.confirm(`Remove "${sheetSite.name}"?\n\nThis hides the site and all its rooms. Existing bookings are preserved.`)) return
+            setDeletingId(sheetSite.id)
+            try {
+              await deleteSite(sheetSite.id)
+              setSites(prev => prev.filter(s => s.id !== sheetSite.id))
+            } catch {
+              alert('Failed to remove site. Please try again.')
+            } finally {
+              setDeletingId(null)
+            }
+          }}
+          onClose={() => setSheetSite(null)}
         />
       )}
 

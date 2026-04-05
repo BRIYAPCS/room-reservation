@@ -38,6 +38,20 @@
   transition: background 0.2s;
 }
 .sort-order-btn:hover { background: rgba(255,255,255,0.32); }
+.sort-order-btn--active {
+  background: rgba(255,255,255,0.92);
+  color: #1186c4;
+  border-color: #fff;
+}
+.sort-order-btn--active:hover { background: #fff; }
+
+/* Manage mode card — pulsing outline so user knows cards are in edit mode */
+.site-card-wrap--manage .site-card {
+  outline: 2.5px dashed rgba(255,255,255,0.7);
+  outline-offset: 2px;
+}
+.site-card-wrap--manage .site-edit-btn,
+.site-card-wrap--manage .site-delete-btn { opacity: 1; }
 
 .header-logo {
   display: flex;
