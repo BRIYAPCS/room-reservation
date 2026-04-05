@@ -99,8 +99,8 @@ export default function BookingModal({
   // Live occurrence count for recurring modes
   const occurrenceCount = useMemo(() => {
     if (!isRecurring || !form.recurUntil) return 0
-    return buildEvents({ ...form, title: '_', bookedBy: '_' }).length
-  }, [isRecurring, form.recurring, form.recurUntil, form.date, form.startTime, form.endTime])
+    return buildEvents({ ...form, title: '_', bookedBy: '_' }, BOOKING_START_HOUR, BOOKING_END_HOUR).length
+  }, [isRecurring, form.recurring, form.recurUntil, form.date, form.startTime, form.endTime, BOOKING_START_HOUR, BOOKING_END_HOUR])
 
   function handleChange(e) {
     const { name, value, type, checked } = e.target
@@ -167,7 +167,7 @@ export default function BookingModal({
       setError('Please choose a "Repeat Until" date for this series.'); return
     }
 
-    const events = buildEvents(form)
+    const events = buildEvents(form, BOOKING_START_HOUR, BOOKING_END_HOUR)
     onSave(events)
     onClose()
   }
@@ -359,7 +359,7 @@ function genGroupId() {
 }
 
 // ── Event builder ─────────────────────────────────────────────
-function buildEvents(form) {
+function buildEvents(form, BOOKING_START_HOUR, BOOKING_END_HOUR) {
   const isSeriesMode = ['daily', 'biweekly', 'monthly'].includes(form.recurring)
   const groupId = isSeriesMode ? genGroupId() : null
 
