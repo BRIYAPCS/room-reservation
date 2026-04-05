@@ -29,22 +29,37 @@
       })()
     </script>
 
-    <!-- Preconnect to Google Fonts CDN (font CSS + font files live on two origins) -->
+    <!-- Preconnect to actual API server (DuckDNS temp — update to api.briyaroomreservations.org after domain purchase) -->
+    <link rel="preconnect" href="https://briya-api.duckdns.org" />
+    <link rel="dns-prefetch" href="https://briya-api.duckdns.org" />
+
+    <!-- Preconnect to Google Fonts origins so the connection is warm before the CSS loads -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-
-    <!-- Preconnect to the production API — replace with your Linode domain before deploying -->
-    <link rel="preconnect" href="https://api.briya.org" />
-    <link rel="dns-prefetch" href="https://api.briya.org" />
 
     <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
     <link rel="apple-touch-icon" href="/briya_logo.png" />
 
+    <!--
+      Non-render-blocking font loading:
+      1. media="print" makes the browser fetch it without blocking paint
+      2. onload switches media to "all" so it applies once downloaded
+      3. display=swap means text shows in system font immediately — no invisible text
+      4. <noscript> fallback for JS-disabled browsers
+    -->
     <link
+      rel="preload"
       href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
-      rel="stylesheet"
+      as="style"
+      onload="this.onload=null;this.rel='stylesheet'"
     />
+    <noscript>
+      <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+        rel="stylesheet"
+      />
+    </noscript>
   </head>
   <body>
     <div id="root"></div>

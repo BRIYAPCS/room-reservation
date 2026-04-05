@@ -60,7 +60,7 @@ export default function HomePage() {
               onFocus={() => prefetchRooms(site.code)}
               onClick={() => { navigate(`/rooms/${site.code}`) }}
             >
-              <img src={site.image_url ? getImageUrl(site.image_url) : comingSoon} alt={site.name} className="site-card-img" loading="lazy" onError={e => { e.target.onerror = null; e.target.src = comingSoon }} />
+              <img src={site.image_url ? getImageUrl(site.image_url) : comingSoon} alt={site.name} className="site-card-img" loading="lazy" decoding="async" onError={e => { e.target.onerror = null; e.target.src = comingSoon }} />
               <div className="site-card-label">{site.name}</div>
             </button>
           ))}

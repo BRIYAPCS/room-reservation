@@ -7,6 +7,8 @@ export default function BriyaFullLogo({ className = '' }) {
       alt="Briya Public Charter School"
       className={`briya-full-logo ${className}`}
       draggable={false}
+      decoding="async"
+      fetchpriority="high"
     />
   )
 }

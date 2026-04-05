@@ -93,7 +93,7 @@ export default function RoomsPage() {
               onFocus={() => prefetchReservations(siteId, room.id)}
               onClick={() => navigate(`/calendar/${siteId}/${room.id}`)}
             >
-              <img src={room.image_url ? getImageUrl(room.image_url) : comingSoon} alt={room.name} className="room-card-img" loading="lazy" onError={e => { e.target.onerror = null; e.target.src = comingSoon }} />
+              <img src={room.image_url ? getImageUrl(room.image_url) : comingSoon} alt={room.name} className="room-card-img" loading="lazy" decoding="async" onError={e => { e.target.onerror = null; e.target.src = comingSoon }} />
               <div className="room-card-label">
                 <span>{room.name}</span>
                 {room.capacity > 0 && (
