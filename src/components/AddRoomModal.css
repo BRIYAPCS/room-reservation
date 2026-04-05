@@ -1,0 +1,139 @@
+.arm-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: rgba(0,0,0,0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  backdrop-filter: blur(2px);
+}
+
+.arm-modal {
+  background: #fff;
+  border-radius: 12px;
+  width: 100%;
+  max-width: 400px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+  overflow: hidden;
+  animation: arm-pop 0.22s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes arm-pop {
+  from { opacity: 0; transform: scale(0.93) translateY(12px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.arm-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 20px 12px;
+  border-bottom: 1px solid #e8edf2;
+}
+
+.arm-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #1a2f4a;
+  margin: 0;
+}
+
+.arm-close {
+  background: none;
+  border: none;
+  font-size: 1.1rem;
+  color: #6b7a8d;
+  cursor: pointer;
+  padding: 4px 6px;
+  border-radius: 4px;
+  transition: background 0.15s;
+}
+.arm-close:hover { background: #f0f3f7; }
+
+.arm-site-label {
+  font-size: 0.85rem;
+  color: #6b7a8d;
+  margin: 10px 20px 0;
+}
+
+.arm-form {
+  padding: 14px 20px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.arm-label {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: #1a2f4a;
+}
+
+.arm-required { color: #e53e3e; }
+.arm-optional { color: #9aa5b4; font-weight: 400; font-size: 0.82rem; }
+
+.arm-input {
+  border: 1.5px solid #d1d9e3;
+  border-radius: 7px;
+  padding: 9px 12px;
+  font-size: 0.95rem;
+  color: #1a2f4a;
+  outline: none;
+  transition: border-color 0.15s;
+}
+.arm-input:focus { border-color: #1186c4; }
+
+.arm-error {
+  font-size: 0.85rem;
+  color: #e53e3e;
+  margin: 0;
+  background: #fff5f5;
+  border: 1px solid #fed7d7;
+  border-radius: 6px;
+  padding: 8px 12px;
+}
+
+.arm-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.arm-btn-cancel {
+  flex: 1;
+  background: #f0f3f7;
+  border: none;
+  border-radius: 8px;
+  padding: 10px;
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: #4a5568;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.arm-btn-cancel:hover:not(:disabled) { background: #e2e8f0; }
+
+.arm-btn-save {
+  flex: 2;
+  background: #1186c4;
+  border: none;
+  border-radius: 8px;
+  padding: 10px;
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: #fff;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.arm-btn-save:hover:not(:disabled) { background: #0d70a5; }
+.arm-btn-save:disabled,
+.arm-btn-cancel:disabled { opacity: 0.6; cursor: default; }
+
+@media (prefers-reduced-motion: reduce) {
+  .arm-modal { animation: none; }
+}

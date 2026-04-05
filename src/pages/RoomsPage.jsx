@@ -7,7 +7,8 @@ import LoginModal from '../components/LoginModal'
 import WeatherWidget from '../components/WeatherWidget'
 import VisitorCounter from '../components/VisitorCounter'
 import SortModal from '../components/SortModal'
-import { getSite, getRooms, getReservations, reorderRooms } from '../services/api'
+import AddRoomModal from '../components/AddRoomModal'
+import { getSite, getRooms, getReservations, reorderRooms, createRoom, deleteRoom } from '../services/api'
 import { useConfig } from '../context/ConfigContext'
 import { useAuth } from '../context/AuthContext'
 import comingSoon from '../ComingSoon.jpg'
@@ -31,9 +32,11 @@ export default function RoomsPage() {
   const { auth } = useAuth()
   const [site,      setSite]      = useState(null)
   const [rooms,     setRooms]     = useState([])
-  const [showLogin, setShowLogin] = useState(false)
-  const [showSort,  setShowSort]  = useState(false)
-  const [pageReady, setPageReady] = useState(false)
+  const [showLogin,   setShowLogin]   = useState(false)
+  const [showSort,    setShowSort]    = useState(false)
+  const [showAddRoom, setShowAddRoom] = useState(false)
+  const [deletingId,  setDeletingId]  = useState(null)
+  const [pageReady,   setPageReady]   = useState(false)
   const { weatherEnabled, visitorCounterEnabled } = useConfig()
 
   const pendingRef = useRef(0)
@@ -112,10 +115,17 @@ export default function RoomsPage() {
           <BriyaFullLogo />
         </div>
         <div className="rooms-header-right">
-          {auth.role === 'superadmin' && rooms.length > 0 && (
-            <button className="sort-order-btn" onClick={() => setShowSort(true)} title="Reorder rooms">
-              ⇅ Sort
-            </button>
+          {auth.role === 'superadmin' && (
+            <>
+              <button className="sort-order-btn" onClick={() => setShowAddRoom(true)} title="Add room">
+                + Room
+              </button>
+              {rooms.length > 1 && (
+                <button className="sort-order-btn" onClick={() => setShowSort(true)} title="Reorder rooms">
+                  ⇅ Sort
+                </button>
+              )}
+            </>
           )}
           <UserAvatar theme="dark" onLoginClick={() => setShowLogin(true)} />
         </div>
@@ -135,34 +145,61 @@ export default function RoomsPage() {
 
         <div className="rooms-grid">
           {rooms.map((room, index) => (
-            <button
+            <div
               key={room.id}
-              className={`room-card rp-anim rp-anim-card${pageReady ? ' rp-entered' : ''}`}
+              className={`room-card-wrap rp-anim rp-anim-card${pageReady ? ' rp-entered' : ''}`}
               style={pageReady ? { animationDelay: `${0.28 + index * 0.06}s` } : undefined}
-              onMouseEnter={() => prefetchReservations(siteId, room.id)}
-              onFocus={() => prefetchReservations(siteId, room.id)}
-              onClick={() => navigate(`/calendar/${siteId}/${room.id}`)}
             >
-              <img
-                src={room.image_url ? getImageUrl(room.image_url) : comingSoon}
-                alt={room.name}
-                className="room-card-img"
-                loading="eager"
-                decoding="async"
-                onLoad={onImageSettled}
-                onError={e => {
-                  onImageSettled()
-                  e.target.onerror = null
-                  e.target.src = comingSoon
-                }}
-              />
-              <div className="room-card-label">
-                <span>{room.name}</span>
-                {room.capacity > 0 && (
-                  <span className="room-card-capacity">🪑 {room.capacity}</span>
-                )}
-              </div>
-            </button>
+              <button
+                className="room-card"
+                onMouseEnter={() => prefetchReservations(siteId, room.id)}
+                onFocus={() => prefetchReservations(siteId, room.id)}
+                onClick={() => navigate(`/calendar/${siteId}/${room.id}`)}
+              >
+                <img
+                  src={room.image_url ? getImageUrl(room.image_url) : comingSoon}
+                  alt={room.name}
+                  className="room-card-img"
+                  loading="eager"
+                  decoding="async"
+                  onLoad={onImageSettled}
+                  onError={e => {
+                    onImageSettled()
+                    e.target.onerror = null
+                    e.target.src = comingSoon
+                  }}
+                />
+                <div className="room-card-label">
+                  <span>{room.name}</span>
+                  {room.capacity > 0 && (
+                    <span className="room-card-capacity">🪑 {room.capacity}</span>
+                  )}
+                </div>
+              </button>
+
+              {auth.role === 'superadmin' && (
+                <button
+                  className="room-delete-btn"
+                  disabled={deletingId === room.id}
+                  title={`Remove ${room.name}`}
+                  onClick={async e => {
+                    e.stopPropagation()
+                    if (!window.confirm(`Remove "${room.name}" from ${site.name}?\n\nThis hides the room — existing bookings are preserved.`)) return
+                    setDeletingId(room.id)
+                    try {
+                      await deleteRoom(siteId, room.id)
+                      setRooms(prev => prev.filter(r => r.id !== room.id))
+                    } catch {
+                      alert('Failed to remove room. Please try again.')
+                    } finally {
+                      setDeletingId(null)
+                    }
+                  }}
+                >
+                  {deletingId === room.id ? '…' : '✕'}
+                </button>
+              )}
+            </div>
           ))}
         </div>
       </main>
@@ -183,6 +220,17 @@ export default function RoomsPage() {
             setRooms(updated)
           }}
           onClose={() => setShowSort(false)}
+        />
+      )}
+
+      {showAddRoom && (
+        <AddRoomModal
+          siteName={site?.name}
+          onSave={async data => {
+            const newRoom = await createRoom(siteId, data)
+            setRooms(prev => [...prev, newRoom])
+          }}
+          onClose={() => setShowAddRoom(false)}
         />
       )}
 

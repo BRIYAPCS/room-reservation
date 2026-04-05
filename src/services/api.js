@@ -50,6 +50,12 @@ export const reorderSites = (items) =>
 export const reorderRooms = (siteCode, items) =>
   request(`/rooms/reorder/${siteCode}`, { method: 'PUT', body: JSON.stringify(items) })
 
+export const createRoom = (siteCode, data) =>
+  request(`/rooms/${siteCode}`, { method: 'POST', body: JSON.stringify(data) })
+
+export const deleteRoom = (siteCode, roomId) =>
+  request(`/rooms/${siteCode}/${roomId}`, { method: 'DELETE' })
+
 // Rooms
 export const getRooms = async (siteSlug) => {
   try {
