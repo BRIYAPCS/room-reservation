@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import BriyaFullLogo from '../components/BriyaFullLogo'
 import Breadcrumb from '../components/Breadcrumb'
@@ -21,13 +21,30 @@ function prefetchReservations(siteCode, roomId) {
   getReservations(siteCode, roomId).catch(() => {})
 }
 
+const SPINNER_STYLE = `@keyframes spin { to { transform: rotate(360deg) } }`
+
 export default function RoomsPage() {
   const { siteId } = useParams()
   const navigate = useNavigate()
   const [site,      setSite]      = useState(null)
   const [rooms,     setRooms]     = useState([])
   const [showLogin, setShowLogin] = useState(false)
+  const [pageReady, setPageReady] = useState(false)
   const { weatherEnabled, visitorCounterEnabled } = useConfig()
+
+  const pendingRef = useRef(0)
+  const readyRef   = useRef(false)
+
+  function markReady() {
+    if (readyRef.current) return
+    readyRef.current = true
+    setPageReady(true)
+  }
+
+  function onImageSettled() {
+    pendingRef.current -= 1
+    if (pendingRef.current <= 0) markReady()
+  }
 
   useEffect(() => {
     async function load() {
@@ -40,15 +57,22 @@ export default function RoomsPage() {
         setRooms(roomsData)
       } catch {
         setSite(undefined)
+        markReady()
       }
     }
     load()
   }, [siteId])
 
-  if (site === null) {
-    return <div className="rooms-page" />
-  }
+  useEffect(() => {
+    if (!rooms.length) return
+    const withImages = rooms.filter(r => r.image_url)
+    if (!withImages.length) { markReady(); return }
+    pendingRef.current = withImages.length
+    const fallback = setTimeout(markReady, 6000)
+    return () => clearTimeout(fallback)
+  }, [rooms])
 
+  if (site === null) return <div className="rooms-page" />
   if (!site) {
     return (
       <div className="rooms-page">
@@ -59,6 +83,22 @@ export default function RoomsPage() {
 
   return (
     <div className="rooms-page">
+      {/* Full-page loading overlay */}
+      {!pageReady && (
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 9999,
+          background: '#1186c4',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}>
+          <style>{SPINNER_STYLE}</style>
+          <img
+            src={`${import.meta.env.BASE_URL}briya_logo.png`}
+            alt="Loading…"
+            style={{ width: 72, height: 72, filter: 'brightness(0) invert(1)', animation: 'spin 1.2s linear infinite' }}
+          />
+        </div>
+      )}
+
       <header className="rooms-header">
         <div className="rooms-header-left">
           <button className="back-btn" onClick={() => navigate('/')}>← Sites</button>
@@ -93,7 +133,19 @@ export default function RoomsPage() {
               onFocus={() => prefetchReservations(siteId, room.id)}
               onClick={() => navigate(`/calendar/${siteId}/${room.id}`)}
             >
-              <img src={room.image_url ? getImageUrl(room.image_url) : comingSoon} alt={room.name} className="room-card-img" loading="lazy" decoding="async" onError={e => { e.target.onerror = null; e.target.src = comingSoon }} />
+              <img
+                src={room.image_url ? getImageUrl(room.image_url) : comingSoon}
+                alt={room.name}
+                className="room-card-img"
+                loading="lazy"
+                decoding="async"
+                onLoad={onImageSettled}
+                onError={e => {
+                  onImageSettled()
+                  e.target.onerror = null
+                  e.target.src = comingSoon
+                }}
+              />
               <div className="room-card-label">
                 <span>{room.name}</span>
                 {room.capacity > 0 && (

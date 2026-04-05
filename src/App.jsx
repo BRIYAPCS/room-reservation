@@ -25,7 +25,7 @@ function AnimatedRoutes() {
           <img
             src={`${import.meta.env.BASE_URL}briya_logo.png`}
             alt="Loading…"
-            style={{ width: 64, height: 64, opacity: 0.9, animation: 'spin 1.2s linear infinite' }}
+            style={{ width: 72, height: 72, filter: 'brightness(0) invert(1)', animation: 'spin 1.2s linear infinite' }}
           />
           <style>{`@keyframes spin { to { transform: rotate(360deg) } }`}</style>
         </div>

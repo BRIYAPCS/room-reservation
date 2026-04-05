@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import BriyaFullLogo from '../components/BriyaFullLogo'
 import UserAvatar from '../components/UserAvatar'
@@ -11,30 +11,71 @@ import comingSoon from '../ComingSoon.jpg'
 import { getImageUrl } from '../utils/image'
 import './HomePage.css'
 
-// Simple in-memory prefetch cache — rooms are small, safe to keep for the session
 const prefetchCache = new Set()
 
 function prefetchRooms(siteCode) {
   if (!siteCode || prefetchCache.has(siteCode)) return
   prefetchCache.add(siteCode)
-  getRooms(siteCode).catch(() => {}) // fire-and-forget, warms the browser cache
+  getRooms(siteCode).catch(() => {})
 }
+
+const SPINNER_STYLE = `@keyframes spin { to { transform: rotate(360deg) } }`
 
 export default function HomePage() {
   const navigate = useNavigate()
-  const [showLogin, setShowLogin] = useState(false)
-  const [sites,     setSites]     = useState([])
+  const [showLogin,  setShowLogin]  = useState(false)
+  const [sites,      setSites]      = useState([])
+  const [pageReady,  setPageReady]  = useState(false)
   const { weatherEnabled, visitorCounterEnabled } = useConfig()
+
+  const pendingRef = useRef(0)
+  const readyRef   = useRef(false)
+
+  function markReady() {
+    if (readyRef.current) return
+    readyRef.current = true
+    setPageReady(true)
+  }
+
+  function onImageSettled() {
+    pendingRef.current -= 1
+    if (pendingRef.current <= 0) markReady()
+  }
 
   useEffect(() => {
     getHealth()
       .then(data => console.log('[API] health:', data))
       .catch(err => console.error('[API] health check failed:', err.message))
-    getSites().then(setSites).catch(() => {})
+    getSites().then(setSites).catch(() => { markReady() })
   }, [])
+
+  useEffect(() => {
+    if (!sites.length) return
+    const withImages = sites.filter(s => s.image_url)
+    if (!withImages.length) { markReady(); return }
+    pendingRef.current = withImages.length
+    const fallback = setTimeout(markReady, 6000)
+    return () => clearTimeout(fallback)
+  }, [sites])
 
   return (
     <div className="home-page">
+      {/* Full-page loading overlay — hides until data + images are ready */}
+      {!pageReady && (
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 9999,
+          background: '#1186c4',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}>
+          <style>{SPINNER_STYLE}</style>
+          <img
+            src={`${import.meta.env.BASE_URL}briya_logo.png`}
+            alt="Loading…"
+            style={{ width: 72, height: 72, filter: 'brightness(0) invert(1)', animation: 'spin 1.2s linear infinite' }}
+          />
+        </div>
+      )}
+
       <header className="home-header">
         <div className="home-header-left">
           {weatherEnabled && <WeatherWidget />}
@@ -72,9 +113,13 @@ export default function HomePage() {
                 className="site-card-img"
                 loading="eager"
                 decoding="async"
-                onLoad={e => { clearTimeout(e.target._loadTimer) }}
+                onLoad={e => {
+                  clearTimeout(e.target._loadTimer)
+                  onImageSettled()
+                }}
                 onError={e => {
                   clearTimeout(e.target._loadTimer)
+                  onImageSettled()
                   const retries = parseInt(e.target.dataset.retries || '0')
                   if (retries < 3) {
                     e.target.dataset.retries = retries + 1
