@@ -272,8 +272,14 @@
 
 .lm-badge-admin {
   background: #fff8e1;
-  color: #b8a000;
-  border: 1px solid #e6cc00;
+  color: #b45309;
+  border: 1px solid #f59e0b;
+}
+
+.lm-badge-superadmin {
+  background: #f5f3ff;
+  color: #6d28d9;
+  border: 1px solid #a78bfa;
 }
 
 .lm-badge-standard {

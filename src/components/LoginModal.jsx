@@ -272,7 +272,7 @@ export default function LoginModal({ onClose, onDismiss, required = false }) {
             <div className="lm-status-body">
               {auth.role === 'superadmin' ? (
                 <>
-                  <span className="lm-badge lm-badge-admin">⭐⭐ Super Admin</span>
+                  <span className="lm-badge lm-badge-superadmin">🛡️ Super Admin</span>
                   <p className="lm-user-name">{auth.name}</p>
                 </>
               ) : auth.role === 'admin' ? (
