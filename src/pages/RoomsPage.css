@@ -135,16 +135,15 @@
   .room-card:hover { transform: none; }
 }
 
-/* Delete button — top-right corner of the card */
+/* Superadmin action buttons — top corners of room card */
+.room-edit-btn,
 .room-delete-btn {
   position: absolute;
   top: 6px;
-  right: 6px;
   z-index: 10;
   width: 26px;
   height: 26px;
   border-radius: 50%;
-  background: rgba(220, 38, 38, 0.88);
   border: 2px solid rgba(255,255,255,0.7);
   color: #fff;
   font-size: 0.75rem;
@@ -158,20 +157,31 @@
   opacity: 0;
 }
 
+.room-edit-btn {
+  left: 6px;
+  background: rgba(17, 134, 196, 0.88);
+}
+
+.room-delete-btn {
+  right: 6px;
+  background: rgba(220, 38, 38, 0.88);
+}
+
+.room-card-wrap:hover .room-edit-btn,
 .room-card-wrap:hover .room-delete-btn,
+.room-card-wrap:focus-within .room-edit-btn,
 .room-card-wrap:focus-within .room-delete-btn {
   opacity: 1;
 }
 
-.room-delete-btn:hover:not(:disabled) {
-  background: rgba(185, 28, 28, 1);
-  transform: scale(1.12);
-}
+.room-edit-btn:hover:not(:disabled)   { background: rgba(13, 112, 165, 1); transform: scale(1.12); }
+.room-delete-btn:hover:not(:disabled) { background: rgba(185, 28, 28, 1);  transform: scale(1.12); }
 
+.room-edit-btn:disabled,
 .room-delete-btn:disabled { opacity: 0.5; cursor: default; }
 
-/* On touch devices always show the delete button */
 @media (hover: none) {
+  .room-edit-btn,
   .room-delete-btn { opacity: 1; }
 }
 

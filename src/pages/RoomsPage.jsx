@@ -8,7 +8,8 @@ import WeatherWidget from '../components/WeatherWidget'
 import VisitorCounter from '../components/VisitorCounter'
 import SortModal from '../components/SortModal'
 import AddRoomModal from '../components/AddRoomModal'
-import { getSite, getRooms, getReservations, reorderRooms, createRoom, deleteRoom } from '../services/api'
+import EditCardModal from '../components/EditCardModal'
+import { getSite, getRooms, getReservations, reorderRooms, createRoom, updateRoom, deleteRoom } from '../services/api'
 import { useConfig } from '../context/ConfigContext'
 import { useAuth } from '../context/AuthContext'
 import comingSoon from '../ComingSoon.jpg'
@@ -35,6 +36,7 @@ export default function RoomsPage() {
   const [showLogin,   setShowLogin]   = useState(false)
   const [showSort,    setShowSort]    = useState(false)
   const [showAddRoom, setShowAddRoom] = useState(false)
+  const [editingRoom, setEditingRoom] = useState(null) // room object being edited
   const [deletingId,  setDeletingId]  = useState(null)
   const [pageReady,   setPageReady]   = useState(false)
   const { weatherEnabled, visitorCounterEnabled } = useConfig()
@@ -179,6 +181,16 @@ export default function RoomsPage() {
 
               {auth.role === 'superadmin' && (
                 <button
+                  className="room-edit-btn"
+                  title={`Edit ${room.name}`}
+                  onClick={e => { e.stopPropagation(); setEditingRoom(room) }}
+                >
+                  ✎
+                </button>
+              )}
+
+              {auth.role === 'superadmin' && (
+                <button
                   className="room-delete-btn"
                   disabled={deletingId === room.id}
                   title={`Remove ${room.name}`}
@@ -231,6 +243,20 @@ export default function RoomsPage() {
             setRooms(prev => [...prev, newRoom])
           }}
           onClose={() => setShowAddRoom(false)}
+        />
+      )}
+
+      {editingRoom && (
+        <EditCardModal
+          mode="room"
+          initialValues={{ name: editingRoom.name, capacity: editingRoom.capacity ?? '' }}
+          onSave={async data => {
+            const result = await updateRoom(siteId, editingRoom.id, data)
+            setRooms(prev => prev.map(r =>
+              r.id === editingRoom.id ? { ...r, name: result.name, capacity: result.capacity } : r
+            ))
+          }}
+          onClose={() => setEditingRoom(null)}
         />
       )}
 

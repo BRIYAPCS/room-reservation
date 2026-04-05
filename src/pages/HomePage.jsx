@@ -7,7 +7,8 @@ import WeatherWidget from '../components/WeatherWidget'
 import VisitorCounter from '../components/VisitorCounter'
 import SortModal from '../components/SortModal'
 import AddSiteModal from '../components/AddSiteModal'
-import { getSites, getHealth, getRooms, reorderSites, createSite, deleteSite } from '../services/api'
+import EditCardModal from '../components/EditCardModal'
+import { getSites, getHealth, getRooms, reorderSites, createSite, updateSite, deleteSite } from '../services/api'
 import { useConfig } from '../context/ConfigContext'
 import { useAuth } from '../context/AuthContext'
 import comingSoon from '../ComingSoon.jpg'
@@ -30,6 +31,7 @@ export default function HomePage() {
   const [showLogin,   setShowLogin]   = useState(false)
   const [showSort,    setShowSort]    = useState(false)
   const [showAddSite, setShowAddSite] = useState(false)
+  const [editingSite, setEditingSite] = useState(null) // site object being edited
   const [deletingId,  setDeletingId]  = useState(null)
   const [sites,       setSites]       = useState([])
   const [pageReady,   setPageReady]   = useState(false)
@@ -174,6 +176,16 @@ export default function HomePage() {
 
               {auth.role === 'superadmin' && (
                 <button
+                  className="site-edit-btn"
+                  title={`Edit ${site.name}`}
+                  onClick={e => { e.stopPropagation(); setEditingSite(site) }}
+                >
+                  ✎
+                </button>
+              )}
+
+              {auth.role === 'superadmin' && (
+                <button
                   className="site-delete-btn"
                   disabled={deletingId === site.id}
                   title={`Remove ${site.name}`}
@@ -225,6 +237,20 @@ export default function HomePage() {
             setSites(prev => [...prev, newSite])
           }}
           onClose={() => setShowAddSite(false)}
+        />
+      )}
+
+      {editingSite && (
+        <EditCardModal
+          mode="site"
+          initialValues={{ name: editingSite.name, code: editingSite.code }}
+          onSave={async data => {
+            const result = await updateSite(editingSite.id, data)
+            setSites(prev => prev.map(s =>
+              s.id === editingSite.id ? { ...s, name: result.name, code: result.code } : s
+            ))
+          }}
+          onClose={() => setEditingSite(null)}
         />
       )}
 

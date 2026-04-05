@@ -50,6 +50,9 @@ export const reorderSites = (items) =>
 export const createSite = (data) =>
   request('/sites', { method: 'POST', body: JSON.stringify(data) })
 
+export const updateSite = (siteId, data) =>
+  request(`/sites/${siteId}`, { method: 'PUT', body: JSON.stringify(data) })
+
 export const deleteSite = (siteId) =>
   request(`/sites/${siteId}`, { method: 'DELETE' })
 
@@ -58,6 +61,9 @@ export const reorderRooms = (siteCode, items) =>
 
 export const createRoom = (siteCode, data) =>
   request(`/rooms/${siteCode}`, { method: 'POST', body: JSON.stringify(data) })
+
+export const updateRoom = (siteCode, roomId, data) =>
+  request(`/rooms/${siteCode}/${roomId}`, { method: 'PUT', body: JSON.stringify(data) })
 
 export const deleteRoom = (siteCode, roomId) =>
   request(`/rooms/${siteCode}/${roomId}`, { method: 'DELETE' })
