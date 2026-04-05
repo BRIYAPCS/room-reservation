@@ -104,7 +104,7 @@ export default function RoomsPage() {
           <button className="back-btn" onClick={() => navigate('/')}>← Sites</button>
           {weatherEnabled && <WeatherWidget />}
         </div>
-        <div className="header-logo">
+        <div className={`header-logo rp-anim rp-anim-logo${pageReady ? ' rp-entered' : ''}`}>
           <BriyaFullLogo />
         </div>
         <div className="rooms-header-right">
@@ -113,8 +113,8 @@ export default function RoomsPage() {
       </header>
 
       <main className="rooms-main">
-        <h1 className="rooms-title">Briya Room Reservations</h1>
-        <div className="rooms-subtitle-box">{site.name} — Choose a Room to Book</div>
+        <h1 className={`rooms-title rp-anim rp-anim-title${pageReady ? ' rp-entered' : ''}`}>Briya Room Reservations</h1>
+        <div className={`rooms-subtitle-box rp-anim rp-anim-subtitle${pageReady ? ' rp-entered' : ''}`}>{site.name} — Choose a Room to Book</div>
 
         <Breadcrumb
           variant="on-blue"
@@ -125,10 +125,11 @@ export default function RoomsPage() {
         />
 
         <div className="rooms-grid">
-          {rooms.map(room => (
+          {rooms.map((room, index) => (
             <button
               key={room.id}
-              className="room-card"
+              className={`room-card rp-anim rp-anim-card${pageReady ? ' rp-entered' : ''}`}
+              style={pageReady ? { animationDelay: `${0.28 + index * 0.06}s` } : undefined}
               onMouseEnter={() => prefetchReservations(siteId, room.id)}
               onFocus={() => prefetchReservations(siteId, room.id)}
               onClick={() => navigate(`/calendar/${siteId}/${room.id}`)}
@@ -157,7 +158,7 @@ export default function RoomsPage() {
         </div>
       </main>
 
-      <footer className="rooms-footer">
+      <footer className={`rooms-footer rp-anim rp-anim-footer${pageReady ? ' rp-entered' : ''}`}>
         © 2025 | Designed &amp; Engineered by the Briya IT Team | All Rights Reserved.
       </footer>
 
