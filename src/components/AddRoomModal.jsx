@@ -29,7 +29,7 @@ export default function AddRoomModal({ siteName, onSave, onClose }) {
   }
 
   return (
-    <div className="arm-overlay" onClick={e => { if (e.target === e.currentTarget) onClose() }}>
+    <div className="arm-overlay">
       <div className="arm-modal">
         <div className="arm-header">
           <h2 className="arm-title">Add Room</h2>

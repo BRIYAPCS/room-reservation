@@ -40,8 +40,8 @@ export default function RecurrenceActionSheet({ action, recurrenceIndex, onChoos
   ].filter(o => o.show)
 
   return (
-    <div className="ras-overlay" onClick={onClose}>
-      <div className="ras-sheet" onClick={e => e.stopPropagation()}>
+    <div className="ras-overlay">
+      <div className="ras-sheet">
         <div className="ras-header">
           <span className="ras-icon">{isDelete ? '🗑️' : '✏️'}</span>
           <div>

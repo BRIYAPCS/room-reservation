@@ -156,7 +156,7 @@ export default function LoginModal({ onClose, onDismiss, required = false }) {
       className="lm-overlay"
       onMouseDown={e => { overlayMouseTarget.current = e.target }}
       onMouseUp={e => {
-        if (!required && overlayMouseTarget.current === e.currentTarget && e.target === e.currentTarget) onDismiss()
+        // Click-outside intentionally disabled — use ✕ or Cancel to close
         overlayMouseTarget.current = null
       }}
     >

@@ -70,7 +70,7 @@ export default function SortModal({ title, items, onSave, onClose }) {
   }
 
   return (
-    <div className="sm-overlay" onClick={e => { if (e.target === e.currentTarget) onClose() }}>
+    <div className="sm-overlay">
       <div className="sm-modal">
         <div className="sm-header">
           <h2 className="sm-title">{title}</h2>
