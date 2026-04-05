@@ -8,6 +8,7 @@ import VisitorCounter from '../components/VisitorCounter'
 import { getSites, getHealth, getRooms } from '../services/api'
 import { useConfig } from '../context/ConfigContext'
 import comingSoon from '../ComingSoon.jpg'
+import { getImageUrl } from '../utils/image'
 import './HomePage.css'
 
 // Simple in-memory prefetch cache — rooms are small, safe to keep for the session
@@ -59,7 +60,7 @@ export default function HomePage() {
               onFocus={() => prefetchRooms(site.code)}
               onClick={() => { navigate(`/rooms/${site.code}`) }}
             >
-              <img src={site.image_url || comingSoon} alt={site.name} className="site-card-img" loading="lazy" />
+              <img src={site.image_url ? getImageUrl(site.image_url) : comingSoon} alt={site.name} className="site-card-img" loading="lazy" onError={e => { e.target.onerror = null; e.target.src = comingSoon }} />
               <div className="site-card-label">{site.name}</div>
             </button>
           ))}

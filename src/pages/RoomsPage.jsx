@@ -9,6 +9,7 @@ import VisitorCounter from '../components/VisitorCounter'
 import { getSite, getRooms, getReservations } from '../services/api'
 import { useConfig } from '../context/ConfigContext'
 import comingSoon from '../ComingSoon.jpg'
+import { getImageUrl } from '../utils/image'
 import './RoomsPage.css'
 
 const prefetchCache = new Set()
@@ -92,7 +93,7 @@ export default function RoomsPage() {
               onFocus={() => prefetchReservations(siteId, room.id)}
               onClick={() => navigate(`/calendar/${siteId}/${room.id}`)}
             >
-              <img src={room.image_url || comingSoon} alt={room.name} className="room-card-img" loading="lazy" />
+              <img src={room.image_url ? getImageUrl(room.image_url) : comingSoon} alt={room.name} className="room-card-img" loading="lazy" onError={e => { e.target.onerror = null; e.target.src = comingSoon }} />
               <div className="room-card-label">
                 <span>{room.name}</span>
                 {room.capacity > 0 && (
