@@ -5,15 +5,24 @@
   <title>Briya Room Reservations</title>
   <!--
     GitHub Pages SPA routing fix.
-    When GitHub Pages 404s on a deep path (e.g. /rooms/fort-totten),
-    this page redirects back to index.html with the path preserved
-    as a query param (?p=...), which index.html then restores via
-    history.replaceState so React Router sees the correct URL.
+    When GitHub Pages 404s on a deep path (e.g. /room-reservation/calendar/FT/1),
+    this page redirects to the app root with the full path preserved as ?p=...
+    index.html then restores it via history.replaceState so React Router sees
+    the correct URL without a page reload.
+
+    IMPORTANT: pathSegmentsToKeep = 1 because the repo is served from a subpath
+    (/room-reservation/). Set to 0 if ever deployed to a root domain (briyaroomreservations.org).
   -->
   <script>
+    var pathSegmentsToKeep = 1
     var loc = window.location
-    var path = loc.pathname + loc.search + loc.hash
-    loc.replace(loc.origin + '/?p=' + encodeURIComponent(path))
+    var segments = loc.pathname.split('/').slice(0, 1 + pathSegmentsToKeep).join('/')
+    loc.replace(
+      loc.protocol + '//' + loc.hostname +
+      (loc.port ? ':' + loc.port : '') +
+      segments + '/?p=' +
+      encodeURIComponent(loc.pathname.slice(segments.length) + loc.search + loc.hash)
+    )
   </script>
 </head>
 <body></body>

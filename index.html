@@ -21,7 +21,11 @@
     <script>
       ;(function () {
         var p = new URLSearchParams(window.location.search).get('p')
-        if (p) window.history.replaceState(null, '', p)
+        if (p) {
+          // Reconstruct the full URL: keep the base subpath + restore the deep path
+          var base = window.location.pathname.replace(/\/$/, '')
+          window.history.replaceState(null, '', base + p)
+        }
       })()
     </script>
 
