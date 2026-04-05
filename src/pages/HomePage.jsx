@@ -56,7 +56,13 @@ export default function HomePage() {
             <button
               key={site.id}
               className="site-card"
-              onMouseEnter={() => prefetchRooms(site.code)}
+              onMouseEnter={e => {
+                prefetchRooms(site.code)
+                const img = e.currentTarget.querySelector('img')
+                if (img && site.image_url && (!img.complete || img.naturalWidth === 0)) {
+                  img.src = getImageUrl(site.image_url) + '?t=' + Date.now()
+                }
+              }}
               onFocus={() => prefetchRooms(site.code)}
               onClick={() => { navigate(`/rooms/${site.code}`) }}
             >
