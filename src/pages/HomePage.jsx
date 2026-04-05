@@ -93,7 +93,7 @@ export default function HomePage() {
         <div className="home-subtitle-box">Choose a Site</div>
 
         <div className="site-grid">
-          {sites.map(site => (
+          {sites.map((site, index) => (
             <button
               key={site.id}
               className="site-card"
@@ -108,14 +108,18 @@ export default function HomePage() {
               onClick={() => { navigate(`/rooms/${site.code}`) }}
             >
               <img
-                src={site.image_url ? getImageUrl(site.image_url) : comingSoon}
+                src={comingSoon}
                 alt={site.name}
                 className="site-card-img"
                 loading="eager"
                 decoding="async"
                 onLoad={e => {
                   clearTimeout(e.target._loadTimer)
-                  if (!e.target._settled) { e.target._settled = true; onImageSettled() }
+                  // Only count as settled once the real image loads, not the placeholder
+                  if (!e.target._settled && e.target._realSrcSet) {
+                    e.target._settled = true
+                    onImageSettled()
+                  }
                 }}
                 onError={e => {
                   clearTimeout(e.target._loadTimer)
@@ -123,11 +127,12 @@ export default function HomePage() {
                   if (!site.image_url) return
                   const retries = (e.target._retries || 0) + 1
                   e.target._retries = retries
-                  if (retries <= 5) {
-                    // Cache-bust each retry so the browser re-requests from network
+                  if (retries <= 6) {
+                    // Immediate first retry, then back off — always cache-bust
+                    const delay = retries === 1 ? 0 : 2000 * (retries - 1)
                     setTimeout(() => {
                       e.target.src = getImageUrl(site.image_url) + '?t=' + Date.now()
-                    }, 1500 * retries)
+                    }, delay)
                   } else {
                     e.target.onerror = null
                     e.target.src = comingSoon
@@ -136,11 +141,18 @@ export default function HomePage() {
                 ref={el => {
                   if (!el || !site.image_url || el._timerSet) return
                   el._timerSet = true
-                  el._loadTimer = setTimeout(() => {
-                    if (!el.complete || el.naturalWidth === 0) {
-                      el.src = getImageUrl(site.image_url) + '?t=' + Date.now()
-                    }
-                  }, 8000)
+                  // Stagger real image requests: 0ms, 300ms, 600ms, 900ms…
+                  // so DuckDNS is never hit with 5 simultaneous connections
+                  setTimeout(() => {
+                    el._realSrcSet = true
+                    el.src = getImageUrl(site.image_url)
+                    // Fallback: if still broken after 8s, force a fresh request
+                    el._loadTimer = setTimeout(() => {
+                      if (!el.complete || el.naturalWidth === 0) {
+                        el.src = getImageUrl(site.image_url) + '?t=' + Date.now()
+                      }
+                    }, 8000)
+                  }, index * 300)
                 }}
               />
               <div className="site-card-label">{site.name}</div>
