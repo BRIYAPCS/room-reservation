@@ -1,0 +1,957 @@
+.cal-page {
+  min-height: 100vh;
+  background: #f4f6f8;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ════════════════════════════════════════
+   TOP BAR
+   ════════════════════════════════════════ */
+.cal-topbar {
+  background: #1186c4;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  padding: 10px 16px;
+  gap: 10px;
+  min-height: 64px;
+}
+
+.back-btn {
+  background: rgba(255,255,255,0.18);
+  border: 1.5px solid rgba(255,255,255,0.5);
+  color: #fff;
+  border-radius: 6px;
+  padding: 7px 13px;
+  font-size: clamp(0.78rem, 1.2vw, 0.9rem);
+  font-weight: 600;
+  transition: background 0.2s;
+  white-space: nowrap;
+}
+
+.back-btn:hover { background: rgba(255,255,255,0.3); }
+
+.cal-topbar-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-width: 0;
+  overflow: visible;
+}
+
+.logo-wrap {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  /* Padding gives the scale animation room without clipping */
+  padding: 6px;
+}
+
+.breadcrumb-box {
+  background: #1a3557;
+  color: #fff;
+  font-size: clamp(0.8rem, 1.5vw, 1rem);
+  font-weight: 700;
+  padding: clamp(6px, 1.2vw, 10px) clamp(12px, 2vw, 24px);
+  border-radius: 6px;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.cal-topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.view-toggle {
+  display: flex;
+  background: rgba(255,255,255,0.12);
+  border-radius: 6px;
+  overflow: hidden;
+  border: 1px solid rgba(255,255,255,0.3);
+}
+
+.view-toggle button {
+  background: none;
+  border: none;
+  color: rgba(255,255,255,0.8);
+  padding: 6px 14px;
+  font-size: clamp(0.78rem, 1.2vw, 0.9rem);
+  font-weight: 500;
+  transition: background 0.15s, color 0.15s;
+  white-space: nowrap;
+}
+
+.view-toggle button.active {
+  background: rgba(255,255,255,0.25);
+  color: #fff;
+  font-weight: 700;
+}
+
+.view-toggle button:hover:not(.active) {
+  background: rgba(255,255,255,0.15);
+  color: #fff;
+}
+
+.user-icon { cursor: pointer; opacity: 0.9; flex-shrink: 0; }
+.user-icon:hover { opacity: 1; }
+
+/* ════════════════════════════════════════
+   CONTENT AREA
+   ════════════════════════════════════════ */
+.cal-content {
+  flex: 1;
+  padding: clamp(10px, 2vw, 20px) clamp(10px, 2.5vw, 24px) 32px;
+  display: flex;
+  flex-direction: column;
+  gap: clamp(8px, 1.5vw, 14px);
+}
+
+.cal-load-error {
+  background: #fff3cd;
+  color: #664d03;
+  border: 1px solid #ffecb5;
+  border-radius: 6px;
+  padding: 10px 16px;
+  font-size: 0.88rem;
+  font-weight: 500;
+}
+
+/* ── Action toolbar ── */
+.cal-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.btn-new-booking,
+.btn-refresh {
+  background: #1186c4;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: clamp(7px, 1.2vw, 10px) clamp(14px, 2vw, 22px);
+  font-size: clamp(0.82rem, 1.2vw, 0.92rem);
+  font-weight: 700;
+  transition: background 0.2s;
+  white-space: nowrap;
+}
+
+.btn-new-booking:hover,
+.btn-refresh:hover { background: #0e70a0; }
+
+.btn-refresh--loading,
+.btn-refresh--loading:hover {
+  background: #0e70a0;
+  opacity: 0.75;
+  cursor: not-allowed;
+}
+
+/* ── Calendar nav ── */
+.cal-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.cal-nav-left {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.cal-nav-right {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+}
+
+.cal-nav-left button,
+.cal-nav-right button {
+  background: #fff;
+  border: 1.5px solid #ddd;
+  color: #333;
+  border-radius: 5px;
+  padding: clamp(5px, 1vw, 7px) clamp(10px, 1.5vw, 15px);
+  font-size: clamp(0.78rem, 1.1vw, 0.88rem);
+  font-weight: 500;
+  transition: background 0.15s, border-color 0.15s;
+  white-space: nowrap;
+}
+
+.cal-nav-left button:hover,
+.cal-nav-right button:hover {
+  background: #f0f4f8;
+  border-color: #bbb;
+}
+
+.cal-nav-right button.active {
+  background: #1a3557;
+  color: #fff;
+  border-color: #1a3557;
+}
+
+.cal-nav-title {
+  font-size: clamp(0.88rem, 1.5vw, 1.05rem);
+  font-weight: 600;
+  color: #333;
+  text-align: center;
+  flex: 1;
+  min-width: 100px;
+}
+
+/* ── FullCalendar wrapper ── */
+.fc-wrapper {
+  background: #fff;
+  border-radius: 8px;
+  border: 1px solid #dde2e8;
+  overflow: hidden;
+}
+
+/* FullCalendar overrides */
+.fc .fc-scrollgrid { border-color: #dde2e8; }
+
+.fc .fc-col-header-cell {
+  background: #f8fafc;
+  font-weight: 600;
+  font-size: clamp(0.72rem, 1.1vw, 0.86rem);
+  color: #555;
+  padding: 6px 0;
+}
+
+.fc .fc-timegrid-slot { height: clamp(30px, 4vw, 44px); }
+
+.fc .fc-timegrid-slot-label {
+  font-size: clamp(0.68rem, 1vw, 0.8rem);
+  color: #888;
+}
+
+.fc-event-time {
+  font-size: clamp(0.62rem, 0.9vw, 0.72rem);
+  opacity: 0.9;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.fc-event-title {
+  font-size: clamp(0.7rem, 1vw, 0.82rem);
+  font-weight: 600;
+  white-space: normal;        /* allow wrapping */
+  word-break: break-word;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;      /* show up to 3 lines then fade */
+  -webkit-box-orient: vertical;
+  line-height: 1.3;
+}
+
+/* ── Enhanced event content ── */
+.fc-event-inner {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 3px 6px 4px;
+  overflow: hidden;
+  position: relative;
+  height: 100%;
+  box-sizing: border-box;
+}
+
+/* ── Short slot (≤20 min): single compact row ── */
+.fc-event-inner--short {
+  flex-direction: row;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 5px;
+}
+
+.fc-event-short-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.fc-event-inner--short .fc-event-time {
+  font-size: 0.62rem;
+  white-space: nowrap;
+  flex-shrink: 0;
+  opacity: 0.9;
+}
+
+.fc-event-inner--short .fc-event-title {
+  font-size: 0.68rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-weight: 600;
+}
+
+/* ── Conflicting / overlapping event ── */
+.fc-event-inner--conflict {
+  border-left: 3px solid rgba(255,255,255,0.7);
+  padding-left: 5px;
+}
+
+/* Override event background color for conflicts via FullCalendar harness */
+.fc-timegrid-event:has(.fc-event-inner--conflict) {
+  --fc-event-bg-color: #e07b2a !important;
+  --fc-event-border-color: #c46920 !important;
+  background-color: #e07b2a !important;
+  border-color: #c46920 !important;
+}
+
+.fc-event-conflict-badge {
+  position: absolute;
+  top: 2px;
+  right: 4px;
+  font-size: 0.65rem;
+  line-height: 1;
+  color: #ffe234;
+  filter: drop-shadow(0 0 3px rgba(0,0,0,0.6));
+  pointer-events: none;
+}
+
+/* Soft bottom fade when content is taller than the slot */
+.fc-event-inner::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 14px;
+  background: linear-gradient(transparent, rgba(0,0,0,0.18));
+  pointer-events: none;
+  border-radius: 0 0 3px 3px;
+}
+
+.fc-event-who {
+  font-size: clamp(0.58rem, 0.85vw, 0.68rem);
+  opacity: 0.88;
+  white-space: normal;
+  word-break: break-word;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  line-height: 1.25;
+}
+
+/* ── Hover expand: event block grows to show overflow content ── */
+@media (hover: hover) {
+  /* Lift the harness so the expanded block floats above siblings */
+  .fc-timegrid-event-harness:hover {
+    z-index: 20 !important;
+  }
+
+  /* Allow the block itself to overflow its time-slot height */
+  .fc-timegrid-event:hover {
+    overflow: visible !important;
+    z-index: 20 !important;
+  }
+
+  .fc-timegrid-event:hover .fc-event-main {
+    overflow: visible;
+  }
+
+  /* The inner content area expands downward */
+  .fc-timegrid-event:hover .fc-event-inner {
+    overflow: visible;
+    height: auto;
+    min-height: 100%;
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    background: var(--fc-event-bg-color, #4abfce);
+    border-color: var(--fc-event-border-color, #3aaebe);
+    border-radius: 3px;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+    padding-bottom: 8px;
+    z-index: 20;
+  }
+
+  /* Remove the fade gradient when expanded — full content is visible */
+  .fc-timegrid-event:hover .fc-event-inner::after {
+    display: none;
+  }
+
+  /* Uncap line-clamp when expanded */
+  .fc-timegrid-event:hover .fc-event-title,
+  .fc-timegrid-event:hover .fc-event-who {
+    -webkit-line-clamp: unset;
+    display: block;
+  }
+}
+
+/* Small drag-handle dot for editable events */
+.fc-event-drag-hint {
+  position: absolute;
+  top: 3px;
+  right: 4px;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.55);
+}
+
+/* ── Month view pill style ─────────────────────────────────── */
+.fc-daygrid-event {
+  background: transparent !important;
+  border: none !important;
+  padding: 1px 2px !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+
+.fc-month-pill {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  background: #1186c4;
+  border-radius: 20px;
+  padding: 3px 8px 3px 6px;
+  overflow: hidden;
+  min-width: 0;
+  width: 100%;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.18);
+  position: relative;
+}
+
+.fc-month-pill--conflict {
+  background: #e07b2a;
+}
+
+.fc-month-pill-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.8);
+  flex-shrink: 0;
+}
+
+.fc-month-pill-warn {
+  font-size: 0.72rem;
+  flex-shrink: 0;
+}
+
+.fc-month-pill-title {
+  font-size: clamp(0.68rem, 1vw, 0.78rem);
+  font-weight: 700;
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1;
+  min-width: 0;
+}
+
+.fc-month-pill-who {
+  font-size: clamp(0.6rem, 0.85vw, 0.68rem);
+  color: rgba(255,255,255,0.78);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex-shrink: 0;
+  max-width: 35%;
+}
+
+/* Past events in month view */
+.fc-daygrid-event:has(.fc-month-pill) .fc-event-past,
+.fc-day-past .fc-month-pill {
+  background: #7db8d4;
+}
+
+/* Hover lift */
+@media (hover: hover) {
+  .fc-month-pill:hover {
+    filter: brightness(1.1);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.22);
+  }
+}
+
+/* ── Past time columns (standard user visual cue only) ── */
+.fc-wrapper--standard .fc .fc-timegrid-col.fc-day-past {
+  background: repeating-linear-gradient(
+    -45deg,
+    transparent,
+    transparent 6px,
+    rgba(0, 0, 0, 0.035) 6px,
+    rgba(0, 0, 0, 0.035) 12px
+  );
+  cursor: not-allowed;
+}
+/* Force not-allowed through all child slots — they would reset the cursor otherwise */
+.fc-wrapper--standard .fc .fc-timegrid-col.fc-day-past *:not(.fc-timegrid-event):not(.fc-timegrid-event *) {
+  cursor: not-allowed !important;
+}
+
+/* Today's column after BOOKING_END_HOUR — same treatment as past days */
+.fc-wrapper--standard.fc-wrapper--today-closed .fc .fc-timegrid-col.fc-day-today {
+  background: repeating-linear-gradient(
+    -45deg,
+    transparent,
+    transparent 6px,
+    rgba(0, 0, 0, 0.035) 6px,
+    rgba(0, 0, 0, 0.035) 12px
+  );
+  cursor: not-allowed;
+}
+.fc-wrapper--standard.fc-wrapper--today-closed .fc .fc-timegrid-col.fc-day-today *:not(.fc-timegrid-event):not(.fc-timegrid-event *) {
+  cursor: not-allowed !important;
+}
+
+/* Past day column header lock badge */
+.cal-day-header-past-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: #999;
+  background: rgba(0,0,0,0.06);
+  border-radius: 10px;
+  padding: 1px 6px;
+  margin-left: 5px;
+  vertical-align: middle;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+/* On mobile keep it compact — just the icon */
+@media (max-width: 600px) {
+  .cal-day-header-past-badge span.cal-past-label {
+    display: none;
+  }
+}
+
+/* ── Past events (non-admin view) ── */
+.fc-timegrid-event.fc-event-past {
+  opacity: 0.45;
+  cursor: default;
+}
+.fc-timegrid-event.fc-event-past .fc-event-inner {
+  background: none;
+}
+
+/* ── Now indicator ── */
+.fc .fc-timegrid-now-indicator-line {
+  border-color: #e53935;
+  border-width: 2px;
+}
+
+.fc .fc-timegrid-now-indicator-arrow {
+  border-top-color: #e53935;
+}
+
+/* ── Business hours shading ── */
+.fc .fc-non-business {
+  background: rgba(0,0,0,0.03);
+}
+
+/* ── Selection mirror ── */
+.fc .fc-highlight {
+  background: rgba(17,134,196,0.15);
+}
+
+/* ════════════════════════════════════════
+   TOOLTIP  (desktop hover only)
+   ════════════════════════════════════════ */
+@media (hover: hover) {
+  .cal-tooltip {
+    position: fixed;
+    z-index: 9000;
+    background: #1a3557;
+    color: #fff;
+    border-radius: 8px;
+    padding: 10px 14px;
+    min-width: 180px;
+    max-width: 280px;
+    box-shadow: 0 6px 24px rgba(0,0,0,0.28);
+    pointer-events: none;
+    font-size: 0.82rem;
+    line-height: 1.5;
+    animation: tooltip-in 0.12s ease;
+  }
+
+  @keyframes tooltip-in {
+    from { opacity: 0; transform: translateY(-4px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .cal-tooltip-title {
+    font-weight: 700;
+    font-size: 0.88rem;
+    margin-bottom: 4px;
+    border-bottom: 1px solid rgba(255,255,255,0.2);
+    padding-bottom: 4px;
+  }
+
+  .cal-tooltip-row {
+    font-size: 0.8rem;
+    opacity: 0.9;
+  }
+
+  .cal-tooltip-desc {
+    opacity: 0.75;
+    font-style: italic;
+    margin-top: 2px;
+  }
+}
+
+/* Hide tooltip on touch-only devices */
+@media (hover: none) {
+  .cal-tooltip { display: none; }
+}
+
+/* ════════════════════════════════════════
+   TOAST NOTIFICATIONS
+   ════════════════════════════════════════ */
+.cal-toast {
+  position: fixed;
+  bottom: 28px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 8500;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #fff;
+  box-shadow: 0 4px 18px rgba(0,0,0,0.22);
+  animation: toast-in 0.22s ease, toast-out 0.3s ease 2.9s forwards;
+  white-space: normal;
+  word-break: break-word;
+  width: max-content;
+  max-width: min(480px, 88vw);
+  text-align: center;
+  line-height: 1.4;
+}
+
+@media (max-width: 480px) {
+  .cal-toast {
+    bottom: max(env(safe-area-inset-bottom, 0px), 16px);
+    left: 16px;
+    right: 16px;
+    width: auto;
+    max-width: 100%;
+    transform: none;
+    font-size: 0.84rem;
+    padding: 11px 16px;
+    border-radius: 10px;
+  }
+}
+
+@keyframes toast-in-mobile {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@media (max-width: 480px) {
+  .cal-toast {
+    animation: toast-in-mobile 0.22s ease, toast-out-mobile 0.3s ease 2.9s forwards;
+  }
+}
+
+@keyframes toast-out-mobile {
+  to { opacity: 0; transform: translateY(8px); }
+}
+
+.cal-toast--success { background: #2e7d32; }
+.cal-toast--error   { background: #c62828; }
+.cal-toast--warning { background: #b45309; }
+
+@keyframes toast-in {
+  from { opacity: 0; transform: translateX(-50%) translateY(12px); }
+  to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+
+@keyframes toast-out {
+  to { opacity: 0; transform: translateX(-50%) translateY(8px); }
+}
+
+/* ════════════════════════════════════════
+   LIST VIEW
+   ════════════════════════════════════════ */
+.list-view {
+  background: #fff;
+  border-radius: 8px;
+  border: 1px solid #dde2e8;
+  overflow: hidden;
+}
+
+.list-filters {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 12px 16px;
+  border-bottom: 1px solid #eee;
+  flex-wrap: wrap;
+}
+
+.filter-check {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: clamp(0.8rem, 1.2vw, 0.9rem);
+  color: #444;
+  cursor: pointer;
+}
+
+.filter-check input[type="checkbox"] {
+  width: 15px;
+  height: 15px;
+  cursor: pointer;
+  accent-color: #1186c4;
+}
+
+.filter-user {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: clamp(0.8rem, 1.2vw, 0.9rem);
+  color: #444;
+}
+
+.filter-user input {
+  border: 1.5px solid #ddd;
+  border-radius: 6px;
+  padding: 6px 12px;
+  font-size: clamp(0.8rem, 1.2vw, 0.9rem);
+  outline: none;
+  width: clamp(130px, 20vw, 200px);
+  transition: border-color 0.2s;
+}
+
+.filter-user input:focus { border-color: #1186c4; }
+
+/* Scrollable wrapper for table on small screens */
+.list-table-wrap {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.list-table {
+  width: 100%;
+  min-width: 600px;
+  border-collapse: collapse;
+  font-size: clamp(0.78rem, 1.2vw, 0.9rem);
+}
+
+.list-table th {
+  background: #f8fafc;
+  text-align: left;
+  padding: clamp(9px, 1.5vw, 13px) clamp(10px, 1.8vw, 16px);
+  font-weight: 700;
+  color: #333;
+  border-bottom: 2px solid #eee;
+  white-space: nowrap;
+}
+
+.list-table td {
+  padding: clamp(9px, 1.5vw, 12px) clamp(10px, 1.8vw, 16px);
+  border-bottom: 1px solid #f0f2f4;
+  color: #444;
+  vertical-align: middle;
+}
+
+.list-table tr:last-child td { border-bottom: none; }
+.list-table tr:hover td { background: #f8fafc; }
+
+.list-desc-cell {
+  max-width: 280px;
+}
+
+.list-desc-cell span {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  font-size: 0.85rem;
+  color: #555;
+  line-height: 1.4;
+}
+
+.list-desc-cell b, .list-desc-cell strong { font-weight: 700; }
+.list-desc-cell i, .list-desc-cell em     { font-style: italic; }
+.list-desc-cell u                         { text-decoration: underline; }
+.list-desc-cell a                         { color: #1186c4; text-decoration: underline; }
+.list-desc-cell ul                        { padding-left: 16px; list-style: disc; margin: 0; }
+.list-desc-cell ol                        { padding-left: 16px; list-style: decimal; margin: 0; }
+.list-desc-cell img                       { max-width: 60px; height: auto; border-radius: 3px; vertical-align: middle; }
+
+.list-empty {
+  text-align: center;
+  color: #999;
+  padding: 40px !important;
+}
+
+/* ── Admin export button ── */
+.list-export-btn {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #1a3557;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 8px 16px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, transform 0.1s;
+  white-space: nowrap;
+}
+
+.list-export-btn:hover  { background: #142844; }
+.list-export-btn:active { transform: scale(0.97); }
+
+@media (max-width: 600px) {
+  .list-export-btn {
+    margin-left: 0;
+    width: 100%;
+    justify-content: center;
+    padding: 10px;
+  }
+}
+
+.list-actions-cell {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.list-edit-btn {
+  background: none;
+  border: 1.5px solid #ddd;
+  color: #888;
+  border-radius: 5px;
+  padding: 4px 9px;
+  font-size: 0.85rem;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.list-edit-btn:hover {
+  background: #eef6ff;
+  color: #1186c4;
+  border-color: #1186c4;
+}
+
+.list-view-btn {
+  background: none;
+  border: 1.5px solid #ddd;
+  color: #aaa;
+  border-radius: 5px;
+  padding: 4px 8px;
+  font-size: 0.8rem;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+  cursor: pointer;
+}
+
+.list-view-btn:hover {
+  background: #f5f5f5;
+  color: #555;
+  border-color: #aaa;
+}
+
+.list-delete-btn {
+  background: none;
+  border: 1.5px solid #ddd;
+  color: #888;
+  border-radius: 5px;
+  padding: 4px 9px;
+  font-size: 0.8rem;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.list-delete-btn:hover {
+  background: #fee;
+  color: #c0392b;
+  border-color: #c0392b;
+}
+
+/* ════════════════════════════════════════
+   MOBILE  ≤ 640px
+   ════════════════════════════════════════ */
+@media (max-width: 640px) {
+  /* Mobile topbar: [back | right] on row 1, [center breadcrumb] on row 2 */
+  .cal-topbar {
+    grid-template-columns: auto 1fr;
+    grid-template-rows: auto auto;
+    padding: 10px 12px 8px;
+    gap: 8px;
+  }
+
+  .back-btn      { grid-column: 1; grid-row: 1; }
+  .cal-topbar-right  { grid-column: 2; grid-row: 1; justify-content: flex-end; }
+  .cal-topbar-center { grid-column: 1 / -1; grid-row: 2; justify-content: center; }
+
+  /* Hide logo on mobile to keep breadcrumb readable */
+  .logo-wrap { display: none; }
+
+  .breadcrumb-box {
+    font-size: 0.82rem;
+    padding: 6px 12px;
+    width: 100%;
+    text-align: center;
+  }
+
+  .view-toggle button { padding: 6px 10px; font-size: 0.78rem; }
+
+  /* Calendar nav stacks into two rows */
+  .cal-nav { flex-direction: column; align-items: stretch; gap: 6px; }
+  .cal-nav-left { justify-content: flex-start; }
+  .cal-nav-right { justify-content: flex-start; flex-wrap: wrap; }
+  .cal-nav-title { text-align: center; }
+
+  /* Hide Month and Week nav buttons — too many on mobile */
+  .cal-nav-right .hide-mobile { display: none; }
+
+  .cal-toolbar { gap: 8px; }
+  .btn-new-booking,
+  .btn-refresh { padding: 8px 14px; font-size: 0.82rem; }
+
+  /* List view: full-width filter inputs */
+  .list-filters { gap: 10px; padding: 10px 12px; }
+  .filter-user input { width: 100%; }
+  .filter-user { width: 100%; }
+  .list-desc-cell { max-width: 160px; }
+}
+
+/* ════════════════════════════════════════
+   TABLET  641px – 1024px
+   ════════════════════════════════════════ */
+@media (min-width: 641px) and (max-width: 1024px) {
+  .breadcrumb-box { font-size: 0.88rem; padding: 7px 14px; }
+}
+
+/* ════════════════════════════════════════
+   4K  ≥ 2560px
+   ════════════════════════════════════════ */
+@media (min-width: 2560px) {
+  .cal-topbar { padding: 16px 32px; min-height: 80px; }
+  .breadcrumb-box { font-size: 1.3rem; padding: 12px 32px; }
+  .view-toggle button { padding: 10px 22px; font-size: 1.05rem; }
+  .btn-new-booking,
+  .btn-refresh { font-size: 1.05rem; padding: 12px 28px; }
+  .cal-nav-left button,
+  .cal-nav-right button { font-size: 1rem; padding: 10px 20px; }
+  .cal-nav-title { font-size: 1.3rem; }
+  .fc .fc-timegrid-slot { height: 56px; }
+  .fc .fc-col-header-cell { font-size: 1rem; padding: 10px 0; }
+  .fc-event-title { font-size: 0.95rem; }
+  .list-table { font-size: 1rem; }
+  .list-table th,
+  .list-table td { padding: 14px 20px; }
+}

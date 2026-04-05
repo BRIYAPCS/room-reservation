@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Briya Room Reservations</title>
+  <!--
+    GitHub Pages SPA routing fix.
+    When GitHub Pages 404s on a deep path (e.g. /rooms/fort-totten),
+    this page redirects back to index.html with the path preserved
+    as a query param (?p=...), which index.html then restores via
+    history.replaceState so React Router sees the correct URL.
+  -->
+  <script>
+    var loc = window.location
+    var path = loc.pathname + loc.search + loc.hash
+    loc.replace(loc.origin + '/?p=' + encodeURIComponent(path))
+  </script>
+</head>
+<body></body>
+</html>

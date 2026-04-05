@@ -1,0 +1,324 @@
+.bm-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 900;
+  touch-action: none;
+  overscroll-behavior: contain;
+}
+
+.bm-modal {
+  background: #fff;
+  border-radius: 8px;
+  width: 480px;
+  max-width: 95vw;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.25);
+}
+
+.bm-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px 16px;
+  border-bottom: 1px solid #eee;
+}
+
+.bm-title-block {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.bm-room-name {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #1a3557;
+  line-height: 1.2;
+}
+
+.bm-user-name {
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: #1186c4;
+}
+
+.bm-close {
+  background: none;
+  border: none;
+  font-size: 1.1rem;
+  color: #666;
+  line-height: 1;
+  padding: 10px;
+}
+
+.bm-close:hover { color: #222; }
+
+.bm-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 20px 24px 24px;
+}
+
+.bm-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #444;
+}
+
+.bm-form input,
+.bm-form select,
+.bm-form textarea {
+  border: 1.5px solid #ddd;
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-size: 0.95rem;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.bm-form input:focus,
+.bm-form select:focus,
+.bm-form textarea:focus {
+  border-color: #1186c4;
+}
+
+.bm-form textarea { resize: vertical; }
+
+.bm-field-group {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.bm-field-label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #444;
+}
+
+.bm-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+
+.required { color: #c0392b; }
+
+/* ── All Day toggle ── */
+.bm-allday-label {
+  display: flex;
+  flex-direction: row !important;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  width: fit-content;
+}
+
+.bm-allday-check {
+  width: 16px;
+  height: 16px;
+  accent-color: #1186c4;
+  cursor: pointer;
+  flex-shrink: 0;
+  padding: 0 !important;
+  border: none !important;
+}
+
+.bm-allday-text {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #444;
+  user-select: none;
+}
+
+.bm-error {
+  color: #c0392b;
+  font-size: 0.85rem;
+}
+
+.bm-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.bm-cancel {
+  background: none;
+  border: 1.5px solid #ccc;
+  border-radius: 6px;
+  padding: 9px 20px;
+  font-size: 0.9rem;
+  color: #555;
+}
+
+.bm-cancel:hover { background: #f5f5f5; }
+
+.bm-save {
+  background: #1186c4;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 9px 20px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  transition: background 0.2s;
+}
+
+.bm-save:hover { background: #0e70a0; }
+
+/* ── Recurrence section ── */
+.bm-recur-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.bm-recur-pills {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 8px;
+}
+
+/* ── Multi-Day 2×2 date+time grid ── */
+.bm-multiday-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.bm-recur-pill {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 10px 6px;
+  border: 1.5px solid #ddd;
+  border-radius: 8px;
+  background: #f9f9f9;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
+  text-align: center;
+}
+
+.bm-recur-pill:hover {
+  border-color: #1186c4;
+  background: #eef6fc;
+}
+
+.bm-recur-pill--active {
+  border-color: #1186c4;
+  background: #1186c4;
+  box-shadow: 0 2px 8px rgba(17,134,196,0.25);
+}
+
+.bm-recur-pill-label {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #333;
+  line-height: 1.1;
+}
+
+.bm-recur-pill--active .bm-recur-pill-label {
+  color: #fff;
+}
+
+.bm-recur-pill-desc {
+  font-size: 0.7rem;
+  color: #888;
+  line-height: 1.2;
+}
+
+.bm-recur-pill--active .bm-recur-pill-desc {
+  color: rgba(255,255,255,0.85);
+}
+
+.bm-recur-until-block {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: #f4f8fb;
+  border: 1.5px solid #d0e8f5;
+  border-radius: 8px;
+  padding: 12px 14px;
+}
+
+.bm-recur-until-label {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #444;
+}
+
+.bm-recur-summary {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.83rem;
+  color: #1a3557;
+  margin: 0;
+  padding: 6px 10px;
+  background: #dff0fa;
+  border-radius: 6px;
+}
+
+.bm-recur-summary-icon {
+  font-size: 0.95rem;
+}
+
+/* ── Mobile ≤ 480px — bottom sheet ── */
+@media (max-width: 480px) {
+  .bm-overlay { align-items: flex-end; }
+  .bm-modal {
+    width: 100%;
+    max-width: 100%;
+    border-radius: 16px 16px 0 0;
+    max-height: 92vh;
+  }
+  .bm-header { padding: 14px 16px 12px; }
+  .bm-form { padding: 14px 16px 20px; gap: 12px; }
+  .bm-row { grid-template-columns: 1fr; gap: 8px; }
+  .bm-actions { flex-direction: column-reverse; gap: 8px; }
+  .bm-cancel,
+  .bm-save { width: 100%; text-align: center; padding: 11px; }
+  .bm-recur-pills { grid-template-columns: repeat(3, 1fr); }
+  .bm-recur-pill { padding: 10px 6px; }
+  .bm-multiday-grid { grid-template-columns: 1fr 1fr; gap: 8px; }
+}
+
+/* ── Tablet 481px – 768px ── */
+@media (min-width: 481px) and (max-width: 768px) {
+  .bm-modal { width: 92vw; }
+}
+
+/* ── 4K ≥ 2560px ── */
+@media (min-width: 2560px) {
+  .bm-modal { width: 640px; }
+  .bm-room-name { font-size: 1.4rem; }
+  .bm-user-name { font-size: 1rem; }
+  .bm-header { padding: 26px 32px 20px; }
+  .bm-form { padding: 26px 32px 32px; gap: 18px; }
+  .bm-form input,
+  .bm-form select,
+  .bm-form textarea { font-size: 1.1rem; padding: 12px 16px; }
+  .bm-form label { font-size: 1.05rem; }
+  .bm-field-label { font-size: 1.05rem; }
+  .bm-save,
+  .bm-cancel { font-size: 1.05rem; padding: 12px 28px; }
+  .bm-recur-pill-label { font-size: 0.95rem; }
+  .bm-recur-pill-desc  { font-size: 0.82rem; }
+  .bm-recur-summary    { font-size: 0.95rem; }
+}
