@@ -115,24 +115,27 @@ export default function HomePage() {
                 decoding="async"
                 onLoad={e => {
                   clearTimeout(e.target._loadTimer)
-                  onImageSettled()
+                  if (!e.target._settled) { e.target._settled = true; onImageSettled() }
                 }}
                 onError={e => {
                   clearTimeout(e.target._loadTimer)
-                  onImageSettled()
-                  const retries = parseInt(e.target.dataset.retries || '0')
-                  if (retries < 3) {
-                    e.target.dataset.retries = retries + 1
-                    const s = e.target.src
-                    setTimeout(() => { e.target.src = s }, 2000 * (retries + 1))
+                  if (!e.target._settled) { e.target._settled = true; onImageSettled() }
+                  if (!site.image_url) return
+                  const retries = (e.target._retries || 0) + 1
+                  e.target._retries = retries
+                  if (retries <= 5) {
+                    // Cache-bust each retry so the browser re-requests from network
+                    setTimeout(() => {
+                      e.target.src = getImageUrl(site.image_url) + '?t=' + Date.now()
+                    }, 1500 * retries)
                   } else {
                     e.target.onerror = null
                     e.target.src = comingSoon
                   }
                 }}
                 ref={el => {
-                  if (!el || !site.image_url) return
-                  clearTimeout(el._loadTimer)
+                  if (!el || !site.image_url || el._timerSet) return
+                  el._timerSet = true
                   el._loadTimer = setTimeout(() => {
                     if (!el.complete || el.naturalWidth === 0) {
                       el.src = getImageUrl(site.image_url) + '?t=' + Date.now()
