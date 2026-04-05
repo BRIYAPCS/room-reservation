@@ -60,7 +60,35 @@ export default function HomePage() {
               onFocus={() => prefetchRooms(site.code)}
               onClick={() => { navigate(`/rooms/${site.code}`) }}
             >
-              <img src={site.image_url ? getImageUrl(site.image_url) : comingSoon} alt={site.name} className="site-card-img" loading="eager" decoding="async" onError={e => { if (!e.target.dataset.retried) { e.target.dataset.retried = '1'; const s = e.target.src; setTimeout(() => { e.target.src = s }, 1500) } else { e.target.onerror = null; e.target.src = comingSoon } }} />
+              <img
+                src={site.image_url ? getImageUrl(site.image_url) : comingSoon}
+                alt={site.name}
+                className="site-card-img"
+                loading="eager"
+                decoding="async"
+                onLoad={e => { clearTimeout(e.target._loadTimer) }}
+                onError={e => {
+                  clearTimeout(e.target._loadTimer)
+                  const retries = parseInt(e.target.dataset.retries || '0')
+                  if (retries < 3) {
+                    e.target.dataset.retries = retries + 1
+                    const s = e.target.src
+                    setTimeout(() => { e.target.src = s }, 2000 * (retries + 1))
+                  } else {
+                    e.target.onerror = null
+                    e.target.src = comingSoon
+                  }
+                }}
+                ref={el => {
+                  if (!el || !site.image_url) return
+                  clearTimeout(el._loadTimer)
+                  el._loadTimer = setTimeout(() => {
+                    if (!el.complete || el.naturalWidth === 0) {
+                      el.src = getImageUrl(site.image_url) + '?t=' + Date.now()
+                    }
+                  }, 8000)
+                }}
+              />
               <div className="site-card-label">{site.name}</div>
             </button>
           ))}
