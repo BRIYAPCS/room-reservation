@@ -25,6 +25,21 @@
   align-items: center;
 }
 
+.back-btn {
+  background: rgba(255,255,255,0.2);
+  border: 1.5px solid rgba(255,255,255,0.5);
+  color: #fff;
+  border-radius: 6px;
+  padding: 7px 14px;
+  font-size: clamp(0.78rem, 1.2vw, 0.92rem);
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+  white-space: nowrap;
+}
+
+.back-btn:hover { background: rgba(255,255,255,0.32); }
+
 /* ── Main ── */
 .admin-main {
   flex: 1;
