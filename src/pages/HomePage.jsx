@@ -38,7 +38,7 @@ export default function HomePage() {
   const [deletingId,   setDeletingId]   = useState(null)
   const [sites,        setSites]        = useState([])
   const [pageReady,    setPageReady]    = useState(false)
-  const { weatherEnabled, visitorCounterEnabled } = useConfig()
+  const { weatherEnabled, visitorCounterEnabled, siteManagementEnabled } = useConfig()
 
   const pendingRef = useRef(0)
   const readyRef   = useRef(false)
@@ -98,22 +98,29 @@ export default function HomePage() {
         <div className="home-header-right">
           {auth.role === 'superadmin' && (
             <>
-              <button
-                className={`sort-order-btn${manageMode ? ' sort-order-btn--active' : ''}`}
-                onClick={() => setManageMode(m => !m)}
-                title={manageMode ? 'Exit manage mode' : 'Manage sites'}
-              >
-                {manageMode ? '✓ Managing' : '⚙ Manage'}
+              <button className="sort-order-btn" onClick={() => navigate('/admin')} title="Admin Dashboard">
+                ◈<span className="btn-label"> Dashboard</span>
               </button>
-              {!manageMode && (
+              {siteManagementEnabled && (
                 <>
-                  <button className="sort-order-btn" onClick={() => setShowAddSite(true)} title="Add site">
-                    + Site
+                  <button
+                    className={`sort-order-btn${manageMode ? ' sort-order-btn--active' : ''}`}
+                    onClick={() => setManageMode(m => !m)}
+                    title={manageMode ? 'Exit manage mode' : 'Manage sites'}
+                  >
+                    {manageMode ? '✓' : '⚙'}<span className="btn-label">{manageMode ? ' Managing' : ' Manage'}</span>
                   </button>
-                  {sites.length > 1 && (
-                    <button className="sort-order-btn" onClick={() => setShowSort(true)} title="Reorder sites">
-                      ⇅ Sort
-                    </button>
+                  {!manageMode && (
+                    <>
+                      <button className="sort-order-btn" onClick={() => setShowAddSite(true)} title="Add site">
+                        +<span className="btn-label"> Site</span>
+                      </button>
+                      {sites.length > 1 && (
+                        <button className="sort-order-btn" onClick={() => setShowSort(true)} title="Reorder sites">
+                          ⇅<span className="btn-label"> Sort</span>
+                        </button>
+                      )}
+                    </>
                   )}
                 </>
               )}
@@ -129,7 +136,7 @@ export default function HomePage() {
 
         <div className="site-grid">
           {sites.map((site, index) => (
-            <div key={site.id} className={`site-card-wrap${manageMode ? ' site-card-wrap--manage' : ''}`}>
+            <div key={site.id} className={`site-card-wrap${manageMode && siteManagementEnabled ? ' site-card-wrap--manage' : ''}`}>
               <button
                 className="site-card"
                 onMouseEnter={e => {
@@ -192,7 +199,7 @@ export default function HomePage() {
                 <div className="site-card-label">{site.name}</div>
               </button>
 
-              {auth.role === 'superadmin' && (
+              {auth.role === 'superadmin' && siteManagementEnabled && (
                 <button
                   className="site-edit-btn"
                   title={`Edit ${site.name}`}
@@ -202,7 +209,7 @@ export default function HomePage() {
                 </button>
               )}
 
-              {auth.role === 'superadmin' && (
+              {auth.role === 'superadmin' && siteManagementEnabled && (
                 <button
                   className="site-delete-btn"
                   disabled={deletingId === site.id}

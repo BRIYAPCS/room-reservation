@@ -240,11 +240,20 @@
   }
   .home-header-left  { justify-content: flex-start; }
   .header-logo       { justify-content: center; }
-  .home-header-right { justify-content: flex-end; }
+  .home-header-right { justify-content: flex-end; gap: 6px; }
+  /* Icon-only buttons on all mobile — hide text labels */
+  .btn-label { display: none; }
+  .sort-order-btn { padding: 6px 9px; font-size: 0.82rem; min-width: 30px; text-align: center; }
 }
 
-/* ── Mobile portrait (≤480px): 2 columns ── */
+/* ── Mobile portrait (≤480px): 2 columns, icon-only header buttons ── */
 @media (max-width: 480px) {
+  .home-header {
+    grid-template-columns: auto 1fr auto;
+    padding: 10px 12px;
+    gap: 6px;
+  }
+
   .site-grid {
     grid-template-columns: repeat(2, 1fr);
     gap: 10px;

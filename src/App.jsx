@@ -9,6 +9,7 @@ import PageTransition from './components/PageTransition'
 const HomePage     = lazy(() => import('./pages/HomePage'))
 const RoomsPage    = lazy(() => import('./pages/RoomsPage'))
 const CalendarPage = lazy(() => import('./pages/CalendarPage'))
+const AdminPage    = lazy(() => import('./pages/AdminPage'))
 
 function AnimatedRoutes() {
   const location = useLocation()
@@ -34,6 +35,7 @@ function AnimatedRoutes() {
           <Route path="/" element={<HomePage />} />
           <Route path="/rooms/:siteId" element={<RoomsPage />} />
           <Route path="/calendar/:siteId/:roomId" element={<CalendarPage />} />
+          <Route path="/admin" element={<AdminPage />} />
         </Routes>
       </Suspense>
     </PageTransition>

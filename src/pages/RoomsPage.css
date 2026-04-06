@@ -300,9 +300,20 @@
   }
 }
 
-/* ── Mobile logo ── */
+/* ── Mobile logo + header ── */
 @media (max-width: 640px) {
   .briya-full-logo { width: clamp(120px, 42vw, 200px); }
+  .rooms-header {
+    grid-template-columns: auto 1fr auto;
+    padding: 10px 14px;
+    gap: 8px;
+  }
+  .rooms-header-left  { justify-content: flex-start; }
+  .header-logo        { justify-content: center; }
+  .rooms-header-right { justify-content: flex-end; gap: 6px; }
+  /* Icon-only buttons on all mobile — hide text labels */
+  .btn-label { display: none; }
+  .sort-order-btn { padding: 6px 9px; font-size: 0.82rem; min-width: 30px; text-align: center; }
 }
 
 @media (max-width: 360px) {
@@ -314,9 +325,17 @@
   .briya-full-logo { width: 480px; }
 }
 
-/* ── Mobile portrait (≤480px): 2 columns ── */
+/* ── Mobile portrait (≤480px): 2 columns, icon-only header buttons ── */
 @media (max-width: 480px) {
-  .rooms-header { padding: 10px 12px; min-height: 56px; }
+  .rooms-header {
+    padding: 10px 12px;
+    min-height: 56px;
+    /* Let left/right columns shrink to content; logo takes remaining space */
+    grid-template-columns: auto 1fr auto;
+  }
+
+  .rooms-header-right { gap: 5px; }
+
   .back-btn { padding: 6px 10px; font-size: 0.78rem; }
 
   .rooms-grid {

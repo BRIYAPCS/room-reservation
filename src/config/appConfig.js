@@ -36,6 +36,10 @@ const appConfig = {
   canCreateRoles:          ['superadmin', 'admin', 'standard'],
   editOthersRole:          'admin',
   deleteRole:              'admin',
+
+  // ── Admin dashboard toggles (default on until API responds) ──
+  siteManagementEnabled:   true,
+  roomManagementEnabled:   true,
 }
 
 export default appConfig

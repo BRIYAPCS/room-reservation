@@ -29,7 +29,8 @@ async function request(path, options = {}) {
 }
 
 export const getHealth  = ()           => request('/health')
-export const getConfig  = ()           => request('/config')
+export const getConfig    = ()     => request('/config')
+export const updateConfig = (data) => request('/config', { method: 'PUT', body: JSON.stringify(data) })
 export const getWeather = (lat, lon)   => request(lat && lon ? `/weather?lat=${lat}&lon=${lon}` : '/weather')
 export const getVisitors       = ()           => request('/visitors')
 export const heartbeatVisitor  = (sessionId)  => request('/visitors/heartbeat', {

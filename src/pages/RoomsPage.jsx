@@ -42,7 +42,7 @@ export default function RoomsPage() {
   const [manageMode,  setManageMode]  = useState(false)
   const [deletingId,  setDeletingId]  = useState(null)
   const [pageReady,   setPageReady]   = useState(false)
-  const { weatherEnabled, visitorCounterEnabled } = useConfig()
+  const { weatherEnabled, visitorCounterEnabled, roomManagementEnabled } = useConfig()
 
   const pendingRef = useRef(0)
   const readyRef   = useRef(false)
@@ -122,22 +122,29 @@ export default function RoomsPage() {
         <div className="rooms-header-right">
           {auth.role === 'superadmin' && (
             <>
-              <button
-                className={`sort-order-btn${manageMode ? ' sort-order-btn--active' : ''}`}
-                onClick={() => setManageMode(m => !m)}
-                title={manageMode ? 'Exit manage mode' : 'Manage rooms'}
-              >
-                {manageMode ? '✓ Managing' : '⚙ Manage'}
+              <button className="sort-order-btn" onClick={() => navigate('/admin')} title="Admin Dashboard">
+                ◈<span className="btn-label"> Dashboard</span>
               </button>
-              {!manageMode && (
+              {roomManagementEnabled && (
                 <>
-                  <button className="sort-order-btn" onClick={() => setShowAddRoom(true)} title="Add room">
-                    + Room
+                  <button
+                    className={`sort-order-btn${manageMode ? ' sort-order-btn--active' : ''}`}
+                    onClick={() => setManageMode(m => !m)}
+                    title={manageMode ? 'Exit manage mode' : 'Manage rooms'}
+                  >
+                    {manageMode ? '✓' : '⚙'}<span className="btn-label">{manageMode ? ' Managing' : ' Manage'}</span>
                   </button>
-                  {rooms.length > 1 && (
-                    <button className="sort-order-btn" onClick={() => setShowSort(true)} title="Reorder rooms">
-                      ⇅ Sort
-                    </button>
+                  {!manageMode && (
+                    <>
+                      <button className="sort-order-btn" onClick={() => setShowAddRoom(true)} title="Add room">
+                        +<span className="btn-label"> Room</span>
+                      </button>
+                      {rooms.length > 1 && (
+                        <button className="sort-order-btn" onClick={() => setShowSort(true)} title="Reorder rooms">
+                          ⇅<span className="btn-label"> Sort</span>
+                        </button>
+                      )}
+                    </>
                   )}
                 </>
               )}
@@ -163,7 +170,7 @@ export default function RoomsPage() {
           {rooms.map((room, index) => (
             <div
               key={room.id}
-              className={`room-card-wrap rp-anim rp-anim-card${pageReady ? ' rp-entered' : ''}${manageMode ? ' room-card-wrap--manage' : ''}`}
+              className={`room-card-wrap rp-anim rp-anim-card${pageReady ? ' rp-entered' : ''}${manageMode && roomManagementEnabled ? ' room-card-wrap--manage' : ''}`}
               style={pageReady ? { animationDelay: `${0.28 + index * 0.06}s` } : undefined}
             >
               <button
@@ -196,7 +203,7 @@ export default function RoomsPage() {
                 </div>
               </button>
 
-              {auth.role === 'superadmin' && (
+              {auth.role === 'superadmin' && roomManagementEnabled && (
                 <button
                   className="room-edit-btn"
                   title={`Edit ${room.name}`}
@@ -206,7 +213,7 @@ export default function RoomsPage() {
                 </button>
               )}
 
-              {auth.role === 'superadmin' && (
+              {auth.role === 'superadmin' && roomManagementEnabled && (
                 <button
                   className="room-delete-btn"
                   disabled={deletingId === room.id}
