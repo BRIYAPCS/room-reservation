@@ -185,19 +185,24 @@
   gap: 10px;
 }
 
-/* ── Multi-Day 2×2 date+time grid ── */
-.bm-multiday-grid {
+/* ── Always-visible 2-column date+time grid ── */
+.bm-datetime-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 12px;
 }
 
-/* ── Booking type top-level radios (One-time / Multi-Day / Recurring Event) ── */
-.bm-booking-type-row {
-  display: flex;
-  gap: 20px;
-  flex-wrap: wrap;
-  align-items: center;
+/* Dim the disabled End Date when recurring (each occurrence is single-day) */
+.bm-datetime-grid input:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  background: #f5f5f5;
+}
+
+/* ── Recurring Event checkbox toggle ── */
+.bm-recurring-toggle {
+  font-weight: 600 !important;
+  color: #1a3557 !important;
 }
 
 .bm-type-radio {
@@ -345,10 +350,9 @@
   .bm-actions { flex-direction: column-reverse; gap: 8px; }
   .bm-cancel,
   .bm-save { width: 100%; text-align: center; padding: 11px; }
-  .bm-booking-type-row { gap: 14px; }
-  .bm-recur-type-row   { gap: 14px; }
-  .bm-multiday-grid    { grid-template-columns: 1fr 1fr; gap: 8px; }
-  .bm-weekday-btn      { width: 34px; height: 34px; }
+  .bm-recur-type-row  { gap: 14px; }
+  .bm-datetime-grid   { grid-template-columns: 1fr 1fr; gap: 8px; }
+  .bm-weekday-btn     { width: 34px; height: 34px; }
 }
 
 /* ── Tablet 481px – 768px ── */

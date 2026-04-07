@@ -88,8 +88,9 @@ export default function BookingModal({
   })
   const [error, setError] = useState('')
 
-  const isMultiDay  = form.recurring === 'multiday'
   const isRecurring = ['daily', 'weekly', 'biweekly', 'monthly'].includes(form.recurring)
+  // Multi-day is auto-detected: same-day unless end date > start date (and not a recurring series)
+  const isMultiDay  = !isRecurring && form.endDate > form.date
 
   // Max date for "Repeat Until" — RECURRING_MAX_MONTHS from start date
   const maxRecurDate = useMemo(() => {
@@ -161,21 +162,12 @@ export default function BookingModal({
     if (!form.title.trim())    { setError('Event title is required.'); return }
     if (!form.bookedBy.trim()) { setError('Booked By is required.'); return }
 
-    if (isMultiDay && form.endDate < form.date) {
+    if (!isRecurring && form.endDate < form.date) {
       setError('End date must be on or after the start date.'); return
     }
-    if (!form.allDay) {
-      if (isMultiDay) {
-        if (form.endDate === form.date && form.startTime >= form.endTime) {
-          setError('End time must be after start time on the same day.'); return
-        }
-      } else {
-        if (form.startTime >= form.endTime) {
-          setError('End time must be after start time.'); return
-        }
-      }
+    if (!form.allDay && (form.endDate === form.date || isRecurring) && form.startTime >= form.endTime) {
+      setError('End time must be after start time.'); return
     }
-
     if (isRecurring && !form.recurUntil) {
       setError('Please choose an "Ends On" date for this series.'); return
     }
@@ -183,7 +175,11 @@ export default function BookingModal({
       setError('Please select at least one day for weekly recurrence.'); return
     }
 
-    const events = buildEvents(form, BOOKING_START_HOUR, BOOKING_END_HOUR)
+    // Pass multiday flag via recurring field so buildEvents handles it correctly
+    const effectiveForm = !isRecurring && isMultiDay
+      ? { ...form, recurring: 'multiday' }
+      : form
+    const events = buildEvents(effectiveForm, BOOKING_START_HOUR, BOOKING_END_HOUR)
     onSave(events)
     onClose()
   }
@@ -223,76 +219,46 @@ export default function BookingModal({
             <span className="bm-allday-text">All Day</span>
           </label>
 
-          {/* ── Date / time fields — layout depends on mode ── */}
-          {isMultiDay ? (
-            /* Multi-Day: dates always shown; times hidden when All Day */
-            <div className="bm-multiday-grid">
-              <label>
-                Start Date
-                <input type="date" name="date" value={form.date} onChange={handleChange} />
-              </label>
-              <label>
-                End Date
-                <input
-                  type="date"
-                  name="endDate"
-                  value={form.endDate}
-                  min={form.date}
-                  onChange={handleChange}
-                />
-              </label>
-              {!form.allDay && (
-                <>
-                  <label>
-                    Start Time
-                    <select name="startTime" value={form.startTime} onChange={handleChange}>
-                      {TIME_OPTIONS.map(opt => (
+          {/* ── Date + time — always 2-column grid ── */}
+          <div className="bm-datetime-grid">
+            <label>
+              Start Date
+              <input type="date" name="date" value={form.date} onChange={handleChange} />
+            </label>
+            <label>
+              End Date
+              <input
+                type="date"
+                name="endDate"
+                value={isRecurring ? form.date : form.endDate}
+                min={form.date}
+                disabled={isRecurring}
+                onChange={handleChange}
+              />
+            </label>
+            {!form.allDay && (
+              <>
+                <label>
+                  Start Time
+                  <select name="startTime" value={form.startTime} onChange={handleChange}>
+                    {TIME_OPTIONS.map(opt => (
+                      <option key={opt.value} value={opt.value}>{opt.label}</option>
+                    ))}
+                  </select>
+                </label>
+                <label>
+                  End Time
+                  <select name="endTime" value={form.endTime} onChange={handleChange}>
+                    {TIME_OPTIONS
+                      .filter(opt => timeToMins(opt.value) >= timeToMins(form.startTime) + SLOT_DURATION_MINUTES)
+                      .map(opt => (
                         <option key={opt.value} value={opt.value}>{opt.label}</option>
                       ))}
-                    </select>
-                  </label>
-                  <label>
-                    End Time
-                    <select name="endTime" value={form.endTime} onChange={handleChange}>
-                      {TIME_OPTIONS.map(opt => (
-                        <option key={opt.value} value={opt.value}>{opt.label}</option>
-                      ))}
-                    </select>
-                  </label>
-                </>
-              )}
-            </div>
-          ) : (
-            /* One-time / Recurring: Date + times (times hidden when All Day) */
-            <>
-              <label>
-                {isRecurring ? 'Start Date' : 'Date'}
-                <input type="date" name="date" value={form.date} onChange={handleChange} />
-              </label>
-              {!form.allDay && (
-                <div className="bm-row">
-                  <label>
-                    Start Time
-                    <select name="startTime" value={form.startTime} onChange={handleChange}>
-                      {TIME_OPTIONS.map(opt => (
-                        <option key={opt.value} value={opt.value}>{opt.label}</option>
-                      ))}
-                    </select>
-                  </label>
-                  <label>
-                    End Time
-                    <select name="endTime" value={form.endTime} onChange={handleChange}>
-                      {TIME_OPTIONS
-                        .filter(opt => timeToMins(opt.value) >= timeToMins(form.startTime) + SLOT_DURATION_MINUTES)
-                        .map(opt => (
-                          <option key={opt.value} value={opt.value}>{opt.label}</option>
-                        ))}
-                    </select>
-                  </label>
-                </div>
-              )}
-            </>
-          )}
+                  </select>
+                </label>
+              </>
+            )}
+          </div>
 
           <div className="bm-field-group">
             <span className="bm-field-label">Description</span>
@@ -303,59 +269,37 @@ export default function BookingModal({
             />
           </div>
 
-          {/* ── Booking type ───────────────────────────────── */}
+          {/* ── Recurring Event toggle + sub-options ── */}
           {ENABLE_RECURRING_EVENTS && (
             <div className="bm-recur-section">
-              <span className="bm-field-label">Booking Type</span>
 
-              {/* ── Top-level: One-time / Multi-Day / Recurring Event ── */}
-              <div className="bm-booking-type-row">
-                {[
-                  { value: 'none',      label: 'One-time' },
-                  { value: 'multiday',  label: 'Multi-Day' },
-                  { value: 'recurring', label: 'Recurring Event' },
-                ].map(opt => {
-                  const checked = opt.value === 'recurring' ? isRecurring : form.recurring === opt.value
-                  return (
-                    <label key={opt.value} className="bm-type-radio">
-                      <input
-                        type="radio"
-                        name="bookingCategory"
-                        checked={checked}
-                        onChange={() =>
-                          opt.value === 'recurring'
-                            ? (!isRecurring && setBookingType('daily'))
-                            : setBookingType(opt.value)
-                        }
-                      />
-                      <span>{opt.label}</span>
-                    </label>
-                  )
-                })}
-              </div>
+              {/* Single "Recurring Event" radio/checkbox */}
+              <label className="bm-type-radio bm-recurring-toggle">
+                <input
+                  type="checkbox"
+                  checked={isRecurring}
+                  onChange={e => e.target.checked ? setBookingType('daily') : setBookingType('none')}
+                />
+                <span>Recurring Event</span>
+              </label>
 
-              {/* ── Recurring sub-section ── */}
+              {/* Repeat type + day picker + Ends On */}
               {isRecurring && (
                 <div className="bm-recur-sub">
 
-                  {/* Repeat Type radios */}
-                  <div className="bm-recur-type-block">
-                    <span className="bm-field-label">
-                      Repeat Type <span className="required">*</span>
-                    </span>
-                    <div className="bm-recur-type-row">
-                      {REPEAT_TYPES.map(opt => (
-                        <label key={opt.value} className="bm-type-radio">
-                          <input
-                            type="radio"
-                            name="recurType"
-                            checked={form.recurring === opt.value}
-                            onChange={() => setBookingType(opt.value)}
-                          />
-                          <span>{opt.label}</span>
-                        </label>
-                      ))}
-                    </div>
+                  {/* Repeat type radio row */}
+                  <div className="bm-recur-type-row">
+                    {REPEAT_TYPES.map(opt => (
+                      <label key={opt.value} className="bm-type-radio">
+                        <input
+                          type="radio"
+                          name="recurType"
+                          checked={form.recurring === opt.value}
+                          onChange={() => setBookingType(opt.value)}
+                        />
+                        <span>{opt.label}</span>
+                      </label>
+                    ))}
                   </div>
 
                   {/* Weekly day picker */}
@@ -432,7 +376,7 @@ function genGroupId() {
 
 // ── Event builder ─────────────────────────────────────────────
 function buildEvents(form, BOOKING_START_HOUR, BOOKING_END_HOUR) {
-  const isSeriesMode = ['daily', 'biweekly', 'monthly'].includes(form.recurring)
+  const isSeriesMode = ['daily', 'weekly', 'biweekly', 'monthly'].includes(form.recurring)
   const groupId = isSeriesMode ? genGroupId() : null
 
   const makeBase = (index) => ({
