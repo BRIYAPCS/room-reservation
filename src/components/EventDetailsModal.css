@@ -22,11 +22,37 @@
   padding: 28px 32px 24px;
 }
 
+/* Header row — title left, series badge right */
+.edm-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0 0 16px 0;
+}
+
 .edm-header {
   font-size: 1.15rem;
   font-weight: 700;
   color: #1a3557;
-  margin: 0 0 16px 0;
+  margin: 0;
+}
+
+/* "🔁 3 / 10" occurrence badge */
+.edm-series-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: #eaf4fb;
+  color: #1186c4;
+  border: 1.5px solid #b8ddf5;
+  border-radius: 20px;
+  padding: 4px 12px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  white-space: nowrap;
+  flex-shrink: 0;
+  letter-spacing: 0.01em;
 }
 
 .edm-divider {
@@ -197,6 +223,8 @@
     max-height: 92vh;
     padding: 20px 18px 24px;
   }
+  .edm-header { font-size: 1rem; }
+  .edm-series-badge { font-size: 0.76rem; padding: 3px 9px; }
   .edm-label { min-width: 76px; font-size: 0.82rem; }
   .edm-value { font-size: 0.88rem; }
   .edm-description { max-height: 140px; }
@@ -216,6 +244,7 @@
 @media (min-width: 2560px) {
   .edm-modal { width: 580px; padding: 36px 40px 32px; }
   .edm-header { font-size: 1.4rem; }
+  .edm-series-badge { font-size: 0.95rem; padding: 5px 16px; }
   .edm-label { font-size: 1rem; min-width: 120px; }
   .edm-value { font-size: 1.1rem; }
   .edm-description { max-height: 260px; }

@@ -1080,17 +1080,32 @@ export default function CalendarPage() {
       )}
 
       {/* Event Details Modal */}
-      {showEventDetails && selectedEvent && (
-        <EventDetailsModal
-          event={selectedEvent}
-          canEdit={canEdit(selectedEvent) && (isAdmin(auth.role) || new Date(selectedEvent?.end || selectedEvent?.extendedProps?.end) > new Date())}
-          canDelete={canDelete(selectedEvent)}
-          isRecurring={!!selectedEvent?.extendedProps?.recurrenceGroupId}
-          onEdit={() => handleEditRequest(selectedEvent)}
-          onDelete={() => handleDeleteRequest(selectedEvent)}
-          onClose={() => { setShowEventDetails(false); setSelectedEvent(null) }}
-        />
-      )}
+      {showEventDetails && selectedEvent && (() => {
+        // Compute series position live from events state — auto-updates after any deletion
+        const groupId = selectedEvent?.extendedProps?.recurrenceGroupId
+        let seriesInfo = null
+        if (groupId) {
+          const sid = String(selectedEvent?.id ?? '')
+          const siblings = [...events]
+            .filter(ev => ev.extendedProps?.recurrenceGroupId === groupId)
+            .sort((a, b) => new Date(a.start) - new Date(b.start))
+          const total    = siblings.length
+          const position = siblings.findIndex(ev => String(ev.id) === sid) + 1
+          seriesInfo = { position: position > 0 ? position : 1, total }
+        }
+        return (
+          <EventDetailsModal
+            event={selectedEvent}
+            canEdit={canEdit(selectedEvent) && (isAdmin(auth.role) || new Date(selectedEvent?.end || selectedEvent?.extendedProps?.end) > new Date())}
+            canDelete={canDelete(selectedEvent)}
+            isRecurring={!!groupId}
+            seriesInfo={seriesInfo}
+            onEdit={() => handleEditRequest(selectedEvent)}
+            onDelete={() => handleDeleteRequest(selectedEvent)}
+            onClose={() => { setShowEventDetails(false); setSelectedEvent(null) }}
+          />
+        )
+      })()}
 
       {/* Recurrence Action Sheet */}
       {recurAction && (() => {

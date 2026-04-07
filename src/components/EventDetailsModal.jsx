@@ -30,7 +30,7 @@ function formatEditedAt(iso) {
   })
 }
 
-export default function EventDetailsModal({ event, canEdit, canDelete, onEdit, onDelete, onClose, isRecurring }) {
+export default function EventDetailsModal({ event, canEdit, canDelete, onEdit, onDelete, onClose, isRecurring, seriesInfo }) {
   const [confirmDelete, setConfirmDelete] = useState(false)
 
   useEffect(() => {
@@ -68,7 +68,14 @@ export default function EventDetailsModal({ event, canEdit, canDelete, onEdit, o
   return (
     <div className="edm-overlay">
       <div className="edm-modal">
-        <h2 className="edm-header">Event Details</h2>
+        <div className="edm-header-row">
+          <h2 className="edm-header">Event Details</h2>
+          {seriesInfo && (
+            <span className="edm-series-badge" title={`This is occurrence ${seriesInfo.position} of ${seriesInfo.total} in the series`}>
+              🔁 {seriesInfo.position} / {seriesInfo.total}
+            </span>
+          )}
+        </div>
         <div className="edm-divider" />
 
         <div className="edm-body">
