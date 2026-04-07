@@ -207,17 +207,31 @@ export default function BookingModal({
             <input name="bookedBy" value={form.bookedBy} onChange={handleChange} placeholder="Your name" />
           </label>
 
-          {/* ── All Day toggle ── */}
-          <label className="bm-allday-label">
-            <input
-              type="checkbox"
-              name="allDay"
-              checked={form.allDay}
-              onChange={handleChange}
-              className="bm-allday-check"
-            />
-            <span className="bm-allday-text">All Day</span>
-          </label>
+          {/* ── All Day + Recurring Event — same row ── */}
+          <div className="bm-checks-row">
+            <label className="bm-allday-label">
+              <input
+                type="checkbox"
+                name="allDay"
+                checked={form.allDay}
+                onChange={handleChange}
+                className="bm-allday-check"
+              />
+              <span className="bm-allday-text">All Day</span>
+            </label>
+
+            {ENABLE_RECURRING_EVENTS && (
+              <label className="bm-allday-label">
+                <input
+                  type="checkbox"
+                  className="bm-allday-check"
+                  checked={isRecurring}
+                  onChange={e => e.target.checked ? setBookingType('daily') : setBookingType('none')}
+                />
+                <span className="bm-allday-text">Recurring Event</span>
+              </label>
+            )}
+          </div>
 
           {/* ── Date + time — always 2-column grid ── */}
           <div className="bm-datetime-grid">
@@ -261,23 +275,10 @@ export default function BookingModal({
             )}
           </div>
 
-          {/* ── Recurring Event toggle + sub-options ── */}
-          {ENABLE_RECURRING_EVENTS && (
+          {/* ── Recurring sub-options (shown when recurring is checked above) ── */}
+          {ENABLE_RECURRING_EVENTS && isRecurring && (
             <div className="bm-recur-section">
-
-              {/* Single "Recurring Event" radio/checkbox */}
-              <label className="bm-type-radio bm-recurring-toggle">
-                <input
-                  type="checkbox"
-                  checked={isRecurring}
-                  onChange={e => e.target.checked ? setBookingType('daily') : setBookingType('none')}
-                />
-                <span>Recurring Event</span>
-              </label>
-
-              {/* Repeat type + day picker + Ends On */}
-              {isRecurring && (
-                <div className="bm-recur-sub">
+              <div className="bm-recur-sub">
 
                   {/* Repeat type radio row */}
                   <div className="bm-recur-type-row">
@@ -339,8 +340,7 @@ export default function BookingModal({
                     )}
                   </div>
 
-                </div>
-              )}
+              </div>
             </div>
           )}
 

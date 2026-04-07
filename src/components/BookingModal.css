@@ -115,6 +115,14 @@
 
 .required { color: #c0392b; }
 
+/* ── All Day + Recurring on the same row ── */
+.bm-checks-row {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+
 /* ── All Day toggle ── */
 .bm-allday-label {
   display: flex;
