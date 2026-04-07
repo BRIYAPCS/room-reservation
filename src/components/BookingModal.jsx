@@ -225,17 +225,18 @@ export default function BookingModal({
               Start Date
               <input type="date" name="date" value={form.date} onChange={handleChange} />
             </label>
-            <label>
-              End Date
-              <input
-                type="date"
-                name="endDate"
-                value={isRecurring ? form.date : form.endDate}
-                min={form.date}
-                disabled={isRecurring}
-                onChange={handleChange}
-              />
-            </label>
+            {!isRecurring && (
+              <label>
+                End Date
+                <input
+                  type="date"
+                  name="endDate"
+                  value={form.endDate}
+                  min={form.date}
+                  onChange={handleChange}
+                />
+              </label>
+            )}
             {!form.allDay && (
               <>
                 <label>
