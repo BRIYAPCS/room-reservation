@@ -260,15 +260,6 @@ export default function BookingModal({
             )}
           </div>
 
-          <div className="bm-field-group">
-            <span className="bm-field-label">Description</span>
-            <RichTextEditor
-              value={form.description}
-              onChange={html => { setForm(prev => ({ ...prev, description: html })); setError('') }}
-              placeholder="Optional — supports bold, italic, links, lists…"
-            />
-          </div>
-
           {/* ── Recurring Event toggle + sub-options ── */}
           {ENABLE_RECURRING_EVENTS && (
             <div className="bm-recur-section">
@@ -351,6 +342,15 @@ export default function BookingModal({
               )}
             </div>
           )}
+
+          <div className="bm-field-group">
+            <span className="bm-field-label">Description</span>
+            <RichTextEditor
+              value={form.description}
+              onChange={html => { setForm(prev => ({ ...prev, description: html })); setError('') }}
+              placeholder="Optional — supports bold, italic, links, lists…"
+            />
+          </div>
 
           {error && <p className="bm-error">{error}</p>}
 
