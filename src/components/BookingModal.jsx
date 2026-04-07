@@ -233,9 +233,9 @@ export default function BookingModal({
             )}
           </div>
 
-          {/* ── Date + time — always 2-column grid ── */}
+          {/* ── Date row ── */}
           <div className="bm-datetime-grid">
-            <label>
+            <label className={isRecurring ? 'bm-span-full' : ''}>
               Start Date
               <input type="date" name="date" value={form.date} onChange={handleChange} />
             </label>
@@ -251,29 +251,31 @@ export default function BookingModal({
                 />
               </label>
             )}
-            {!form.allDay && (
-              <>
-                <label>
-                  Start Time
-                  <select name="startTime" value={form.startTime} onChange={handleChange}>
-                    {TIME_OPTIONS.map(opt => (
+          </div>
+
+          {/* ── Time row (hidden when All Day) ── */}
+          {!form.allDay && (
+            <div className="bm-datetime-grid">
+              <label>
+                Start Time
+                <select name="startTime" value={form.startTime} onChange={handleChange}>
+                  {TIME_OPTIONS.map(opt => (
+                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                End Time
+                <select name="endTime" value={form.endTime} onChange={handleChange}>
+                  {TIME_OPTIONS
+                    .filter(opt => timeToMins(opt.value) >= timeToMins(form.startTime) + SLOT_DURATION_MINUTES)
+                    .map(opt => (
                       <option key={opt.value} value={opt.value}>{opt.label}</option>
                     ))}
-                  </select>
-                </label>
-                <label>
-                  End Time
-                  <select name="endTime" value={form.endTime} onChange={handleChange}>
-                    {TIME_OPTIONS
-                      .filter(opt => timeToMins(opt.value) >= timeToMins(form.startTime) + SLOT_DURATION_MINUTES)
-                      .map(opt => (
-                        <option key={opt.value} value={opt.value}>{opt.label}</option>
-                      ))}
-                  </select>
-                </label>
-              </>
-            )}
-          </div>
+                </select>
+              </label>
+            </div>
+          )}
 
           {/* ── Recurring sub-options (shown when recurring is checked above) ── */}
           {ENABLE_RECURRING_EVENTS && isRecurring && (

@@ -5,6 +5,13 @@
   flex-direction: column;
 }
 
+/* ── Logo — defined here so it works even if HomePage never loads ── */
+.admin-header .briya-full-logo {
+  width: clamp(130px, 20vw, 280px);
+  height: auto;
+  display: block;
+}
+
 /* ── Header ── */
 .admin-header {
   display: grid;
