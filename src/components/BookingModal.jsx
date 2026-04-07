@@ -23,14 +23,16 @@ const timeToMins = t => { const [h, m] = (t || '00:00').split(':').map(Number); 
 const minsToTime = m => `${pad(Math.floor(m / 60))}:${pad(m % 60)}`
 const toDateStr  = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
 
-// ── Booking type options ──────────────────────────────────────
-const BOOKING_TYPES = [
-  { value: 'none',     label: 'One-time',   desc: 'Single day'       },
-  { value: 'multiday', label: 'Multi-Day',  desc: 'Spans several days'},
-  { value: 'daily',    label: 'Daily',      desc: 'Mon – Fri'        },
-  { value: 'biweekly', label: 'Bi-Weekly',  desc: 'Every 2 weeks'    },
-  { value: 'monthly',  label: 'Monthly',    desc: 'Same date / mo.'  },
+// ── Repeat-type options (shown inside Recurring Event section) ─
+const REPEAT_TYPES = [
+  { value: 'daily',    label: 'Daily'    },
+  { value: 'weekly',   label: 'Weekly'   },
+  { value: 'biweekly', label: 'Bi-Weekly'},
+  { value: 'monthly',  label: 'Monthly'  },
 ]
+
+const WEEK_DAYS = ['S', 'M', 'T', 'W', 'T', 'F', 'S']
+const WEEK_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 
 // ── Component ─────────────────────────────────────────────────
 export default function BookingModal({
@@ -80,14 +82,14 @@ export default function BookingModal({
     endTime:     minsToTime(parsedEndMins),
     allDay:      false,
     description: '',
-    recurring:   'none',             // 'none' | 'multiday' | 'daily' | 'biweekly' | 'monthly'
+    recurring:   'none',             // 'none' | 'multiday' | 'daily' | 'weekly' | 'biweekly' | 'monthly'
     recurUntil:  '',
+    recurDays:   [1, 2, 3, 4, 5],   // day indices 0=Sun … 6=Sat; default Mon–Fri for weekly
   })
   const [error, setError] = useState('')
 
-  const isMultiDay       = form.recurring === 'multiday'
-  const isRecurring      = ['daily', 'biweekly', 'monthly'].includes(form.recurring)
-  const needsRepeatUntil = isRecurring
+  const isMultiDay  = form.recurring === 'multiday'
+  const isRecurring = ['daily', 'weekly', 'biweekly', 'monthly'].includes(form.recurring)
 
   // Max date for "Repeat Until" — RECURRING_MAX_MONTHS from start date
   const maxRecurDate = useMemo(() => {
@@ -99,8 +101,9 @@ export default function BookingModal({
   // Live occurrence count for recurring modes
   const occurrenceCount = useMemo(() => {
     if (!isRecurring || !form.recurUntil) return 0
+    if (form.recurring === 'weekly' && form.recurDays.length === 0) return 0
     return buildEvents({ ...form, title: '_', bookedBy: '_' }, BOOKING_START_HOUR, BOOKING_END_HOUR).length
-  }, [isRecurring, form.recurring, form.recurUntil, form.date, form.startTime, form.endTime, BOOKING_START_HOUR, BOOKING_END_HOUR])
+  }, [isRecurring, form.recurring, form.recurUntil, form.date, form.startTime, form.endTime, form.recurDays, BOOKING_START_HOUR, BOOKING_END_HOUR])
 
   function handleChange(e) {
     const { name, value, type, checked } = e.target
@@ -138,9 +141,19 @@ export default function BookingModal({
       ...prev,
       recurring:  value,
       recurUntil: '',
-      endDate:    prev.date, // reset end date when switching modes
+      endDate:    prev.date,
     }))
     setError('')
+  }
+
+  // Toggle a weekday in/out of the weekly selection (minimum 1 day must remain)
+  function toggleDay(dayIndex) {
+    setForm(prev => {
+      const next = prev.recurDays.includes(dayIndex)
+        ? prev.recurDays.filter(d => d !== dayIndex)
+        : [...prev.recurDays, dayIndex].sort((a, b) => a - b)
+      return next.length === 0 ? prev : { ...prev, recurDays: next }
+    })
   }
 
   function handleSubmit(e) {
@@ -164,15 +177,16 @@ export default function BookingModal({
     }
 
     if (isRecurring && !form.recurUntil) {
-      setError('Please choose a "Repeat Until" date for this series.'); return
+      setError('Please choose an "Ends On" date for this series.'); return
+    }
+    if (form.recurring === 'weekly' && form.recurDays.length === 0) {
+      setError('Please select at least one day for weekly recurrence.'); return
     }
 
     const events = buildEvents(form, BOOKING_START_HOUR, BOOKING_END_HOUR)
     onSave(events)
     onClose()
   }
-
-  const recurLabel = BOOKING_TYPES.find(o => o.value === form.recurring)?.label ?? ''
 
   return (
     <div className="bm-overlay">
@@ -289,48 +303,106 @@ export default function BookingModal({
             />
           </div>
 
-          {/* ── Booking type pills ─────────────────────────── */}
+          {/* ── Booking type ───────────────────────────────── */}
           {ENABLE_RECURRING_EVENTS && (
             <div className="bm-recur-section">
               <span className="bm-field-label">Booking Type</span>
 
-              <div className="bm-recur-pills" role="group" aria-label="Booking type">
-                {BOOKING_TYPES.map(opt => (
-                  <button
-                    key={opt.value}
-                    type="button"
-                    className={`bm-recur-pill${form.recurring === opt.value ? ' bm-recur-pill--active' : ''}`}
-                    onClick={() => setBookingType(opt.value)}
-                    aria-pressed={form.recurring === opt.value}
-                  >
-                    <span className="bm-recur-pill-label">{opt.label}</span>
-                    <span className="bm-recur-pill-desc">{opt.desc}</span>
-                  </button>
-                ))}
+              {/* ── Top-level: One-time / Multi-Day / Recurring Event ── */}
+              <div className="bm-booking-type-row">
+                {[
+                  { value: 'none',      label: 'One-time' },
+                  { value: 'multiday',  label: 'Multi-Day' },
+                  { value: 'recurring', label: 'Recurring Event' },
+                ].map(opt => {
+                  const checked = opt.value === 'recurring' ? isRecurring : form.recurring === opt.value
+                  return (
+                    <label key={opt.value} className="bm-type-radio">
+                      <input
+                        type="radio"
+                        name="bookingCategory"
+                        checked={checked}
+                        onChange={() =>
+                          opt.value === 'recurring'
+                            ? (!isRecurring && setBookingType('daily'))
+                            : setBookingType(opt.value)
+                        }
+                      />
+                      <span>{opt.label}</span>
+                    </label>
+                  )
+                })}
               </div>
 
-              {/* Repeat Until — only for Daily / Bi-Weekly / Monthly */}
-              {needsRepeatUntil && (
-                <div className="bm-recur-until-block">
-                  <label className="bm-recur-until-label">
-                    Repeat Until
-                    <input
-                      type="date"
-                      name="recurUntil"
-                      value={form.recurUntil}
-                      min={form.date}
-                      max={maxRecurDate}
-                      onChange={handleChange}
-                    />
-                  </label>
-                  {occurrenceCount > 0 && (
-                    <p className="bm-recur-summary">
-                      <span className="bm-recur-summary-icon">📅</span>
-                      <strong>{occurrenceCount}</strong>&nbsp;
-                      {occurrenceCount === 1 ? 'occurrence' : 'occurrences'} will be created
-                      &nbsp;·&nbsp;{recurLabel}
-                    </p>
+              {/* ── Recurring sub-section ── */}
+              {isRecurring && (
+                <div className="bm-recur-sub">
+
+                  {/* Repeat Type radios */}
+                  <div className="bm-recur-type-block">
+                    <span className="bm-field-label">
+                      Repeat Type <span className="required">*</span>
+                    </span>
+                    <div className="bm-recur-type-row">
+                      {REPEAT_TYPES.map(opt => (
+                        <label key={opt.value} className="bm-type-radio">
+                          <input
+                            type="radio"
+                            name="recurType"
+                            checked={form.recurring === opt.value}
+                            onChange={() => setBookingType(opt.value)}
+                          />
+                          <span>{opt.label}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Weekly day picker */}
+                  {form.recurring === 'weekly' && (
+                    <div className="bm-weekday-block">
+                      <span className="bm-field-label">
+                        Repeats On <span className="required">*</span>
+                      </span>
+                      <div className="bm-weekday-picker">
+                        {WEEK_DAYS.map((day, i) => (
+                          <button
+                            key={i}
+                            type="button"
+                            className={`bm-weekday-btn${form.recurDays.includes(i) ? ' bm-weekday-btn--active' : ''}`}
+                            onClick={() => toggleDay(i)}
+                            aria-label={WEEK_LABELS[i]}
+                            aria-pressed={form.recurDays.includes(i)}
+                          >
+                            {day}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
                   )}
+
+                  {/* Ends On */}
+                  <div className="bm-recur-until-block">
+                    <label className="bm-recur-until-label">
+                      Ends On <span className="required">*</span>
+                      <input
+                        type="date"
+                        name="recurUntil"
+                        value={form.recurUntil}
+                        min={form.date}
+                        max={maxRecurDate}
+                        onChange={handleChange}
+                      />
+                    </label>
+                    {occurrenceCount > 0 && (
+                      <p className="bm-recur-summary">
+                        <span className="bm-recur-summary-icon">📅</span>
+                        <strong>{occurrenceCount}</strong>&nbsp;
+                        {occurrenceCount === 1 ? 'occurrence' : 'occurrences'} will be created
+                      </p>
+                    )}
+                  </div>
+
                 </div>
               )}
             </div>
@@ -411,6 +483,17 @@ function buildEvents(form, BOOKING_START_HOUR, BOOKING_END_HOUR) {
     while (cur <= until) {
       const dow = cur.getDay()
       if (dow >= 1 && dow <= 5) {
+        const d = toDateStr(cur)
+        events.push({ ...makeBase(index++), start: startOf(d), end: endOf(d) })
+      }
+      cur.setDate(cur.getDate() + 1)
+    }
+
+  } else if (form.recurring === 'weekly') {
+    const days = form.recurDays?.length ? form.recurDays : [1, 2, 3, 4, 5]
+    const cur  = new Date(form.date + 'T00:00:00')
+    while (cur <= until) {
+      if (days.includes(cur.getDay())) {
         const d = toDateStr(cur)
         events.push({ ...makeBase(index++), start: startOf(d), end: endOf(d) })
       }

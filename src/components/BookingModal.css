@@ -185,12 +185,6 @@
   gap: 10px;
 }
 
-.bm-recur-pills {
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 8px;
-}
-
 /* ── Multi-Day 2×2 date+time grid ── */
 .bm-multiday-grid {
   display: grid;
@@ -198,50 +192,107 @@
   gap: 12px;
 }
 
-.bm-recur-pill {
+/* ── Booking type top-level radios (One-time / Multi-Day / Recurring Event) ── */
+.bm-booking-type-row {
   display: flex;
-  flex-direction: column;
+  gap: 20px;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 3px;
-  padding: 10px 6px;
-  border: 1.5px solid #ddd;
-  border-radius: 8px;
-  background: #f9f9f9;
-  cursor: pointer;
-  transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
-  text-align: center;
 }
 
-.bm-recur-pill:hover {
+.bm-type-radio {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #444;
+  width: auto !important;
+}
+
+.bm-type-radio input[type="radio"] {
+  width: 15px;
+  height: 15px;
+  accent-color: #1186c4;
+  cursor: pointer;
+  margin: 0;
+  padding: 0 !important;
+  border: none !important;
+  flex-shrink: 0;
+}
+
+/* ── Recurring sub-section card ── */
+.bm-recur-sub {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 14px 16px;
+  background: #f8fafc;
+  border: 1.5px solid #d0e8f5;
+  border-radius: 8px;
+}
+
+/* ── Repeat Type block ── */
+.bm-recur-type-block {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.bm-recur-type-row {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+/* ── Weekday picker ── */
+.bm-weekday-block {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.bm-weekday-picker {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.bm-weekday-btn {
+  width: 36px;
+  height: 36px;
+  border: 1.5px solid #d0d0d0;
+  border-radius: 6px;
+  background: #fff;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #555;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.bm-weekday-btn:hover {
   border-color: #1186c4;
+  color: #1186c4;
   background: #eef6fc;
 }
 
-.bm-recur-pill--active {
-  border-color: #1186c4;
+.bm-weekday-btn--active {
   background: #1186c4;
-  box-shadow: 0 2px 8px rgba(17,134,196,0.25);
-}
-
-.bm-recur-pill-label {
-  font-size: 0.82rem;
-  font-weight: 700;
-  color: #333;
-  line-height: 1.1;
-}
-
-.bm-recur-pill--active .bm-recur-pill-label {
+  border-color: #1186c4;
   color: #fff;
 }
 
-.bm-recur-pill-desc {
-  font-size: 0.7rem;
-  color: #888;
-  line-height: 1.2;
-}
-
-.bm-recur-pill--active .bm-recur-pill-desc {
-  color: rgba(255,255,255,0.85);
+.bm-weekday-btn--active:hover {
+  background: #0e70a0;
+  border-color: #0e70a0;
 }
 
 .bm-recur-until-block {
@@ -294,9 +345,10 @@
   .bm-actions { flex-direction: column-reverse; gap: 8px; }
   .bm-cancel,
   .bm-save { width: 100%; text-align: center; padding: 11px; }
-  .bm-recur-pills { grid-template-columns: repeat(3, 1fr); }
-  .bm-recur-pill { padding: 10px 6px; }
-  .bm-multiday-grid { grid-template-columns: 1fr 1fr; gap: 8px; }
+  .bm-booking-type-row { gap: 14px; }
+  .bm-recur-type-row   { gap: 14px; }
+  .bm-multiday-grid    { grid-template-columns: 1fr 1fr; gap: 8px; }
+  .bm-weekday-btn      { width: 34px; height: 34px; }
 }
 
 /* ── Tablet 481px – 768px ── */
@@ -318,7 +370,6 @@
   .bm-field-label { font-size: 1.05rem; }
   .bm-save,
   .bm-cancel { font-size: 1.05rem; padding: 12px 28px; }
-  .bm-recur-pill-label { font-size: 0.95rem; }
-  .bm-recur-pill-desc  { font-size: 0.82rem; }
   .bm-recur-summary    { font-size: 0.95rem; }
+  .bm-weekday-btn      { width: 44px; height: 44px; font-size: 0.95rem; }
 }

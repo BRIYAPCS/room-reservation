@@ -44,13 +44,74 @@ function toHref(str) {
   return s.startsWith('http') ? s : `https://${s}`
 }
 
-function linkLabel(str) {
+// ── Known service recognizers ─────────────────────────────────
+// Each entry: { test(hostname) → bool, label(url) → string }
+const SERVICE_PATTERNS = [
+  // SharePoint — /:b:/ = PDF, /:w:/ = Word, /:x:/ = Excel, etc.
+  {
+    test:  h => h.includes('sharepoint.com'),
+    label: url => {
+      const TYPE_MAP = {
+        ':b:': 'PDF', ':w:': 'Word Document', ':x:': 'Excel Spreadsheet',
+        ':p:': 'PowerPoint', ':v:': 'Video', ':f:': 'Folder', ':i:': 'Image',
+      }
+      const parts    = url.pathname.split('/')
+      const typeCode = parts.find(p => /^:[a-z]:$/i.test(p))?.toLowerCase()
+      const fileType = TYPE_MAP[typeCode] || 'Document'
+      // /s/<site-name>/ segment gives a human-readable site label
+      const sIdx = parts.indexOf('s')
+      const site = sIdx !== -1 && parts[sIdx + 1]
+        ? decodeURIComponent(parts[sIdx + 1]).replace(/[_-]/g, ' ')
+        : ''
+      return site ? `SharePoint ${fileType} (${site})` : `SharePoint ${fileType}`
+    },
+  },
+  { test: h => h.includes('onedrive.com') || h.includes('1drv.ms'),           label: () => 'OneDrive File' },
+  { test: h => h.includes('docs.google.com'), label: url => {
+      if (url.pathname.includes('/document/'))     return 'Google Doc'
+      if (url.pathname.includes('/spreadsheets/')) return 'Google Sheet'
+      if (url.pathname.includes('/presentation/')) return 'Google Slides'
+      if (url.pathname.includes('/forms/'))        return 'Google Form'
+      return 'Google Docs'
+    },
+  },
+  { test: h => h.includes('drive.google.com'),                                 label: () => 'Google Drive' },
+  { test: h => h.includes('youtube.com') || h.includes('youtu.be'),           label: () => 'YouTube Video' },
+  { test: h => h.includes('zoom.us'),                                          label: () => 'Zoom Meeting' },
+  { test: h => h.includes('teams.microsoft.com') || h.includes('teams.live.com'), label: () => 'Microsoft Teams' },
+  { test: h => h.includes('meet.google.com'),                                  label: () => 'Google Meet' },
+  { test: h => h.includes('github.com') || h.includes('github.io'),           label: () => 'GitHub' },
+  { test: h => h.includes('dropbox.com'),                                      label: () => 'Dropbox' },
+  { test: h => h.includes('forms.office.com') || h.includes('forms.microsoft.com'), label: () => 'Microsoft Form' },
+  { test: h => h.includes('canva.com'),                                        label: () => 'Canva' },
+  { test: h => h.includes('figma.com'),                                        label: () => 'Figma' },
+  { test: h => h.includes('miro.com'),                                         label: () => 'Miro Board' },
+]
+
+// Set of generic TLDs — the segment before these is the brand name
+const GENERIC_TLDS = new Set(['com', 'org', 'net', 'edu', 'gov', 'io', 'co', 'us', 'uk', 'ca', 'au'])
+
+function linkLabel(rawStr) {
   try {
-    const url = new URL(toHref(str))
-    // e.g. "www.google.com" → "google.com"
-    return url.hostname.replace(/^www\./, '')
+    const url      = new URL(toHref(rawStr.trim()))
+    const hostname = url.hostname.replace(/^www\./, '')
+
+    // Check known services first
+    for (const svc of SERVICE_PATTERNS) {
+      if (svc.test(hostname)) return svc.label(url)
+    }
+
+    // Generic: capitalize the primary brand segment of the domain
+    // e.g. "google.com" → parts[-2] = "google" → "Google"
+    //      "briyapcs.github.io" → tld=io → parts[-2]="github" → "GitHub"
+    const parts    = hostname.split('.')
+    const tld      = parts[parts.length - 1]
+    const mainPart = parts.length >= 2 && GENERIC_TLDS.has(tld)
+      ? parts[parts.length - 2]
+      : parts[0]
+    return mainPart.charAt(0).toUpperCase() + mainPart.slice(1)
   } catch {
-    return str.trim()
+    return rawStr.trim()
   }
 }
 
