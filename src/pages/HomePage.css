@@ -226,10 +226,11 @@
   right: 0;
   background: rgba(0,0,0,0.72);
   color: #fff;
-  font-size: clamp(0.76rem, 1.2vw, 0.96rem);
+  /* Scale with card width (vw) so longer names still fit, bigger on large screens */
+  font-size: clamp(0.9rem, 1.5vw, 1.4rem);
   font-weight: 700;
   text-align: center;
-  padding: clamp(5px, 0.8vh, 10px) 8px;
+  padding: clamp(8px, 1.2vh, 16px) 10px;
   letter-spacing: 0.02em;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -296,7 +297,7 @@
     grid-template-columns: repeat(2, 1fr);
     gap: 10px;
   }
-  .site-card-label { font-size: 0.76rem; padding: 5px 6px; }
+  .site-card-label { font-size: clamp(0.82rem, 3.5vw, 1rem); padding: 7px 8px; }
 }
 
 /* ── Very small phones (≤340px) ── */
@@ -334,5 +335,5 @@
   .briya-full-logo { width: clamp(320px, 14vw, 520px); }
   .site-grid { width: min(88vw, 2400px); gap: 32px; }
   .site-card-img { height: clamp(400px, 50vh, 800px); }
-  .site-card-label { font-size: 1.2rem; padding: 14px 10px; }
+  .site-card-label { font-size: clamp(1.2rem, 1.5vw, 1.7rem); padding: clamp(12px, 1.4vh, 20px) 12px; }
 }
