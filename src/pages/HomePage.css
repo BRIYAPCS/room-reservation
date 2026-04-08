@@ -70,22 +70,26 @@
   display: block;
 }
 
-/* ── Main — fills remaining height, centres the whole content block ── */
+/* ── Main ── */
 .home-main {
   flex: 1;
   min-height: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center; /* vertically centre title + subtitle + grid as a group */
-  padding: clamp(6px, 2vh, 24px) clamp(12px, 2vw, 40px) clamp(6px, 1.5vh, 20px);
-  gap: clamp(8px, 1.8vh, 22px);
+  /*
+   * flex-start keeps title RIGHT below the header — no huge gap.
+   * The grid then gets flex:1 so it fills the remaining space and
+   * vertically centres the card rows within that space.
+   */
+  justify-content: flex-start;
+  padding: clamp(10px, 2.2vh, 28px) clamp(12px, 2vw, 40px) 0;
+  gap: clamp(8px, 1.6vh, 20px);
   overflow: hidden;
 }
 
 .home-title {
   color: #fff;
-  /* Scale with viewport height so it stays proportional on any screen */
   font-size: clamp(1.2rem, 3.8vh, 2.8rem);
   font-weight: 700;
   text-align: center;
@@ -95,9 +99,9 @@
 .home-subtitle-box {
   background: #1a3557;
   color: #fff;
-  font-size: clamp(0.82rem, 1.8vh, 1.05rem);
+  font-size: clamp(0.84rem, 1.8vh, 1.05rem);
   font-weight: 600;
-  padding: clamp(6px, 1vh, 11px) clamp(16px, 2.5vw, 32px);
+  padding: clamp(6px, 1vh, 12px) clamp(16px, 2.5vw, 32px);
   border-radius: 6px;
   letter-spacing: 0.03em;
   text-align: center;
@@ -107,27 +111,25 @@
 .site-grid {
   display: grid;
   /*
-   * Cards scale with BOTH dimensions:
-   *   min: clamp(160px, 14vw, 300px)  — grows with viewport width
-   *   max: 1fr                         — fills the row when few sites
-   * Combined with max-width on the grid, this fills space on large screens
-   * without individual cards becoming absurdly wide.
+   * Fixed column width (not 1fr) keeps cards portrait-shaped.
+   * Width scales with viewport width; height scales with viewport height.
+   *   13vw on 1920px = 249px wide, 34vh on 1080px = 367px tall → tall card ✓
+   *   13vw on 2560px = 333px → capped at 280px;  34vh on 1440px = 490px → capped at 440px
    */
-  grid-template-columns: repeat(auto-fit, minmax(clamp(160px, 14vw, 300px), 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(clamp(150px, 13vw, 280px), clamp(150px, 13vw, 280px)));
   justify-content: center;
-  gap: clamp(10px, 1.4vw, 22px);
-  /* Expand to fill available width on big screens */
-  width: min(92vw, 1800px);
-  /* Cap each card so they don't stretch too wide when there are only 2–3 sites */
-  max-width: 1800px;
+  gap: clamp(10px, 1.4vw, 24px);
+  width: min(94vw, 1800px);
+  /* Grid fills remaining main height so cards are vertically centred in the leftover space */
+  flex: 1;
+  min-height: 0;
+  align-content: center;
 }
 
-/* Wrapper — also caps individual card width so 2–3 sites don't stretch wall-to-wall */
+/* Wrapper — standard, no extra width cap needed since column width is already fixed */
 .site-card-wrap {
   position: relative;
   width: 100%;
-  max-width: clamp(220px, 22vw, 420px);
-  justify-self: center;
 }
 
 .site-card {
@@ -207,12 +209,12 @@
 .site-card-img {
   width: 100%;
   /*
-   * Height scales with viewport HEIGHT (vh) so it's proportional on any screen:
-   *   14" laptop (~700px vh)  → ~28vh ≈ 196px
-   *   22" monitor (~980px vh) → ~28vh ≈ 274px → capped at 300px
-   *   27" monitor (~1300px vh)→ ~28vh ≈ 364px → capped at 360px
+   * Tall cards — height driven by viewport height:
+   *   14" laptop  (~700px vh)  → 34vh = 238px
+   *   22" monitor (~1000px vh) → 34vh = 340px
+   *   27" monitor (~1350px vh) → 34vh = 459px → capped at 440px
    */
-  height: clamp(120px, 28vh, 360px);
+  height: clamp(140px, 34vh, 440px);
   object-fit: cover;
   display: block;
 }
@@ -238,10 +240,9 @@
 .home-footer {
   flex-shrink: 0;
   text-align: center;
-  color: rgba(255,255,255,0.8);
-  font-size: clamp(0.68rem, 1vh, 0.84rem);
-  /* vh padding so footer stays compact on short screens */
-  padding: clamp(4px, 1vh, 12px) 24px clamp(6px, 1.2vh, 16px);
+  color: rgba(255,255,255,0.88);
+  font-size: clamp(0.8rem, 1.1vw, 0.92rem);
+  padding: clamp(10px, 1.6vh, 18px) 24px clamp(12px, 1.8vh, 22px);
 }
 
 /* ────────────────────────────────────────────────────────────
@@ -276,7 +277,7 @@
   .btn-label { display: none; }
   .sort-order-btn { padding: 6px 9px; font-size: 0.82rem; min-width: 30px; text-align: center; }
 
-  .home-footer { padding: 14px 24px 18px; font-size: 0.76rem; }
+  .home-footer { padding: 14px 24px 20px; font-size: 0.82rem; }
 }
 
 /* ── Very small phones (≤360px) ── */
@@ -331,8 +332,7 @@
 /* ── 4K / ultra-wide ── */
 @media (min-width: 2560px) {
   .briya-full-logo { width: clamp(320px, 14vw, 520px); }
-  .site-grid { width: min(88vw, 2400px); gap: 28px; }
-  .site-card-wrap { max-width: clamp(300px, 20vw, 520px); }
-  .site-card-img { height: clamp(260px, 26vh, 480px); }
+  .site-grid { width: min(88vw, 2400px); gap: 32px; }
+  .site-card-img { height: clamp(340px, 34vh, 580px); }
   .site-card-label { font-size: 1.2rem; padding: 14px 10px; }
 }
