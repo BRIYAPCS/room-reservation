@@ -214,7 +214,7 @@
    *   22" monitor (~1000px vh) → 34vh = 340px
    *   27" monitor (~1350px vh) → 34vh = 459px → capped at 440px
    */
-  height: clamp(160px, 44vh, 520px);
+  height: clamp(160px, 50vh, 560px);
   object-fit: cover;
   display: block;
 }
@@ -333,6 +333,6 @@
 @media (min-width: 2560px) {
   .briya-full-logo { width: clamp(320px, 14vw, 520px); }
   .site-grid { width: min(88vw, 2400px); gap: 32px; }
-  .site-card-img { height: clamp(400px, 44vh, 700px); }
+  .site-card-img { height: clamp(400px, 50vh, 800px); }
   .site-card-label { font-size: 1.2rem; padding: 14px 10px; }
 }
