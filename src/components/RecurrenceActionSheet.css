@@ -30,21 +30,21 @@
 }
 
 .ras-icon {
-  font-size: 1.5rem;
+  font-size: clamp(1.1rem, 1.8vw, 1.4rem);
   line-height: 1;
   flex-shrink: 0;
   margin-top: 2px;
 }
 
 .ras-title {
-  font-size: 1rem;
+  font-size: clamp(1rem, 1.5vw, 1.2rem);
   font-weight: 700;
   color: #1a3557;
   margin: 0 0 3px;
 }
 
 .ras-subtitle {
-  font-size: 0.8rem;
+  font-size: clamp(0.75rem, 1vw, 0.82rem);
   color: #666;
   margin: 0;
 }
@@ -53,7 +53,7 @@
   margin-left: auto;
   background: none;
   border: none;
-  font-size: 1rem;
+  font-size: clamp(0.88rem, 1.2vw, 1rem);
   color: #999;
   padding: 4px 6px;
   flex-shrink: 0;
@@ -104,13 +104,13 @@
 }
 
 .ras-btn-label {
-  font-size: 0.9rem;
+  font-size: clamp(0.88rem, 1.2vw, 1rem);
   font-weight: 600;
   line-height: 1.2;
 }
 
 .ras-btn-desc {
-  font-size: 0.75rem;
+  font-size: clamp(0.72rem, 0.9vw, 0.82rem);
   opacity: 0.75;
   font-weight: 400;
 }
@@ -123,7 +123,7 @@
   border-radius: 8px;
   background: none;
   color: #555;
-  font-size: 0.875rem;
+  font-size: clamp(0.82rem, 1.1vw, 0.95rem);
   font-weight: 500;
   cursor: pointer;
   transition: background 0.15s;

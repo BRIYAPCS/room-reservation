@@ -36,7 +36,7 @@
 }
 
 .mas-name {
-  font-size: 0.95rem;
+  font-size: clamp(0.92rem, 1.3vw, 1.05rem);
   font-weight: 700;
   color: #1a2f4a;
   text-align: center;
@@ -52,7 +52,7 @@
   padding: 14px;
   border: none;
   border-radius: 10px;
-  font-size: 1rem;
+  font-size: clamp(0.92rem, 1.3vw, 1.05rem);
   font-weight: 600;
   cursor: pointer;
   transition: background 0.15s;

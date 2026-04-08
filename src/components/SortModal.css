@@ -38,7 +38,7 @@
 }
 
 .sm-title {
-  font-size: 1.1rem;
+  font-size: clamp(1rem, 1.5vw, 1.2rem);
   font-weight: 700;
   color: #1a2f4a;
   margin: 0;
@@ -47,7 +47,7 @@
 .sm-close {
   background: none;
   border: none;
-  font-size: 1.1rem;
+  font-size: clamp(1rem, 1.5vw, 1.2rem);
   color: #6b7a8d;
   cursor: pointer;
   padding: 4px 6px;
@@ -59,7 +59,7 @@
 
 /* ── Hint ── */
 .sm-hint {
-  font-size: 0.82rem;
+  font-size: clamp(0.75rem, 1vw, 0.82rem);
   color: #6b7a8d;
   padding: 10px 20px 6px;
   margin: 0;
@@ -67,7 +67,7 @@
   align-items: center;
   gap: 4px;
 }
-.sm-hint-icon { font-size: 1rem; opacity: 0.6; }
+.sm-hint-icon { font-size: clamp(0.88rem, 1.2vw, 1rem); opacity: 0.6; }
 
 /* ── List ── */
 .sm-list {
@@ -101,7 +101,7 @@
 }
 
 .sm-handle {
-  font-size: 1.2rem;
+  font-size: clamp(1rem, 1.5vw, 1.2rem);
   color: #a0afc0;
   flex-shrink: 0;
   cursor: grab;
@@ -110,7 +110,7 @@
 
 .sm-name {
   flex: 1;
-  font-size: 0.95rem;
+  font-size: clamp(0.92rem, 1.3vw, 1.05rem);
   font-weight: 600;
   color: #1a2f4a;
   white-space: nowrap;
@@ -132,7 +132,7 @@
   border-radius: 4px;
   width: 26px;
   height: 22px;
-  font-size: 0.65rem;
+  font-size: clamp(0.72rem, 0.9vw, 0.82rem);
   color: #4a5568;
   cursor: pointer;
   display: flex;
@@ -158,7 +158,7 @@
   border: none;
   border-radius: 8px;
   padding: 10px;
-  font-size: 0.92rem;
+  font-size: clamp(0.88rem, 1.2vw, 1rem);
   font-weight: 600;
   color: #4a5568;
   cursor: pointer;
@@ -172,7 +172,7 @@
   border: none;
   border-radius: 8px;
   padding: 10px;
-  font-size: 0.92rem;
+  font-size: clamp(0.88rem, 1.2vw, 1rem);
   font-weight: 700;
   color: #fff;
   cursor: pointer;

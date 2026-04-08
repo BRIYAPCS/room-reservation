@@ -34,7 +34,7 @@
 }
 
 .arm-title {
-  font-size: 1.1rem;
+  font-size: clamp(1rem, 1.5vw, 1.2rem);
   font-weight: 700;
   color: #1a2f4a;
   margin: 0;
@@ -43,7 +43,7 @@
 .arm-close {
   background: none;
   border: none;
-  font-size: 1.1rem;
+  font-size: clamp(1rem, 1.5vw, 1.2rem);
   color: #6b7a8d;
   cursor: pointer;
   padding: 4px 6px;
@@ -53,7 +53,7 @@
 .arm-close:hover { background: #f0f3f7; }
 
 .arm-site-label {
-  font-size: 0.85rem;
+  font-size: clamp(0.78rem, 1vw, 0.88rem);
   color: #6b7a8d;
   margin: 10px 20px 0;
 }
@@ -69,19 +69,19 @@
   display: flex;
   flex-direction: column;
   gap: 5px;
-  font-size: 0.88rem;
+  font-size: clamp(0.82rem, 1.1vw, 0.95rem);
   font-weight: 600;
   color: #1a2f4a;
 }
 
 .arm-required { color: #e53e3e; }
-.arm-optional { color: #9aa5b4; font-weight: 400; font-size: 0.82rem; }
+.arm-optional { color: #9aa5b4; font-weight: 400; font-size: clamp(0.75rem, 1vw, 0.82rem); }
 
 .arm-input {
   border: 1.5px solid #d1d9e3;
   border-radius: 7px;
   padding: 9px 12px;
-  font-size: 0.95rem;
+  font-size: clamp(0.88rem, 1.2vw, 1rem);
   color: #1a2f4a;
   outline: none;
   transition: border-color 0.15s;
@@ -89,7 +89,7 @@
 .arm-input:focus { border-color: #1186c4; }
 
 .arm-error {
-  font-size: 0.85rem;
+  font-size: clamp(0.78rem, 1vw, 0.88rem);
   color: #e53e3e;
   margin: 0;
   background: #fff5f5;
@@ -110,7 +110,7 @@
   border: none;
   border-radius: 8px;
   padding: 10px;
-  font-size: 0.92rem;
+  font-size: clamp(0.88rem, 1.2vw, 1rem);
   font-weight: 600;
   color: #4a5568;
   cursor: pointer;
@@ -124,7 +124,7 @@
   border: none;
   border-radius: 8px;
   padding: 10px;
-  font-size: 0.92rem;
+  font-size: clamp(0.88rem, 1.2vw, 1rem);
   font-weight: 700;
   color: #fff;
   cursor: pointer;

@@ -10,7 +10,7 @@
 }
 
 .att-label {
-  font-size: 0.85rem;
+  font-size: clamp(0.78rem, 1vw, 0.88rem);
   font-weight: 700;
   color: #444;
   flex: 1;
@@ -21,7 +21,7 @@
   border: 1.5px solid #1186c4;
   border-radius: 5px;
   padding: 4px 12px;
-  font-size: 0.8rem;
+  font-size: clamp(0.75rem, 1vw, 0.82rem);
   font-weight: 600;
   color: #1186c4;
   cursor: pointer;
@@ -31,13 +31,13 @@
 .att-upload-btn:disabled { opacity: 0.55; cursor: default; }
 
 .att-error {
-  font-size: 0.8rem;
+  font-size: clamp(0.75rem, 1vw, 0.82rem);
   color: #c0392b;
   margin: 0 0 6px 0;
 }
 
 .att-empty {
-  font-size: 0.82rem;
+  font-size: clamp(0.75rem, 1vw, 0.82rem);
   color: #aaa;
   font-style: italic;
   margin: 0;
@@ -64,13 +64,13 @@
 }
 
 .att-icon {
-  font-size: 1rem;
+  font-size: clamp(0.88rem, 1.2vw, 1rem);
   flex-shrink: 0;
 }
 
 .att-name {
   flex: 1;
-  font-size: 0.85rem;
+  font-size: clamp(0.78rem, 1vw, 0.88rem);
   color: #333;
   white-space: nowrap;
   overflow: hidden;
@@ -79,7 +79,7 @@
 }
 
 .att-size {
-  font-size: 0.78rem;
+  font-size: clamp(0.72rem, 0.9vw, 0.82rem);
   color: #999;
   flex-shrink: 0;
 }
@@ -89,7 +89,7 @@
   border: 1px solid #c5d8f5;
   border-radius: 4px;
   padding: 3px 10px;
-  font-size: 0.78rem;
+  font-size: clamp(0.72rem, 0.9vw, 0.82rem);
   font-weight: 600;
   color: #1186c4;
   text-decoration: none;
@@ -105,7 +105,7 @@
   background: none;
   border: none;
   padding: 3px 6px;
-  font-size: 0.78rem;
+  font-size: clamp(0.72rem, 0.9vw, 0.82rem);
   color: #bbb;
   cursor: pointer;
   flex-shrink: 0;

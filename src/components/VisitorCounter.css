@@ -21,7 +21,7 @@
   padding: 6px 14px 6px 8px;
 
   color: rgba(255, 255, 255, 0.92);
-  font-size: 0.8rem;
+  font-size: clamp(0.75rem, 1vw, 0.82rem);
   font-weight: 600;
   letter-spacing: 0.03em;
 
@@ -112,13 +112,13 @@
 .vc-label {
   color: rgba(255, 255, 255, 0.55);
   font-weight: 500;
-  font-size: 0.75rem;
+  font-size: clamp(0.72rem, 0.9vw, 0.82rem);
 }
 
 .vc-total {
   color: #fff;
   font-weight: 700;
-  font-size: 0.85rem;
+  font-size: clamp(0.78rem, 1vw, 0.88rem);
   font-variant-numeric: tabular-nums;
   min-width: 1ch; /* prevents layout shift when digit count changes */
   transition: transform 0.2s ease;

@@ -33,7 +33,7 @@
 }
 
 .ebm-header h2 {
-  font-size: 1.05rem;
+  font-size: clamp(1rem, 1.5vw, 1.2rem);
   font-weight: 700;
   color: #1a3557;
   margin: 0;
@@ -42,7 +42,7 @@
 .ebm-close {
   background: none;
   border: none;
-  font-size: 1rem;
+  font-size: clamp(0.88rem, 1.2vw, 1rem);
   color: #999;
   cursor: pointer;
   padding: 10px 12px;
@@ -68,7 +68,7 @@
   display: flex;
   flex-direction: column;
   gap: 5px;
-  font-size: 0.88rem;
+  font-size: clamp(0.82rem, 1.1vw, 0.95rem);
   font-weight: 600;
   color: #444;
 }
@@ -83,7 +83,7 @@
   border: 1.5px solid #ddd;
   border-radius: 6px;
   padding: 9px 12px;
-  font-size: 0.92rem;
+  font-size: clamp(0.88rem, 1.2vw, 1rem);
   outline: none;
   transition: border-color 0.15s;
   font-family: inherit;
@@ -109,7 +109,7 @@
   border: 1.5px solid #ddd;
   border-radius: 6px;
   padding: 9px 10px;
-  font-size: 0.92rem;
+  font-size: clamp(0.88rem, 1.2vw, 1rem);
   outline: none;
   transition: border-color 0.15s;
   font-family: inherit;
@@ -133,21 +133,21 @@
 }
 
 .ebm-readonly-label {
-  font-size: 0.82rem;
+  font-size: clamp(0.75rem, 1vw, 0.82rem);
   font-weight: 700;
   color: #888;
   white-space: nowrap;
 }
 
 .ebm-readonly-value {
-  font-size: 0.92rem;
+  font-size: clamp(0.88rem, 1.2vw, 1rem);
   color: #444;
   font-weight: 500;
 }
 
 .ebm-error {
   color: #c0392b;
-  font-size: 0.82rem;
+  font-size: clamp(0.75rem, 1vw, 0.82rem);
   margin: 0;
 }
 
@@ -170,7 +170,7 @@
   border-radius: 6px;
   padding: 11px 24px;
   font-weight: 700;
-  font-size: 0.95rem;
+  font-size: clamp(0.92rem, 1.3vw, 1.05rem);
   cursor: pointer;
   transition: background 0.15s;
   flex: 1;
@@ -186,7 +186,7 @@
   border: none;
   border-radius: 6px;
   padding: 11px 20px;
-  font-size: 0.95rem;
+  font-size: clamp(0.92rem, 1.3vw, 1.05rem);
   cursor: pointer;
   transition: background 0.15s;
 }

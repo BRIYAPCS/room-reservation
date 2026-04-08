@@ -24,7 +24,7 @@
 }
 
 .pin-modal h2 {
-  font-size: 1.2rem;
+  font-size: clamp(1rem, 1.5vw, 1.2rem);
   font-weight: 600;
   color: #222;
 }
@@ -33,7 +33,7 @@
   border: 1.5px solid #ccc;
   border-radius: 6px;
   padding: 10px 14px;
-  font-size: 1rem;
+  font-size: clamp(0.92rem, 1.3vw, 1.05rem);
   outline: none;
   transition: border-color 0.2s;
 }
@@ -44,7 +44,7 @@
 
 .pin-error {
   color: #c0392b;
-  font-size: 0.85rem;
+  font-size: clamp(0.78rem, 1vw, 0.88rem);
   margin-top: -8px;
 }
 
@@ -54,7 +54,7 @@
   border: none;
   border-radius: 6px;
   padding: 12px;
-  font-size: 1rem;
+  font-size: clamp(0.92rem, 1.3vw, 1.05rem);
   font-weight: 600;
   transition: background 0.2s;
 }

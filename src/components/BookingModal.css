@@ -35,14 +35,14 @@
 }
 
 .bm-room-name {
-  font-size: 1.1rem;
+  font-size: clamp(1rem, 1.5vw, 1.2rem);
   font-weight: 700;
   color: #1a3557;
   line-height: 1.2;
 }
 
 .bm-user-name {
-  font-size: 0.82rem;
+  font-size: clamp(0.75rem, 1vw, 0.82rem);
   font-weight: 500;
   color: #1186c4;
 }
@@ -50,7 +50,7 @@
 .bm-close {
   background: none;
   border: none;
-  font-size: 1.1rem;
+  font-size: clamp(1rem, 1.5vw, 1.2rem);
   color: #666;
   line-height: 1;
   padding: 10px;
@@ -69,7 +69,7 @@
   display: flex;
   flex-direction: column;
   gap: 5px;
-  font-size: 0.875rem;
+  font-size: clamp(0.82rem, 1.1vw, 0.95rem);
   font-weight: 500;
   color: #444;
 }
@@ -80,7 +80,7 @@
   border: 1.5px solid #ddd;
   border-radius: 6px;
   padding: 8px 12px;
-  font-size: 0.95rem;
+  font-size: clamp(0.88rem, 1.2vw, 1rem);
   font-family: inherit;
   outline: none;
   transition: border-color 0.2s;
@@ -101,7 +101,7 @@
 }
 
 .bm-field-label {
-  font-size: 0.875rem;
+  font-size: clamp(0.82rem, 1.1vw, 0.95rem);
   font-weight: 500;
   color: #444;
 }
@@ -144,7 +144,7 @@
 }
 
 .bm-allday-text {
-  font-size: 0.875rem;
+  font-size: clamp(0.82rem, 1.1vw, 0.95rem);
   font-weight: 500;
   color: #444;
   user-select: none;
@@ -152,7 +152,7 @@
 
 .bm-error {
   color: #c0392b;
-  font-size: 0.85rem;
+  font-size: clamp(0.78rem, 1vw, 0.88rem);
 }
 
 .bm-actions {
@@ -167,7 +167,7 @@
   border: 1.5px solid #ccc;
   border-radius: 6px;
   padding: 9px 20px;
-  font-size: 0.9rem;
+  font-size: clamp(0.88rem, 1.2vw, 1rem);
   color: #555;
 }
 
@@ -179,7 +179,7 @@
   border: none;
   border-radius: 6px;
   padding: 9px 20px;
-  font-size: 0.9rem;
+  font-size: clamp(0.88rem, 1.2vw, 1rem);
   font-weight: 600;
   transition: background 0.2s;
 }
@@ -218,7 +218,7 @@
   align-items: center;
   gap: 6px;
   cursor: pointer;
-  font-size: 0.875rem;
+  font-size: clamp(0.82rem, 1.1vw, 0.95rem);
   font-weight: 500;
   color: #444;
   width: auto !important;
@@ -279,7 +279,7 @@
   border: 1.5px solid #d0d0d0;
   border-radius: 6px;
   background: #fff;
-  font-size: 0.82rem;
+  font-size: clamp(0.75rem, 1vw, 0.82rem);
   font-weight: 700;
   color: #555;
   cursor: pointer;
@@ -321,7 +321,7 @@
   display: flex;
   flex-direction: column;
   gap: 5px;
-  font-size: 0.875rem;
+  font-size: clamp(0.82rem, 1.1vw, 0.95rem);
   font-weight: 500;
   color: #444;
 }
@@ -330,7 +330,7 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 0.83rem;
+  font-size: clamp(0.78rem, 1vw, 0.88rem);
   color: #1a3557;
   margin: 0;
   padding: 6px 10px;
@@ -339,7 +339,7 @@
 }
 
 .bm-recur-summary-icon {
-  font-size: 0.95rem;
+  font-size: clamp(0.88rem, 1.2vw, 1rem);
 }
 
 /* ── Mobile ≤ 480px — bottom sheet ── */

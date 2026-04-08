@@ -89,7 +89,7 @@
   color: #fff;
   padding: 10px 18px;
   border-radius: 8px;
-  font-size: 0.9rem;
+  font-size: clamp(0.88rem, 1.2vw, 1rem);
   text-align: center;
 }
 
@@ -108,14 +108,14 @@
 }
 
 .admin-section-title {
-  font-size: 0.98rem;
+  font-size: clamp(0.92rem, 1.3vw, 1.05rem);
   font-weight: 700;
   color: #1a3557;
   margin: 0 0 4px;
 }
 
 .admin-section-desc {
-  font-size: 0.81rem;
+  font-size: clamp(0.75rem, 1vw, 0.82rem);
   color: #6b7fa0;
   margin: 0;
 }
@@ -141,13 +141,13 @@
 .admin-toggle-info { flex: 1; min-width: 0; }
 
 .admin-toggle-label {
-  font-size: 0.93rem;
+  font-size: clamp(0.88rem, 1.2vw, 1rem);
   font-weight: 600;
   color: #1a2f4a;
 }
 
 .admin-toggle-desc {
-  font-size: 0.79rem;
+  font-size: clamp(0.72rem, 0.9vw, 0.82rem);
   color: #7a90aa;
   margin-top: 3px;
   line-height: 1.45;
