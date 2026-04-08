@@ -64,65 +64,70 @@
 }
 
 .briya-full-logo {
-  /* Scale with viewport width, but also shrink on very short screens */
-  width: clamp(130px, 18vw, 300px);
+  /* Scales with both width and height so it looks right on any screen size */
+  width: clamp(140px, min(20vw, 8vh * 4), 360px);
   height: auto;
   display: block;
 }
 
-/* ── Main — fills the remaining height; content must fit inside ── */
+/* ── Main — fills remaining height, centres the whole content block ── */
 .home-main {
   flex: 1;
-  min-height: 0; /* critical: allows flex child to shrink below its content size */
+  min-height: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
-  /* Use vh for vertical padding and gap so everything scales with screen height */
+  justify-content: center; /* vertically centre title + subtitle + grid as a group */
   padding: clamp(6px, 2vh, 24px) clamp(12px, 2vw, 40px) clamp(6px, 1.5vh, 20px);
-  gap: clamp(6px, 1.5vh, 18px);
+  gap: clamp(8px, 1.8vh, 22px);
   overflow: hidden;
 }
 
 .home-title {
   color: #fff;
-  /* vh instead of vw so it scales with the available height */
-  font-size: clamp(1.1rem, 3.5vh, 2.4rem);
+  /* Scale with viewport height so it stays proportional on any screen */
+  font-size: clamp(1.2rem, 3.8vh, 2.8rem);
   font-weight: 700;
   text-align: center;
   line-height: 1.2;
-  flex-shrink: 0;
 }
 
 .home-subtitle-box {
   background: #1a3557;
   color: #fff;
-  font-size: clamp(0.8rem, 1.8vh, 1rem);
+  font-size: clamp(0.82rem, 1.8vh, 1.05rem);
   font-weight: 600;
-  padding: clamp(5px, 1vh, 10px) clamp(14px, 2vw, 28px);
+  padding: clamp(6px, 1vh, 11px) clamp(16px, 2.5vw, 32px);
   border-radius: 6px;
   letter-spacing: 0.03em;
   text-align: center;
-  flex-shrink: 0;
 }
 
 /* ── Site Grid ── */
 .site-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(clamp(140px, 16vw, 220px), 220px));
+  /*
+   * Cards scale with BOTH dimensions:
+   *   min: clamp(160px, 14vw, 300px)  — grows with viewport width
+   *   max: 1fr                         — fills the row when few sites
+   * Combined with max-width on the grid, this fills space on large screens
+   * without individual cards becoming absurdly wide.
+   */
+  grid-template-columns: repeat(auto-fit, minmax(clamp(160px, 14vw, 300px), 1fr));
   justify-content: center;
-  align-content: center; /* vertically centre rows when grid is shorter than available space */
-  gap: clamp(10px, 1.5vw, 20px);
-  max-width: 1400px;
-  width: 100%;
-  /* Allow grid to fill remaining main height, but never overflow */
-  flex: 1;
-  min-height: 0;
+  gap: clamp(10px, 1.4vw, 22px);
+  /* Expand to fill available width on big screens */
+  width: min(92vw, 1800px);
+  /* Cap each card so they don't stretch too wide when there are only 2–3 sites */
+  max-width: 1800px;
 }
 
-/* Wrapper needed so the delete button sits outside the card button */
+/* Wrapper — also caps individual card width so 2–3 sites don't stretch wall-to-wall */
 .site-card-wrap {
   position: relative;
   width: 100%;
+  max-width: clamp(220px, 22vw, 420px);
+  justify-self: center;
 }
 
 .site-card {
@@ -202,12 +207,12 @@
 .site-card-img {
   width: 100%;
   /*
-   * Key change: use vh instead of aspect-ratio so card height scales with
-   * the screen height, not the card width. This prevents cards from
-   * overflowing on 22" monitors and 14" laptops.
-   * clamp: min 100px | preferred 26% of viewport height | max 230px
+   * Height scales with viewport HEIGHT (vh) so it's proportional on any screen:
+   *   14" laptop (~700px vh)  → ~28vh ≈ 196px
+   *   22" monitor (~980px vh) → ~28vh ≈ 274px → capped at 300px
+   *   27" monitor (~1300px vh)→ ~28vh ≈ 364px → capped at 360px
    */
-  height: clamp(100px, 26vh, 230px);
+  height: clamp(120px, 28vh, 360px);
   object-fit: cover;
   display: block;
 }
@@ -317,33 +322,17 @@
   }
 }
 
-/* ── Tablet landscape / small desktop (769px – 1024px): 4 columns ── */
+/* ── Tablet landscape / small desktop (769px – 1024px) ── */
 @media (min-width: 769px) and (max-width: 1024px) {
-  .site-grid {
-    grid-template-columns: repeat(4, 1fr);
-    gap: 16px;
-  }
-  /* Slightly taller cards on smaller desktops since less height is available */
-  .site-card-img { height: clamp(100px, 24vh, 210px); }
+  .site-grid { gap: 16px; }
+  .site-card-wrap { max-width: clamp(180px, 22vw, 280px); }
 }
 
-/* ── Medium desktop (1025px – 1280px): auto-fit ── */
-@media (min-width: 1025px) and (max-width: 1280px) {
-  .site-grid {
-    grid-template-columns: repeat(auto-fit, minmax(180px, 220px));
-  }
-}
-
-/* ── 4K / large screens ── */
+/* ── 4K / ultra-wide ── */
 @media (min-width: 2560px) {
-  .briya-full-logo { width: 480px; }
-  .home-title { font-size: 3rem; }
-  .home-subtitle-box { font-size: 1.3rem; }
-  .site-grid {
-    grid-template-columns: repeat(auto-fit, minmax(260px, 280px));
-    max-width: 2000px;
-  }
-  /* On 4K the viewport is very tall — cap card height generously */
-  .site-card-img { height: clamp(200px, 20vh, 320px); }
-  .site-card-label { font-size: 1.1rem; padding: 12px 10px; }
+  .briya-full-logo { width: clamp(320px, 14vw, 520px); }
+  .site-grid { width: min(88vw, 2400px); gap: 28px; }
+  .site-card-wrap { max-width: clamp(300px, 20vw, 520px); }
+  .site-card-img { height: clamp(260px, 26vh, 480px); }
+  .site-card-label { font-size: 1.2rem; padding: 14px 10px; }
 }
