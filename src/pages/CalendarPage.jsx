@@ -48,6 +48,7 @@ export default function CalendarPage() {
   const CONSTRAINT_START = `${pad(BOOKING_START_HOUR)}:00`
   const CONSTRAINT_END   = `${pad(BOOKING_END_HOUR)}:00`
   const canDelete = (event) => {
+    if (auth.role === 'superadmin') return true  // superadmin can delete any booking
     if (!CAN_CREATE_ROLES.includes(auth.role)) return false
     if (isAdmin(auth.role)) return true
     // standard: only own bookings that have not yet ended
@@ -135,6 +136,7 @@ export default function CalendarPage() {
 
   // ── Auth helpers ──────────────────────────────────────────────
   function canEdit(event) {
+    if (auth.role === 'superadmin') return true  // superadmin can edit any booking
     if (!CAN_CREATE_ROLES.includes(auth.role)) return false
     if (EDIT_OTHERS_ROLE === 'all') return true
     if (isAdmin(auth.role)) return true
@@ -1094,7 +1096,7 @@ export default function CalendarPage() {
         return (
           <EventDetailsModal
             event={selectedEvent}
-            canEdit={canEdit(selectedEvent) && (isAdmin(auth.role) || new Date(selectedEvent?.end || selectedEvent?.extendedProps?.end) > new Date())}
+            canEdit={canEdit(selectedEvent) && (auth.role === 'superadmin' || isAdmin(auth.role) || new Date(selectedEvent?.end || selectedEvent?.extendedProps?.end) > new Date())}
             canDelete={canDelete(selectedEvent)}
             isRecurring={!!groupId}
             seriesInfo={seriesInfo}
