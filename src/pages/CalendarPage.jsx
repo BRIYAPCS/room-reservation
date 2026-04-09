@@ -1074,6 +1074,7 @@ export default function CalendarPage() {
       {showLoginModal && (
         <LoginModal
           required={REQUIRE_LOGIN_FOR_CALENDAR && auth.role === 'none'}
+          onBack={() => navigate(`/rooms/${siteId}`)}
           onClose={() => setShowLoginModal(false)}
           onDismiss={() => setShowLoginModal(false)}
         />

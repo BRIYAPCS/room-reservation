@@ -252,6 +252,22 @@
   margin-top: 8px;
 }
 
+.lm-back-btn {
+  margin-top: 14px;
+  background: none;
+  border: none;
+  color: #888;
+  font-size: clamp(0.8rem, 1.2vw, 0.9rem);
+  cursor: pointer;
+  padding: 6px 10px;
+  border-radius: 4px;
+  transition: color 0.15s, background 0.15s;
+}
+.lm-back-btn:hover {
+  color: #1186c4;
+  background: #f0f7ff;
+}
+
 /* Status step */
 .lm-status-body {
   display: flex;

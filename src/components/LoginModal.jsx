@@ -23,7 +23,7 @@ function PersonIcon() {
   )
 }
 
-export default function LoginModal({ onClose, onDismiss, required = false }) {
+export default function LoginModal({ onClose, onDismiss, required = false, onBack }) {
   const { auth, login, logout, validatePin } = useAuth()
 
   // Lock body scroll while modal is open
@@ -213,6 +213,11 @@ export default function LoginModal({ onClose, onDismiss, required = false }) {
                 {pinLoading ? 'Checking…' : 'Continue →'}
               </button>
             </form>
+            {onBack && (
+              <button type="button" className="lm-back-btn" onClick={onBack}>
+                ← Go Back
+              </button>
+            )}
           </>
         )}
 
