@@ -110,7 +110,7 @@ export default function HomePage() {
                   >
                     {manageMode ? '✓' : '⚙'}<span className="btn-label">{manageMode ? ' Managing' : ' Manage'}</span>
                   </button>
-                  {!manageMode && (
+                  {manageMode && (
                     <>
                       <button className="sort-order-btn" onClick={() => setShowAddSite(true)} title="Add site">
                         +<span className="btn-label"> Site</span>

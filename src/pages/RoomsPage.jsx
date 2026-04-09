@@ -134,7 +134,7 @@ export default function RoomsPage() {
                   >
                     {manageMode ? '✓' : '⚙'}<span className="btn-label">{manageMode ? ' Managing' : ' Manage'}</span>
                   </button>
-                  {!manageMode && (
+                  {manageMode && (
                     <>
                       <button className="sort-order-btn" onClick={() => setShowAddRoom(true)} title="Add room">
                         +<span className="btn-label"> Room</span>
