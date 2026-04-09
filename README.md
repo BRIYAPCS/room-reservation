@@ -37,6 +37,7 @@ A React/Vite single-page application for booking conference rooms and shared spa
 - **Lazy-loaded pages** — each page is a separate JS chunk downloaded only when navigated to
 - **Page transitions** and entrance animations (respects `prefers-reduced-motion`)
 - **Excel export** (admin/superadmin) from the List view
+- **← Go Back button** on the mandatory PIN prompt — lets users return to the rooms list without signing in, while the login-required rule remains active if they return to the calendar
 
 ---
 
@@ -49,7 +50,7 @@ A React/Vite single-page application for booking conference rooms and shared spa
 | Calendar | FullCalendar v6 (daygrid, timegrid, interaction) |
 | Styling | Plain CSS — CSS Grid, `clamp()`, media queries (no CSS framework) |
 | HTTP | Native `fetch` via a thin `api.js` service layer |
-| Auth | JWT stored in `localStorage`, decoded client-side |
+| Auth | JWT stored in `sessionStorage`, decoded client-side |
 | Build | Vite with esbuild minification, manual chunk splitting |
 | Deploy | GitHub Pages via GitHub Actions |
 
@@ -116,10 +117,10 @@ frontend/
 ## Pages & Components
 
 ### HomePage (`/`)
-Displays all school sites as image cards in a responsive auto-fit grid. Superadmins can enter Manage Mode to add, edit, delete, and drag-to-reorder sites. Manage Mode is gated by the `siteManagementEnabled` config flag.
+Displays all school sites as image cards in a responsive auto-fit grid. Superadmins see a **Manage** button in the header; when activated it reveals **+ Site** and **⇅ Sort** sub-buttons inline, and overlays edit/delete controls on each card. Gated by the `siteManagementEnabled` config flag.
 
 ### RoomsPage (`/rooms/:siteId`)
-Displays all rooms for a selected site as image cards with capacity indicators. Superadmins can manage rooms when `roomManagementEnabled` is on. Clicking a room card navigates to its calendar.
+Displays all rooms for a selected site as image cards with capacity indicators. Same Manage Mode pattern as the home page — **+ Room** and **⇅ Sort** appear only while Manage is active. Gated by `roomManagementEnabled`.
 
 ### CalendarPage (`/calendar/:siteId/:roomId`)
 The core reservation interface with three view modes:
@@ -162,7 +163,7 @@ Contenteditable rich-text description field supporting bold, italic, underline, 
 
 ## Authentication & Roles
 
-Login uses PIN codes. A correct PIN returns a JWT that is stored in `localStorage` and decoded client-side to read the role.
+Login uses PIN codes. A correct PIN returns a JWT that is stored in `sessionStorage` (cleared on tab/browser close) and sent as a `Bearer` token on every API request.
 
 | Role | Avatar | Capabilities |
 |---|---|---|
