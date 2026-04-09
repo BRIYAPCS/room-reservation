@@ -407,7 +407,7 @@ export default function CalendarPage() {
         id: info.event.id,
         start: toLocalISO(info.event.start),
         end:   toLocalISO(info.event.end),
-        extendedProps: { bookedBy: info.event.extendedProps?.bookedBy || null },
+        extendedProps: { ...info.event.extendedProps },
       })
       refreshEvents(true)
       showToast('Booking moved successfully.')
@@ -433,7 +433,7 @@ export default function CalendarPage() {
         id: info.event.id,
         start: toLocalISO(info.event.start),
         end:   toLocalISO(info.event.end),
-        extendedProps: { bookedBy: info.event.extendedProps?.bookedBy || null },
+        extendedProps: { ...info.event.extendedProps },
       })
       refreshEvents(true)
       showToast('Booking duration updated.')
