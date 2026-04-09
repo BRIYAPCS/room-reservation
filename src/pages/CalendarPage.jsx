@@ -707,7 +707,11 @@ export default function CalendarPage() {
       <div className="cal-content">
         {eventsLoadError && (
           <div className="cal-load-error" role="alert">
-            Could not load reservations — check your connection and refresh the page.
+            <span>⚠ Could not load reservations — check your connection.</span>
+            <button className="cal-load-error-retry" onClick={() => refreshEvents(false)}>
+              ↺ Retry
+            </button>
+            <span className="cal-load-error-contact">If this keeps happening, contact IT.</span>
           </div>
         )}
         <Breadcrumb

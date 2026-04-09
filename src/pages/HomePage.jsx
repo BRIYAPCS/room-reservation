@@ -38,6 +38,7 @@ export default function HomePage() {
   const [deletingId,   setDeletingId]   = useState(null)
   const [sites,        setSites]        = useState([])
   const [pageReady,    setPageReady]    = useState(false)
+  const [apiError,     setApiError]     = useState(false)
   const { weatherEnabled, visitorCounterEnabled, siteManagementEnabled } = useConfig()
 
   const pendingRef = useRef(0)
@@ -58,7 +59,9 @@ export default function HomePage() {
     getHealth()
       .then(data => console.log('[API] health:', data))
       .catch(err => console.error('[API] health check failed:', err.message))
-    getSites().then(setSites).catch(() => { markReady() })
+    getSites()
+      .then(data => { setApiError(false); setSites(data) })
+      .catch(() => { setApiError(true); markReady() })
   }, [])
 
   useEffect(() => {
@@ -133,6 +136,25 @@ export default function HomePage() {
       <main className="home-main">
         <h1 className="home-title">Briya Room Reservations</h1>
         <div className="home-subtitle-box">Choose a Site</div>
+
+        {apiError && (
+          <div className="home-api-error" role="alert">
+            <span className="home-api-error-icon">⚠</span>
+            <span>Could not connect to the server. Check your connection.</span>
+            <button
+              className="home-api-error-retry"
+              onClick={() => {
+                setApiError(false)
+                getSites()
+                  .then(data => { setApiError(false); setSites(data) })
+                  .catch(() => setApiError(true))
+              }}
+            >
+              Retry
+            </button>
+            <span className="home-api-error-contact">If the problem persists, contact IT.</span>
+          </div>
+        )}
 
         <div className="site-grid">
           {sites.map((site, index) => (

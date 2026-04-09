@@ -58,6 +58,8 @@ export default function RoomsPage() {
     if (pendingRef.current <= 0) markReady()
   }
 
+  const [loadError, setLoadError] = useState(null) // 'notfound' | 'network'
+
   useEffect(() => {
     async function load() {
       try {
@@ -65,9 +67,12 @@ export default function RoomsPage() {
           getSite(siteId),
           getRooms(siteId),
         ])
+        setLoadError(null)
         setSite(siteData)
         setRooms(roomsData)
-      } catch {
+      } catch (err) {
+        const isNotFound = err?.message?.includes('404') || err?.message?.includes('not found')
+        setLoadError(isNotFound ? 'notfound' : 'network')
         setSite(undefined)
         markReady()
       }
@@ -84,11 +89,28 @@ export default function RoomsPage() {
     return () => clearTimeout(fallback)
   }, [rooms])
 
-  if (site === null) return <div className="rooms-page" />
+  if (site === null && !loadError) return <div className="rooms-page" />
   if (!site) {
     return (
-      <div className="rooms-page">
-        <p style={{ color: '#fff', padding: 40 }}>Site not found.</p>
+      <div className="rooms-page" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', gap: 16 }}>
+        <p style={{ color: '#fff', fontSize: '1.1rem', fontWeight: 600 }}>
+          {loadError === 'notfound' ? '404 — Site not found.' : '⚠ Could not load this site. Check your connection.'}
+        </p>
+        {loadError === 'network' && (
+          <button
+            onClick={() => { setSite(null); setLoadError(null); setRooms([]) }}
+            style={{ background: '#fff', color: '#1186c4', border: 'none', borderRadius: 7, padding: '10px 24px', fontWeight: 700, cursor: 'pointer', fontSize: '0.95rem' }}
+          >
+            ↺ Retry
+          </button>
+        )}
+        <button
+          onClick={() => navigate('/')}
+          style={{ background: 'rgba(255,255,255,0.15)', color: '#fff', border: '1.5px solid rgba(255,255,255,0.4)', borderRadius: 7, padding: '10px 24px', fontWeight: 600, cursor: 'pointer', fontSize: '0.9rem' }}
+        >
+          ← Back to Home
+        </button>
+        <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.82rem' }}>If this keeps happening, contact the IT Team.</p>
       </div>
     )
   }

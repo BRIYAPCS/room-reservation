@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom'
 import { AuthProvider } from './context/AuthContext'
 import { ConfigProvider } from './context/ConfigContext'
 import PageTransition from './components/PageTransition'
+import ErrorBoundary from './components/ErrorBoundary'
 
 // Lazy-load all pages — nothing is bundled into the initial JS chunk except
 // the router shell. Each page downloads only when the user navigates to it.
@@ -48,12 +49,14 @@ const basename = import.meta.env.BASE_URL || '/'
 
 export default function App() {
   return (
-    <ConfigProvider>
-      <AuthProvider>
-        <BrowserRouter basename={basename}>
-          <AnimatedRoutes />
-        </BrowserRouter>
-      </AuthProvider>
-    </ConfigProvider>
+    <ErrorBoundary>
+      <ConfigProvider>
+        <AuthProvider>
+          <BrowserRouter basename={basename}>
+            <AnimatedRoutes />
+          </BrowserRouter>
+        </AuthProvider>
+      </ConfigProvider>
+    </ErrorBoundary>
   )
 }

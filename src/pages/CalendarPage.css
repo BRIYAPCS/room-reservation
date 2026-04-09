@@ -115,6 +115,10 @@
 }
 
 .cal-load-error {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
   background: #fff3cd;
   color: #664d03;
   border: 1px solid #ffecb5;
@@ -122,6 +126,23 @@
   padding: 10px 16px;
   font-size: clamp(0.82rem, 1.1vw, 0.95rem);
   font-weight: 500;
+  margin-bottom: 4px;
+}
+.cal-load-error-retry {
+  background: #664d03;
+  color: #fff;
+  border: none;
+  border-radius: 5px;
+  padding: 4px 12px;
+  font-size: clamp(0.78rem, 1vw, 0.85rem);
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.cal-load-error-contact {
+  color: #7a5c00;
+  font-size: clamp(0.75rem, 1vw, 0.82rem);
+  font-style: italic;
 }
 
 /* ── Action toolbar ── */
