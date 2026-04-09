@@ -31,12 +31,10 @@ export default function CalendarPage() {
     bookingStartHour:      BOOKING_START_HOUR,
     bookingEndHour:        BOOKING_END_HOUR,
     slotDurationMinutes:   SLOT_DURATION_MINUTES,
-    allowWeekends:         ALLOW_WEEKENDS,
     allowWeekendBookings:  ALLOW_WEEKEND_BOOKINGS,
     allowPastBookings:     ALLOW_PAST_BOOKINGS,
     allowDoubleBooking:    ALLOW_DOUBLE_BOOKING,
     editOthersRole:        EDIT_OTHERS_ROLE,
-    deleteRole:            DELETE_ROLE,
     requireLoginForCalendar: REQUIRE_LOGIN_FOR_CALENDAR,
     canCreateRoles:        CAN_CREATE_ROLES,
     businessDays:          BUSINESS_DAYS,
@@ -1127,7 +1125,6 @@ export default function CalendarPage() {
           />
         )
       })()}
-      )}
 
       {/* Edit Booking Modal */}
       {showEditModal && selectedEvent && (

@@ -93,8 +93,10 @@ export default function EditBookingModal({ event, roomName, onSave, onClose }) {
       start,
       end,
       extendedProps: {
+        ...event.extendedProps,  // preserve recurrenceGroupId, recurrenceIndex, etc.
         bookedBy:    originalBookedBy,
         description: form.description || null,
+        rawTitle:    form.title.trim(), // keep rawTitle in sync
       },
     })
   }
