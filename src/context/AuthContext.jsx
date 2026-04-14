@@ -117,7 +117,12 @@ export function AuthProvider({ children }) {
   async function login(pin, name, { email = '', emailVerified = false } = {}) {
     let role, token
     try {
-      const res = await apiVerifyPin(pin, name.trim())
+      const deviceSessionId = getOrCreateDeviceSessionId()
+      const res = await apiVerifyPin(pin, name.trim(), {
+        email:           email.trim().toLowerCase(),
+        emailVerified:   emailVerified === true,
+        deviceSessionId,
+      })
       role  = res.role  || null
       token = res.token || null
     } catch {

@@ -158,10 +158,11 @@ export const deleteAttachment = (id) =>
 export const getAttachmentUrl = (id) => `${BASE}/attachments/file/${id}`
 
 // Used by AuthContext (returns lowercase role)
-export const verifyPin = (pin, name = '') =>
+// opts: { email?, emailVerified?, deviceSessionId? } — included in JWT payload by server
+export const verifyPin = (pin, name = '', opts = {}) =>
   request('/auth/verify', {
     method: 'POST',
-    body: JSON.stringify({ pin, name }),
+    body: JSON.stringify({ pin, name, ...opts }),
   })
 
 // Public-facing: returns { success, role: "ADMIN"|"STANDARD" }
