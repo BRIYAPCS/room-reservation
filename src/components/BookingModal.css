@@ -115,6 +115,37 @@
 
 .required { color: #c0392b; }
 
+/* ── Identity-locked field ── */
+.bm-input--locked,
+.bm-form input.bm-input--locked,
+.bm-form select.bm-input--locked {
+  background: #f3f4f6;
+  color: #555;
+  cursor: not-allowed;
+  border-color: #d1d5db;
+}
+
+.bm-input--locked:focus {
+  border-color: #d1d5db;
+}
+
+/* Verified badge shown inline next to the Email label */
+.bm-identity-verified-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  margin-left: 6px;
+  font-size: clamp(0.68rem, 0.9vw, 0.75rem);
+  font-weight: 700;
+  color: #15803d;
+  background: #dcfce7;
+  border: 1px solid #86efac;
+  border-radius: 10px;
+  padding: 1px 7px;
+  vertical-align: middle;
+  user-select: none;
+}
+
 /* ── All Day + Recurring on the same row ── */
 .bm-checks-row {
   display: flex;

@@ -1,7 +1,23 @@
 import { useState, useEffect, useMemo } from 'react'
 import './BookingModal.css'
 import { useConfig } from '../context/ConfigContext'
+import { useAuth } from '../context/AuthContext'
 import RichTextEditor from './RichTextEditor'
+
+const LAST_IDENTITY_KEY = 'last_booking_identity'
+
+function loadLastIdentity() {
+  try {
+    const raw = localStorage.getItem(LAST_IDENTITY_KEY)
+    return raw ? JSON.parse(raw) : null
+  } catch (_) { return null }
+}
+
+function saveLastIdentity(name, email) {
+  try {
+    localStorage.setItem(LAST_IDENTITY_KEY, JSON.stringify({ name, email }))
+  } catch (_) {}
+}
 
 function buildTimeOptions(startHour, endHour, slotMins) {
   const options = []
@@ -47,6 +63,9 @@ export default function BookingModal({
     recurringMaxMonths:  RECURRING_MAX_MONTHS,
   } = useConfig()
 
+  const { auth } = useAuth()
+  const identityLocked = auth.emailVerified === true
+
   const TIME_OPTIONS = useMemo(
     () => buildTimeOptions(BOOKING_START_HOUR, BOOKING_END_HOUR, SLOT_DURATION_MINUTES),
     [BOOKING_START_HOUR, BOOKING_END_HOUR, SLOT_DURATION_MINUTES]
@@ -73,9 +92,19 @@ export default function BookingModal({
   const parsedStartMins = clampMins(rawStart ? timeToMins(rawStart) : startBound)
   const parsedEndMins   = clampMins(rawEnd   ? timeToMins(rawEnd)   : parsedStartMins + SLOT_DURATION_MINUTES)
 
+  // Determine initial name and email from session or saved identity
+  const lastIdentity = identityLocked ? null : loadLastIdentity()
+  const initialName  = identityLocked
+    ? (auth.name  || defaultBookedBy || '')
+    : (defaultBookedBy || lastIdentity?.name || '')
+  const initialEmail = identityLocked
+    ? (auth.email || '')
+    : (auth.email || lastIdentity?.email || '')
+
   const [form, setForm] = useState({
     title:       '',
-    bookedBy:    defaultBookedBy || '',
+    bookedBy:    initialName,
+    ownerEmail:  initialEmail,
     date:        parsedDate,         // start date (always)
     endDate:     parsedDate,         // end date — only used for multiday
     startTime:   minsToTime(parsedStartMins),
@@ -180,7 +209,26 @@ export default function BookingModal({
       ? { ...form, recurring: 'multiday' }
       : form
     const events = buildEvents(effectiveForm, BOOKING_START_HOUR, BOOKING_END_HOUR)
-    onSave(events)
+
+    // ── Identity metadata ──────────────────────────────────────
+    const ownerEmail  = form.ownerEmail.trim()
+    const ownershipType = identityLocked ? 'email' : 'device'
+    const identityMeta = {
+      owner_email:               ownerEmail || null,
+      ownership_type:            ownershipType,
+      created_device_session_id: auth.deviceSessionId || null,
+    }
+    const enriched = events.map(ev => ({
+      ...ev,
+      extendedProps: { ...ev.extendedProps, ...identityMeta },
+    }))
+
+    // Persist last used identity for next time (only when not locked)
+    if (!identityLocked) {
+      saveLastIdentity(form.bookedBy.trim(), ownerEmail)
+    }
+
+    onSave(enriched)
     onClose()
   }
 
@@ -204,7 +252,29 @@ export default function BookingModal({
 
           <label>
             Booked By <span className="required">*</span>
-            <input name="bookedBy" value={form.bookedBy} onChange={handleChange} placeholder="Your name" />
+            <input
+              name="bookedBy"
+              value={form.bookedBy}
+              onChange={handleChange}
+              placeholder="Your name"
+              disabled={identityLocked}
+              className={identityLocked ? 'bm-input--locked' : undefined}
+            />
+          </label>
+
+          <label>
+            Email
+            {identityLocked && <span className="bm-identity-verified-tag">🔒 Verified</span>}
+            <input
+              type="email"
+              name="ownerEmail"
+              value={form.ownerEmail}
+              onChange={handleChange}
+              placeholder="Optional — your @briya.org email"
+              disabled={identityLocked}
+              className={identityLocked ? 'bm-input--locked' : undefined}
+              autoComplete="email"
+            />
           </label>
 
           {/* ── All Day + Recurring Event — same row ── */}
