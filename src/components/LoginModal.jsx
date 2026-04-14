@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { getDeviceName } from '../context/AuthContext'
-import { validateBriyaEmail } from '../utils/validateBriyaEmail'
+import { validateEmail as apiValidateEmail } from '../services/api'
 import './LoginModal.css'
 
 // SVG icons
@@ -54,6 +54,7 @@ export default function LoginModal({ onClose, onDismiss, required = false, onBac
   // Email state (PIN step)
   const [email, setEmail] = useState('')
   const [emailDomainError, setEmailDomainError] = useState('')
+  const [emailVerifyWarning, setEmailVerifyWarning] = useState('')
 
   // Carried into name step after PIN validates
   const [pendingRole, setPendingRole] = useState(null)
@@ -90,6 +91,7 @@ export default function LoginModal({ onClose, onDismiss, required = false, onBac
   async function handlePinSubmit(e) {
     e.preventDefault()
     setPinLoading(true)
+    setEmailVerifyWarning('')
 
     const role = await validatePin(pin)
     if (!role) {
@@ -101,9 +103,15 @@ export default function LoginModal({ onClose, onDismiss, required = false, onBac
     const trimmedEmail = email.trim().toLowerCase()
     const isBriyaEmail = trimmedEmail.endsWith(BRIYA_DOMAIN)
 
-    // If a valid @briya.org email is entered — try to validate it
+    // If a valid @briya.org email is entered — validate it via backend (Power Automate)
     if (trimmedEmail && isBriyaEmail) {
-      const result = await validateBriyaEmail(trimmedEmail)
+      let result = { valid: false, name: '' }
+      try {
+        result = await apiValidateEmail(trimmedEmail)
+      } catch {
+        result = { valid: false, name: '' }
+      }
+
       if (result.valid && result.name) {
         // Email verified — auto-login, skip name step
         await login(pin, result.name, { email: trimmedEmail, emailVerified: true })
@@ -111,7 +119,13 @@ export default function LoginModal({ onClose, onDismiss, required = false, onBac
         onClose()
         return
       }
-      // Email not verified — carry it to name step
+
+      // Distinguish between service unavailable (fallback) and email not recognised
+      if (result.fallback) {
+        setEmailVerifyWarning('Verification unavailable — continue and enter your name manually.')
+      } else {
+        setEmailVerifyWarning('Could not verify email — please enter your name manually.')
+      }
       setPendingEmail(trimmedEmail)
       setPendingEmailVerified(false)
     } else {
@@ -146,15 +160,37 @@ export default function LoginModal({ onClose, onDismiss, required = false, onBac
     onClose()
   }
 
+  function resetModalState() {
+    setPin('')
+    setShowPin(false)
+    setPinTypeWarning('')
+    setPinError('')
+    setPinLoading(false)
+    setEmail('')
+    setEmailDomainError('')
+    setEmailVerifyWarning('')
+    setPendingRole(null)
+    setPendingEmail('')
+    setPendingEmailVerified(false)
+    setName('')
+    setNameFromDevice(false)
+    setNameError('')
+  }
+
   function handleSwitchAccount() {
-    // Clear session and reload — identity is fully reset
     logout()
-    // logout() triggers a page reload, so no further state updates needed
+    resetModalState()
+    setStep('pin')
   }
 
   function handleSignOut() {
     logout()
-    // logout() triggers a page reload; if required the page will re-show the modal
+    if (required) {
+      resetModalState()
+      setStep('pin')
+    } else {
+      onDismiss?.()
+    }
   }
 
   const overlayMouseTarget = useRef(null)
@@ -259,9 +295,10 @@ export default function LoginModal({ onClose, onDismiss, required = false, onBac
                 />
               </div>
               {emailDomainError && <p className="lm-error lm-domain-error">{emailDomainError}</p>}
+              {emailVerifyWarning && <p className="lm-warn lm-email-verify-warn">{emailVerifyWarning}</p>}
 
               <button type="submit" className="lm-btn-gold lm-btn-full" disabled={pinLoading}>
-                {pinLoading ? 'Checking…' : 'Continue →'}
+                {pinLoading ? 'Verifying…' : 'Continue →'}
               </button>
             </form>
             {onBack && (

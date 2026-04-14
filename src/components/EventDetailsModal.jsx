@@ -43,6 +43,7 @@ export default function EventDetailsModal({ event, canEdit, canDelete, onEdit, o
 
   const title = getDisplayTitle(event)
   const bookedBy = event.extendedProps?.bookedBy || '—'
+  const ownerEmail = event.extendedProps?.ownerEmail || ''
   const description = event.extendedProps?.description || ''
   const lastEditedBy = event.extendedProps?.lastEditedBy || ''
   const lastEditedAt = event.extendedProps?.lastEditedAt || ''
@@ -87,6 +88,12 @@ export default function EventDetailsModal({ event, canEdit, canDelete, onEdit, o
             <span className="edm-label">Booked By:</span>
             <span className="edm-value">{bookedBy}</span>
           </div>
+          {ownerEmail && (
+            <div className="edm-row edm-row--email">
+              <span className="edm-label">🔒 Email:</span>
+              <span className="edm-value edm-email">{ownerEmail}</span>
+            </div>
+          )}
           <div className="edm-row">
             <span className="edm-label">Time:</span>
             <span className="edm-value">{timeRange}</span>

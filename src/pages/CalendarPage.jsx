@@ -248,14 +248,16 @@ export default function CalendarPage() {
     showToast('Booking deleted.', 'error')
   }
 
-  // Returns true when the current session owns the reservation without OTP
+  // Returns true when the current session owns the reservation without needing OTP
   function isSameDeviceOwner(event) {
     const ep = event?.extendedProps || {}
     const ownershipType = ep.ownershipType
     if (!ownershipType) return true // legacy booking — no ownership data; backend name-checks
     if (ownershipType === 'email') {
-      // If the current JWT carries a verified email, let the backend verify the match
-      return auth.emailVerified === true
+      // JWT must carry a verified email that matches the booking's stored owner
+      return auth.emailVerified === true &&
+             !!auth.email &&
+             auth.email.toLowerCase() === (ep.ownerEmail || '').toLowerCase()
     }
     // device ownership — compare session IDs
     return !!auth.deviceSessionId && auth.deviceSessionId === ep.createdDeviceSessionId
@@ -357,6 +359,15 @@ export default function CalendarPage() {
   }
 
   // ── Find first available slot on a given date ────────────────
+  // When date is today, the cursor starts at the current clock slot rather than
+  // the booking-start hour, so the suggestion is always a present/future time:
+  //
+  //   3:28 PM  (15-min slots) → floor(208/15)*15 = 195 → 3:15 slot (still open, ends at 3:30)
+  //   3:30 PM  (15-min slots) → floor(210/15)*15 = 210 → 3:30 slot (3:15 has just ended)
+  //   3:00 AM  (before hours) → clamped up to BOOKING_START_HOUR
+  //
+  // If the resulting cursor has no free slot before end-of-day, fall back to
+  // booking start (same behaviour as before for future dates).
   function findFirstAvailableSlot(date) {
     const pad = n => String(n).padStart(2, '0')
     const toMins = iso => {
@@ -371,18 +382,33 @@ export default function CalendarPage() {
       .map(ev => ({ start: toMins(ev.start), end: toMins(ev.end) }))
       .sort((a, b) => a.start - b.start)
 
-    let cursor = BOOKING_START_HOUR * 60
-    const limit = BOOKING_END_HOUR * 60
+    const bookingStart = BOOKING_START_HOUR * 60
+    const limit        = BOOKING_END_HOUR   * 60
+
+    // For today: begin from the current clock slot, not necessarily 8 AM
+    const todayStr = new Date().toISOString().split('T')[0]
+    let cursor = bookingStart
+    if (date === todayStr) {
+      const now = new Date()
+      const nowMins = now.getHours() * 60 + now.getMinutes()
+      // Snap down to the slot boundary that contains now.
+      // Math.floor gives the start of the current slot:
+      //   at 3:28 → 3:15 (slot still running — valid to offer)
+      //   at 3:30 → 3:30 (slot boundary — old slot ended, start here)
+      const currentSlotStart = Math.floor(nowMins / SLOT_DURATION_MINUTES) * SLOT_DURATION_MINUTES
+      cursor = Math.max(currentSlotStart, bookingStart)
+    }
 
     for (const ev of dayEvents) {
-      if (cursor + SLOT_DURATION_MINUTES <= ev.start) break  // gap before this event
+      if (cursor + SLOT_DURATION_MINUTES <= ev.start) break  // free gap at cursor
       if (ev.end > cursor) {
+        // Event overlaps — jump cursor to the next slot after it ends
         cursor = Math.ceil(ev.end / SLOT_DURATION_MINUTES) * SLOT_DURATION_MINUTES
       }
     }
 
-    // if no room left, fall back to start of day
-    if (cursor + SLOT_DURATION_MINUTES > limit) cursor = BOOKING_START_HOUR * 60
+    // No room left before end-of-day → fall back to booking start
+    if (cursor + SLOT_DURATION_MINUTES > limit) cursor = bookingStart
 
     return {
       start: `${date}T${toTimeStr(cursor)}:00`,
@@ -1181,6 +1207,7 @@ export default function CalendarPage() {
             backgroundColor: selectedEvent.backgroundColor,
             borderColor: selectedEvent.borderColor,
           }}
+          ownerEmail={selectedEvent.extendedProps?.ownerEmail || ''}
           roomName={room?.name}
           onSave={handleUpdateEvent}
           onClose={() => { setShowEditModal(false); setSelectedEvent(null); setRecurEditMeta(null) }}

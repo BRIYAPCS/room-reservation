@@ -1,7 +1,9 @@
 const BASE = import.meta.env.VITE_API_BASE || '/api'
 
+const SESSION_KEY = 'room_reservation_auth'
+
 function getStoredToken() {
-  try { return sessionStorage.getItem('authToken') || '' } catch { return '' }
+  try { return localStorage.getItem('authToken') || '' } catch { return '' }
 }
 
 async function request(path, options = {}) {
@@ -16,9 +18,11 @@ async function request(path, options = {}) {
     },
   })
   if (res.status === 401 && token) {
-    // Token was present but rejected (expired / invalid) — clear session and go home
-    sessionStorage.clear()
-    window.location.href = '/'
+    // Token was present but rejected (expired / invalid) — clear stored auth and
+    // signal the React auth context to reset state without a hard page reload.
+    localStorage.removeItem('authToken')
+    localStorage.removeItem(SESSION_KEY)
+    window.dispatchEvent(new CustomEvent('briya:auth:expired'))
     return
   }
   if (!res.ok) {
@@ -185,4 +189,12 @@ export const verifyPinPublic = (pin) =>
   request('/pin/pin-verify', {
     method: 'POST',
     body: JSON.stringify({ pin }),
+  })
+
+// Validate a @briya.org email via Power Automate webhook (server-side call)
+// Returns { valid: boolean, name: string } — never throws
+export const validateEmail = (email) =>
+  request('/auth/validate-email', {
+    method: 'POST',
+    body: JSON.stringify({ email }),
   })

@@ -145,6 +145,18 @@
   font-weight: 500;
 }
 
+/* Owner email — locked, slightly blue tint */
+.ebm-readonly-row--email {
+  background: #eaf4fb;
+  border-color: #b8ddf5;
+}
+
+.ebm-readonly-email {
+  color: #1a4a7a;
+  font-size: clamp(0.82rem, 1.1vw, 0.95rem);
+  word-break: break-all;
+}
+
 .ebm-error {
   color: #c0392b;
   font-size: clamp(0.75rem, 1vw, 0.82rem);

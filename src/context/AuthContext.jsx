@@ -1,4 +1,4 @@
-import { createContext, useContext, useState } from 'react'
+import { createContext, useContext, useState, useEffect, useRef } from 'react'
 import { verifyPin as apiVerifyPin } from '../services/api'
 
 const AuthContext = createContext(null)
@@ -51,7 +51,7 @@ function getOrCreateDeviceSessionId() {
 
 function loadFromSession() {
   try {
-    const raw = sessionStorage.getItem(SESSION_KEY)
+    const raw = localStorage.getItem(SESSION_KEY)
     if (raw) {
       const parsed = JSON.parse(raw)
       return {
@@ -138,16 +138,36 @@ export function AuthProvider({ children }) {
       deviceSessionId: getOrCreateDeviceSessionId(),
     }
     setAuth(newAuth)
-    sessionStorage.setItem(SESSION_KEY, JSON.stringify(newAuth))
-    if (token) sessionStorage.setItem('authToken', token)
+    localStorage.setItem(SESSION_KEY, JSON.stringify(newAuth))
+    if (token) localStorage.setItem('authToken', token)
     if (name.trim()) saveDeviceName(role, name.trim())
     return true
   }
 
   function logout() {
-    sessionStorage.clear()
-    window.location.reload()
+    localStorage.removeItem(SESSION_KEY)
+    localStorage.removeItem('authToken')
+    setAuth({
+      role: 'none',
+      name: '',
+      email: '',
+      emailVerified: false,
+      deviceSessionId: getOrCreateDeviceSessionId(),
+    })
   }
+
+  // Use a ref so the event listener always calls the current logout without
+  // needing to re-register on every render.
+  const logoutRef = useRef(logout)
+  logoutRef.current = logout
+
+  // Listen for the custom event fired by api.js when a 401 is received.
+  // This replaces the old window.location.href = '/' hard-redirect.
+  useEffect(() => {
+    function handleAuthExpired() { logoutRef.current() }
+    window.addEventListener('briya:auth:expired', handleAuthExpired)
+    return () => window.removeEventListener('briya:auth:expired', handleAuthExpired)
+  }, [])
 
   // ADMIN and SUPERADMIN can delete — STANDARD cannot, regardless of ownership
   function canDelete() {

@@ -13,7 +13,7 @@ export default function CrossDeviceVerifyModal({
   onCancel,
 }) {
   const reservationId = event?.id
-  const ownerEmail    = event?.extendedProps?.ownerEmail || null // set if returned by future API
+  const ownerEmail    = event?.extendedProps?.ownerEmail || null
   const ownershipType = event?.extendedProps?.ownershipType || 'device'
 
   // ── Step machine: 'confirm' | 'email' | 'otp' | 'success'
@@ -143,13 +143,18 @@ export default function CrossDeviceVerifyModal({
           <>
             <div className="cdv-icon-wrap">🔐</div>
             <h2 className="cdv-title">Verify Ownership</h2>
+            <p className="cdv-body cdv-body--warning">
+              This reservation was not created by you.
+            </p>
             <p className="cdv-body">
-              This booking was {ownershipType === 'email' ? 'linked to an email address' : 'created on another device'}.
-              Verify you own it using the email that was used when booking.
+              {ownershipType === 'email'
+                ? 'This booking is linked to a different email address.'
+                : 'This booking was created on another device.'}
+              {' '}To edit it, verify ownership using the email address that was used when booking.
             </p>
             <div className="cdv-btn-col">
               <button className="cdv-btn-primary" onClick={() => setStep('email')}>
-                Continue →
+                Verify Ownership →
               </button>
               <button className="cdv-btn-ghost" onClick={onCancel}>Cancel</button>
             </div>

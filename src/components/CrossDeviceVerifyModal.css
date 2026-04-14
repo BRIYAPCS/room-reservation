@@ -71,6 +71,16 @@
   font-weight: 500;
 }
 
+.cdv-body--warning {
+  color: #b91c1c;
+  font-weight: 700;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 6px;
+  padding: 8px 12px;
+  margin-bottom: 6px;
+}
+
 /* Form */
 .cdv-form {
   width: 100%;

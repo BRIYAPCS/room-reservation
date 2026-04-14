@@ -35,7 +35,7 @@ function toISO(date, time) {
   return `${date}T${time}:00`
 }
 
-export default function EditBookingModal({ event, roomName, onSave, onClose }) {
+export default function EditBookingModal({ event, ownerEmail, roomName, onSave, onClose }) {
   const {
     bookingStartHour:    BOOKING_START_HOUR,
     bookingEndHour:      BOOKING_END_HOUR,
@@ -171,6 +171,13 @@ export default function EditBookingModal({ event, roomName, onSave, onClose }) {
             <div className="ebm-readonly-row">
               <span className="ebm-readonly-label">Booked By</span>
               <span className="ebm-readonly-value">{originalBookedBy}</span>
+            </div>
+          )}
+
+          {ownerEmail && (
+            <div className="ebm-readonly-row ebm-readonly-row--email">
+              <span className="ebm-readonly-label">🔒 Email</span>
+              <span className="ebm-readonly-value ebm-readonly-email">{ownerEmail}</span>
             </div>
           )}
 
