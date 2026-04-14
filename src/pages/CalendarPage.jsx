@@ -12,6 +12,7 @@ import LoginModal from '../components/LoginModal'
 import UserAvatar from '../components/UserAvatar'
 import EventDetailsModal from '../components/EventDetailsModal'
 import EditBookingModal from '../components/EditBookingModal'
+import CrossDeviceVerifyModal from '../components/CrossDeviceVerifyModal'
 import RecurrenceActionSheet from '../components/RecurrenceActionSheet'
 import { useAuth } from '../context/AuthContext'
 import { useConfig } from '../context/ConfigContext'
@@ -122,6 +123,10 @@ export default function CalendarPage() {
   const [selectedEvent, setSelectedEvent] = useState(null)
   const [showEventDetails, setShowEventDetails] = useState(false)
   const [showEditModal, setShowEditModal] = useState(false)
+
+  // Cross-device ownership verification
+  const [showCrossDeviceModal, setShowCrossDeviceModal] = useState(false)
+  const [crossDeviceEvent, setCrossDeviceEvent] = useState(null)
 
   // List view filters
   const [showPast, setShowPast] = useState(false)
@@ -243,15 +248,42 @@ export default function CalendarPage() {
     showToast('Booking deleted.', 'error')
   }
 
+  // Returns true when the current session owns the reservation without OTP
+  function isSameDeviceOwner(event) {
+    const ep = event?.extendedProps || {}
+    const ownershipType = ep.ownershipType
+    if (!ownershipType) return true // legacy booking — no ownership data; backend name-checks
+    if (ownershipType === 'email') {
+      // If the current JWT carries a verified email, let the backend verify the match
+      return auth.emailVerified === true
+    }
+    // device ownership — compare session IDs
+    return !!auth.deviceSessionId && auth.deviceSessionId === ep.createdDeviceSessionId
+  }
+
   // Called when user clicks Edit on EventDetailsModal
   const handleEditRequest = (event) => {
+    // Standard users: check device ownership before opening the edit modal
+    if (auth.role === 'standard') {
+      const reservationId = event?.id
+      const alreadyVerified = reservationId &&
+        !!sessionStorage.getItem(`verified_edit_${reservationId}`)
+
+      if (!alreadyVerified && !isSameDeviceOwner(event)) {
+        // Different device — require OTP verification before editing
+        setCrossDeviceEvent(event)
+        setShowCrossDeviceModal(true)
+        setShowEventDetails(false)
+        return
+      }
+    }
+
+    // Same device (or admin / superadmin) — proceed directly
     const groupId = event?.extendedProps?.recurrenceGroupId
     if (groupId) {
-      // Recurring — show the action sheet first
       setShowEventDetails(false)
       setRecurAction({ action: 'edit', event })
     } else {
-      // Non-recurring — open edit modal immediately
       setShowEventDetails(false)
       setShowEditModal(true)
     }
@@ -292,10 +324,14 @@ export default function CalendarPage() {
 
   const handleUpdateEvent = async (updatedEvent) => {
     const meta = recurEditMeta
+    // Attach OTP edit token when it was issued during cross-device verification
+    const editToken = updatedEvent?.id
+      ? (sessionStorage.getItem(`verified_edit_${updatedEvent.id}`) || null)
+      : null
     if (meta?.scope && meta?.groupId) {
       await api.updateRecurrenceGroup(siteId, roomId, meta.groupId, meta.scope, meta.fromIndex, updatedEvent).catch(() => {})
     } else {
-      await api.updateEvent(siteId, roomId, updatedEvent).catch(() => {})
+      await api.updateEvent(siteId, roomId, updatedEvent, editToken).catch(() => {})
     }
     refreshEvents(true)
     setShowEditModal(false)
@@ -1148,6 +1184,32 @@ export default function CalendarPage() {
           roomName={room?.name}
           onSave={handleUpdateEvent}
           onClose={() => { setShowEditModal(false); setSelectedEvent(null); setRecurEditMeta(null) }}
+        />
+      )}
+
+      {/* Cross-device ownership verification */}
+      {showCrossDeviceModal && crossDeviceEvent && (
+        <CrossDeviceVerifyModal
+          siteId={siteId}
+          roomId={roomId}
+          event={crossDeviceEvent}
+          onSuccess={editToken => {
+            setShowCrossDeviceModal(false)
+            const event = crossDeviceEvent
+            setCrossDeviceEvent(null)
+            // Now proceed with the edit the user originally requested
+            const groupId = event?.extendedProps?.recurrenceGroupId
+            setSelectedEvent(event)
+            if (groupId) {
+              setRecurAction({ action: 'edit', event })
+            } else {
+              setShowEditModal(true)
+            }
+          }}
+          onCancel={() => {
+            setShowCrossDeviceModal(false)
+            setCrossDeviceEvent(null)
+          }}
         />
       )}
 

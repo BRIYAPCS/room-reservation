@@ -102,10 +102,25 @@ export const addEvents = (siteId, roomId, events) =>
     body: JSON.stringify(events),
   })
 
-export const updateEvent = (siteId, roomId, event) =>
+export const updateEvent = (siteId, roomId, event, editToken = null) =>
   request(`/events/${siteId}/${roomId}/${event.id}`, {
     method: 'PUT',
     body: JSON.stringify(event),
+    headers: editToken ? { 'X-Edit-Token': editToken } : {},
+  })
+
+// Cross-device OTP — request a code sent to the booking's owner email
+export const requestEditOtp = (siteId, roomId, eventId, email) =>
+  request(`/events/${siteId}/${roomId}/${eventId}/request-otp`, {
+    method: 'POST',
+    body: JSON.stringify({ email }),
+  })
+
+// Cross-device OTP — verify the code; returns { ok, editToken } on success
+export const verifyEditOtp = (siteId, roomId, eventId, email, otp) =>
+  request(`/events/${siteId}/${roomId}/${eventId}/verify-otp`, {
+    method: 'POST',
+    body: JSON.stringify({ email, otp }),
   })
 
 export const deleteEvent = (siteId, roomId, eventId) =>
