@@ -4,6 +4,8 @@ import { verifyPin as apiVerifyPin } from '../services/api'
 const AuthContext = createContext(null)
 
 const SESSION_KEY = 'room_reservation_auth'
+const DEVICE_SESSION_KEY = 'briya_device_session_id'
+
 // Separate device-memory keys per role so admin and standard don't overwrite each other
 const DEVICE_KEYS = {
   standard:   'briya_standard_name',
@@ -32,12 +34,42 @@ function getCookie(name) {
   } catch (_) { return '' }
 }
 
+// ── Device session ID — persists in localStorage across tabs/sessions ────────
+function getOrCreateDeviceSessionId() {
+  try {
+    const existing = localStorage.getItem(DEVICE_SESSION_KEY)
+    if (existing) return existing
+    const id = typeof crypto?.randomUUID === 'function'
+      ? crypto.randomUUID()
+      : `${Date.now()}-${Math.random().toString(36).slice(2)}`
+    localStorage.setItem(DEVICE_SESSION_KEY, id)
+    return id
+  } catch (_) {
+    return `${Date.now()}-${Math.random().toString(36).slice(2)}`
+  }
+}
+
 function loadFromSession() {
   try {
     const raw = sessionStorage.getItem(SESSION_KEY)
-    if (raw) return JSON.parse(raw)
+    if (raw) {
+      const parsed = JSON.parse(raw)
+      return {
+        role:          parsed.role          || 'none',
+        name:          parsed.name          || '',
+        email:         parsed.email         || '',
+        emailVerified: parsed.emailVerified ?? false,
+        deviceSessionId: parsed.deviceSessionId || getOrCreateDeviceSessionId(),
+      }
+    }
   } catch (_) {}
-  return { role: 'none', name: '' }
+  return {
+    role: 'none',
+    name: '',
+    email: '',
+    emailVerified: false,
+    deviceSessionId: getOrCreateDeviceSessionId(),
+  }
 }
 
 /**
@@ -77,7 +109,12 @@ export function AuthProvider({ children }) {
     }
   }
 
-  async function login(pin, name) {
+  /**
+   * @param {string} pin
+   * @param {string} name
+   * @param {{ email?: string, emailVerified?: boolean }} [opts]
+   */
+  async function login(pin, name, { email = '', emailVerified = false } = {}) {
     let role, token
     try {
       const res = await apiVerifyPin(pin, name.trim())
@@ -87,7 +124,14 @@ export function AuthProvider({ children }) {
       return false
     }
     if (!role) return false
-    const newAuth = { role, name: name.trim() }
+
+    const newAuth = {
+      role,
+      name:          name.trim(),
+      email:         email.trim(),
+      emailVerified,
+      deviceSessionId: getOrCreateDeviceSessionId(),
+    }
     setAuth(newAuth)
     sessionStorage.setItem(SESSION_KEY, JSON.stringify(newAuth))
     if (token) sessionStorage.setItem('authToken', token)
@@ -96,8 +140,8 @@ export function AuthProvider({ children }) {
   }
 
   function logout() {
-    setAuth({ role: 'none', name: '' })
-    sessionStorage.removeItem(SESSION_KEY)
+    sessionStorage.clear()
+    window.location.reload()
   }
 
   // ADMIN and SUPERADMIN can delete — STANDARD cannot, regardless of ownership

@@ -268,6 +268,74 @@
   background: #f0f7ff;
 }
 
+/* ── Email field (PIN step) ── */
+.lm-email-wrap {
+  width: 100%;
+}
+
+.lm-email-input {
+  /* inherits .lm-input — just a semantic hook for overrides */
+}
+
+.lm-input--error {
+  border-color: #c0392b;
+  background: #fff5f5;
+}
+
+.lm-input--error:focus {
+  border-color: #c0392b;
+}
+
+.lm-domain-error {
+  /* inherits .lm-error — shown directly below email field */
+}
+
+/* ── Identity locked (verified email on status step) ── */
+.lm-identity-locked {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #f0fdf4;
+  border: 1px solid #86efac;
+  border-radius: 6px;
+  padding: 7px 12px;
+  margin-top: 4px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.lm-identity-lock-icon {
+  font-size: 0.88rem;
+  flex-shrink: 0;
+}
+
+.lm-identity-email {
+  font-size: clamp(0.75rem, 1vw, 0.82rem);
+  color: #166534;
+  font-weight: 500;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.lm-identity-verified-badge {
+  font-size: clamp(0.68rem, 0.9vw, 0.75rem);
+  font-weight: 700;
+  color: #15803d;
+  background: #dcfce7;
+  border: 1px solid #86efac;
+  border-radius: 10px;
+  padding: 2px 8px;
+  flex-shrink: 0;
+}
+
+.lm-identity-email-unverified {
+  font-size: clamp(0.75rem, 1vw, 0.82rem);
+  color: #888;
+  margin: 2px 0 0 0;
+}
+
 /* Status step */
 .lm-status-body {
   display: flex;

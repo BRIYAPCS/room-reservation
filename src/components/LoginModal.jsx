@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { getDeviceName } from '../context/AuthContext'
+import { validateBriyaEmail } from '../utils/validateBriyaEmail'
 import './LoginModal.css'
 
 // SVG icons
@@ -23,6 +24,8 @@ function PersonIcon() {
   )
 }
 
+const BRIYA_DOMAIN = '@briya.org'
+
 export default function LoginModal({ onClose, onDismiss, required = false, onBack }) {
   const { auth, login, logout, validatePin } = useAuth()
 
@@ -40,15 +43,27 @@ export default function LoginModal({ onClose, onDismiss, required = false, onBac
   }
 
   const [step, setStep] = useState(getInitialStep)
+
+  // PIN step state
   const [pin, setPin] = useState('')
   const [showPin, setShowPin] = useState(false)
   const [pinTypeWarning, setPinTypeWarning] = useState('')
-  const [pendingRole, setPendingRole] = useState(null) // 'admin' | 'standard'
+  const [pinError, setPinError] = useState('')
+  const [pinLoading, setPinLoading] = useState(false)
+
+  // Email state (PIN step)
+  const [email, setEmail] = useState('')
+  const [emailDomainError, setEmailDomainError] = useState('')
+
+  // Carried into name step after PIN validates
+  const [pendingRole, setPendingRole] = useState(null)
+  const [pendingEmail, setPendingEmail] = useState('')
+  const [pendingEmailVerified, setPendingEmailVerified] = useState(false)
+
+  // Name step state
   const [name, setName] = useState('')
   const [nameFromDevice, setNameFromDevice] = useState(false)
-  const [pinError, setPinError] = useState('')
   const [nameError, setNameError] = useState('')
-  const [pinLoading, setPinLoading] = useState(false)
 
   function handlePinChange(e) {
     const raw = e.target.value
@@ -62,16 +77,50 @@ export default function LoginModal({ onClose, onDismiss, required = false, onBac
     setPinError('')
   }
 
+  function handleEmailChange(e) {
+    const val = e.target.value
+    setEmail(val)
+    if (val && val.trim() && !val.trim().toLowerCase().endsWith(BRIYA_DOMAIN)) {
+      setEmailDomainError(`Only ${BRIYA_DOMAIN} emails are allowed`)
+    } else {
+      setEmailDomainError('')
+    }
+  }
+
   async function handlePinSubmit(e) {
     e.preventDefault()
     setPinLoading(true)
+
     const role = await validatePin(pin)
-    setPinLoading(false)
     if (!role) {
+      setPinLoading(false)
       setPinError('Incorrect PIN. Please try again.')
       return
     }
-    // Both admin and standard go through the name step
+
+    const trimmedEmail = email.trim().toLowerCase()
+    const isBriyaEmail = trimmedEmail.endsWith(BRIYA_DOMAIN)
+
+    // If a valid @briya.org email is entered — try to validate it
+    if (trimmedEmail && isBriyaEmail) {
+      const result = await validateBriyaEmail(trimmedEmail)
+      if (result.valid && result.name) {
+        // Email verified — auto-login, skip name step
+        await login(pin, result.name, { email: trimmedEmail, emailVerified: true })
+        setPinLoading(false)
+        onClose()
+        return
+      }
+      // Email not verified — carry it to name step
+      setPendingEmail(trimmedEmail)
+      setPendingEmailVerified(false)
+    } else {
+      // No email or non-briya email — carry as-is (unverified)
+      setPendingEmail(trimmedEmail)
+      setPendingEmailVerified(false)
+    }
+
+    // Proceed to name step
     setPendingRole(role)
     const saved = getDeviceName(role)
     if (saved) {
@@ -81,6 +130,7 @@ export default function LoginModal({ onClose, onDismiss, required = false, onBac
       setName('')
       setNameFromDevice(false)
     }
+    setPinLoading(false)
     setStep('name')
   }
 
@@ -91,33 +141,20 @@ export default function LoginModal({ onClose, onDismiss, required = false, onBac
       return
     }
     setPinLoading(true)
-    await login(pin, name.trim())
+    await login(pin, name.trim(), { email: pendingEmail, emailVerified: pendingEmailVerified })
     setPinLoading(false)
     onClose()
   }
 
   function handleSwitchAccount() {
+    // Clear session and reload — identity is fully reset
     logout()
-    setPin('')
-    setPendingRole(null)
-    setName('')
-    setNameFromDevice(false)
-    setPinError('')
-    setNameError('')
-    setStep('pin')
+    // logout() triggers a page reload, so no further state updates needed
   }
 
   function handleSignOut() {
     logout()
-    if (required) {
-      setPin('')
-      setName('')
-      setPinError('')
-      setNameError('')
-      setStep('pin')
-    } else {
-      onDismiss()
-    }
+    // logout() triggers a page reload; if required the page will re-show the modal
   }
 
   const overlayMouseTarget = useRef(null)
@@ -209,6 +246,20 @@ export default function LoginModal({ onClose, onDismiss, required = false, onBac
               </div>
               {pinTypeWarning && <p className="lm-warn">{pinTypeWarning}</p>}
               {pinError && <p className="lm-error">{pinError}</p>}
+
+              {/* Optional email field */}
+              <div className="lm-email-wrap">
+                <input
+                  type="email"
+                  className={`lm-input lm-email-input${emailDomainError ? ' lm-input--error' : ''}`}
+                  placeholder={`Optional — enter your ${BRIYA_DOMAIN} email`}
+                  value={email}
+                  onChange={handleEmailChange}
+                  autoComplete="email"
+                />
+              </div>
+              {emailDomainError && <p className="lm-error lm-domain-error">{emailDomainError}</p>}
+
               <button type="submit" className="lm-btn-gold lm-btn-full" disabled={pinLoading}>
                 {pinLoading ? 'Checking…' : 'Continue →'}
               </button>
@@ -291,10 +342,27 @@ export default function LoginModal({ onClose, onDismiss, required = false, onBac
                   <p className="lm-user-name">{auth.name}</p>
                 </>
               )}
+
+              {/* Show verified email identity */}
+              {auth.emailVerified && auth.email && (
+                <div className="lm-identity-locked">
+                  <span className="lm-identity-lock-icon">🔒</span>
+                  <span className="lm-identity-email">{auth.email}</span>
+                  <span className="lm-identity-verified-badge">Verified</span>
+                </div>
+              )}
+
+              {/* Show unverified email if present */}
+              {!auth.emailVerified && auth.email && (
+                <p className="lm-identity-email-unverified">{auth.email}</p>
+              )}
             </div>
 
             <div className="lm-btn-col">
-              <button className="lm-btn-outlined lm-btn-full" onClick={handleSwitchAccount}>Switch Account</button>
+              {/* Switch Account hidden when identity is locked via verified email */}
+              {!auth.emailVerified && (
+                <button className="lm-btn-outlined lm-btn-full" onClick={handleSwitchAccount}>Switch Account</button>
+              )}
               <button className="lm-btn-outlined-red lm-btn-full" onClick={handleSignOut}>Sign Out</button>
             </div>
           </>
