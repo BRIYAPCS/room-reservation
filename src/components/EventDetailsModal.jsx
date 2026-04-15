@@ -30,7 +30,7 @@ function formatEditedAt(iso) {
   })
 }
 
-export default function EventDetailsModal({ event, canEdit, canDelete, canClaim, onEdit, onDelete, onClaim, onClose, isRecurring, seriesInfo }) {
+export default function EventDetailsModal({ event, actionState, isAdmin, onEdit, onDelete, onClaim, onClose, isRecurring, seriesInfo }) {
   const [confirmDelete, setConfirmDelete] = useState(false)
 
   useEffect(() => {
@@ -119,22 +119,20 @@ export default function EventDetailsModal({ event, canEdit, canDelete, canClaim,
         <div className="edm-divider" />
 
         <div className="edm-actions">
-          {canEdit || canDelete ? (
-            <>
-              {canEdit && <button className="edm-btn-edit" onClick={onEdit}>Edit</button>}
-              {canDelete && (
-                <button
-                  className="edm-btn-delete"
-                  onClick={() => isRecurring ? onDelete() : setConfirmDelete(true)}
-                >
-                  Delete
-                </button>
-              )}
-              <button className="edm-btn-close" onClick={onClose}>Close</button>
-            </>
-          ) : canClaim ? (
+          {actionState?.status === 'legacy_claim' ? (
             <>
               <button className="edm-btn-edit" onClick={onClaim}>Claim Booking</button>
+              <button className="edm-btn-close" onClick={onClose}>Close</button>
+            </>
+          ) : actionState?.status !== 'denied' ? (
+            <>
+              <button className="edm-btn-edit" onClick={onEdit}>Edit</button>
+              <button
+                className="edm-btn-delete"
+                onClick={() => isRecurring ? onDelete() : setConfirmDelete(true)}
+              >
+                Delete
+              </button>
               <button className="edm-btn-close" onClick={onClose}>Close</button>
             </>
           ) : (

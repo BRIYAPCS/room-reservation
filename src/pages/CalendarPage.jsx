@@ -158,21 +158,28 @@ export default function CalendarPage() {
   const [tooltip, setTooltip] = useState({ show: false, x: 0, y: 0, title: '', bookedBy: '', desc: '', time: '' })
 
   // ── Auth helpers ──────────────────────────────────────────────
-  function canEdit(event) {
-    if (auth.role === 'superadmin') return true  // superadmin can edit any booking
-    if (!CAN_CREATE_ROLES.includes(auth.role)) return false
-    if (EDIT_OTHERS_ROLE === 'all') return true
-    if (isAdmin(auth.role)) return true
-    // standard: ownership-aware — must match by email (email-type) or device session (device-type)
-    // Legacy rows (no ownershipType) cannot be verified — deny
+  const getActionState = (event) => {
+    if (auth.role === 'superadmin') return { status: 'allowed' }
+    if (!CAN_CREATE_ROLES.includes(auth.role)) return { status: 'denied', reason: 'Role cannot edit' }
+    if (isAdmin(auth.role) || EDIT_OTHERS_ROLE === 'all') return { status: 'allowed' }
+
     const ep = event?.extendedProps || {}
-    if (!ep.ownershipType) return false
+    if (!ep.ownershipType) return { status: 'legacy_claim' }
+
     if (ep.ownershipType === 'email') {
-      return auth.emailVerified === true &&
-             !!auth.email &&
-             auth.email.toLowerCase() === (ep.ownerEmail || '').toLowerCase()
+      if (!auth.emailVerified) return { status: 'otp_required', reason: 'Email not verified' }
+      if (auth.email?.toLowerCase() === (ep.ownerEmail || '').toLowerCase()) {
+        if (!!auth.deviceSessionId && auth.deviceSessionId === ep.createdDeviceSessionId) return { status: 'allowed' }
+        return { status: 'otp_required', reason: 'Must use OTP for cross-device edit' }
+      }
+      return { status: 'denied', reason: 'You are not the owner of this booking' }
     }
-    return !!auth.deviceSessionId && auth.deviceSessionId === ep.createdDeviceSessionId
+
+    if (ep.ownershipType === 'device') {
+      if (!!auth.deviceSessionId && auth.deviceSessionId === ep.createdDeviceSessionId) return { status: 'allowed' }
+      return { status: 'otp_required', reason: 'Must use OTP' }
+    }
+    return { status: 'denied', reason: 'Unknown ownership type' }
   }
 
   // ── Toast helper ──────────────────────────────────────────────
@@ -191,15 +198,9 @@ export default function CalendarPage() {
       const isPast = new Date(ev.end) <= now
       const ep     = ev.extendedProps || {}
 
-      // Drag-drop is intentionally restricted to device-type ownership only.
-      // Email-type owners must use the edit modal (which enforces OTP for cross-device)
-      // — silent drag-drop would bypass that confirmation step.
-      const isDeviceOwner =
-        ep.ownershipType === 'device' &&
-        !!auth.deviceSessionId &&
-        auth.deviceSessionId === ep.createdDeviceSessionId
-
-      const editable = isAdmin(auth.role) ? canEdit(ev) : (!isPast && isDeviceOwner)
+      const state = getActionState(ev)
+      // Drag-drop strictly requires an already-allowed state (bypasses OTP modals)
+      const editable = state.status === 'allowed' && (!isPast || isAdmin(auth.role))
       return { ...ev, editable, classNames: isPast && !isAdmin(auth.role) ? ['fc-event-past'] : [] }
     })
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -262,26 +263,37 @@ export default function CalendarPage() {
     refreshEvents(true)
   }
 
-  // Called when user clicks Delete on EventDetailsModal
   const handleDeleteRequest = (event) => {
-    // Standard users: same cross-device check as edit
-    if (auth.role === 'standard') {
-      if (!isSameDeviceOwner(event) && !pendingEditToken) {
-        setCrossDeviceEvent(event)
-        setCrossDeviceAction('delete')
-        setShowCrossDeviceModal(true)
-        setShowEventDetails(false)
-        return
-      }
+    if (new Date(event.end || event.endStr) <= new Date() && !isAdmin(auth.role)) {
+      showToast('Past bookings cannot be deleted.', 'error')
+      return
+    }
+
+    const state = getActionState(event)
+    if (state.status === 'denied') {
+      showToast(`Access Denied: ${state.reason}`, 'error')
+      return
+    }
+    if (state.status === 'legacy_claim') {
+      setClaimEvent(event)
+      setShowClaimModal(true)
+      setShowEventDetails(false)
+      return
+    }
+    if (state.status === 'otp_required' && !pendingEditToken) {
+      showToast(state.reason === 'Email not verified' ? 'Verify your email to delete this booking.' : 'Must verify via OTP.', 'warning')
+      setCrossDeviceEvent(event)
+      setCrossDeviceAction('delete')
+      setShowCrossDeviceModal(true)
+      setShowEventDetails(false)
+      return
     }
 
     const groupId = event?.extendedProps?.recurrenceGroupId
     if (groupId) {
-      // Recurring — show the action sheet first
       setShowEventDetails(false)
       setRecurAction({ action: 'delete', event })
     } else {
-      // Non-recurring — delete immediately
       handleDeleteEvent(event.id || event.extendedProps?.id)
     }
   }
@@ -296,42 +308,32 @@ export default function CalendarPage() {
     showToast('Booking deleted.', 'error')
   }
 
-  // Returns true when the current session owns the reservation without needing OTP
-  function isSameDeviceOwner(event) {
-    const ep = event?.extendedProps || {}
-    const ownershipType = ep.ownershipType
-    if (!ownershipType) return false // legacy booking — backend now rejects these unconditionally
-
-    if (ownershipType === 'email') {
-      // Step 1: identity — email must match
-      const emailMatch = auth.emailVerified === true &&
-                         !!auth.email &&
-                         auth.email.toLowerCase() === (ep.ownerEmail || '').toLowerCase()
-      if (!emailMatch) return false
-      // Step 2: device — same device session required for OTP-free edit
-      // If email matches but device differs → frontend shows OTP modal
-      return !!auth.deviceSessionId && auth.deviceSessionId === ep.createdDeviceSessionId
-    }
-
-    // device ownership — compare session IDs
-    return !!auth.deviceSessionId && auth.deviceSessionId === ep.createdDeviceSessionId
-  }
-
-  // Called when user clicks Edit on EventDetailsModal
   const handleEditRequest = (event) => {
-    // Standard users: check device ownership before opening the edit modal
-    if (auth.role === 'standard') {
-      if (!isSameDeviceOwner(event) && !pendingEditToken) {
-        // Cross-device — require OTP verification before editing
-        setCrossDeviceEvent(event)
-        setCrossDeviceAction('edit')
-        setShowCrossDeviceModal(true)
-        setShowEventDetails(false)
-        return
-      }
+    if (new Date(event.end || event.endStr) <= new Date() && !isAdmin(auth.role)) {
+      showToast('Past bookings cannot be edited.', 'error')
+      return
     }
 
-    // Same device (or admin / superadmin) — proceed directly
+    const state = getActionState(event)
+    if (state.status === 'denied') {
+      showToast(`Access Denied: ${state.reason}`, 'error')
+      return
+    }
+    if (state.status === 'legacy_claim') {
+      setClaimEvent(event)
+      setShowClaimModal(true)
+      setShowEventDetails(false)
+      return
+    }
+    if (state.status === 'otp_required' && !pendingEditToken) {
+      showToast(state.reason === 'Email not verified' ? 'Verify your email to edit this booking.' : 'Must verify via OTP to edit.', 'warning')
+      setCrossDeviceEvent(event)
+      setCrossDeviceAction('edit')
+      setShowCrossDeviceModal(true)
+      setShowEventDetails(false)
+      return
+    }
+
     const groupId = event?.extendedProps?.recurrenceGroupId
     if (groupId) {
       setShowEventDetails(false)
@@ -517,9 +519,9 @@ export default function CalendarPage() {
       showToast("Past bookings cannot be moved.", 'error')
       return
     }
-    if (!canEdit(info.event)) {
+    if (getActionState(info.event).status !== 'allowed') {
       info.revert()
-      showToast("You can only move your own bookings.", 'error')
+      showToast("Cannot move this booking (OTP or Claim required).", 'error')
       return
     }
     try {
@@ -543,9 +545,9 @@ export default function CalendarPage() {
       showToast("Past bookings cannot be resized.", 'error')
       return
     }
-    if (!canEdit(info.event)) {
+    if (getActionState(info.event).status !== 'allowed') {
       info.revert()
-      showToast("You can only resize your own bookings.", 'error')
+      showToast("Cannot resize this booking (OTP or Claim required).", 'error')
       return
     }
     try {
@@ -1229,9 +1231,8 @@ export default function CalendarPage() {
         return (
           <EventDetailsModal
             event={selectedEvent}
-            canEdit={canEdit(selectedEvent) && (auth.role === 'superadmin' || isAdmin(auth.role) || new Date(selectedEvent?.end || selectedEvent?.extendedProps?.end) > new Date())}
-            canDelete={canDelete(selectedEvent)}
-            canClaim={!selectedEvent?.extendedProps?.ownershipType && auth.role !== 'none'}
+            actionState={getActionState(selectedEvent)}
+            isAdmin={isAdmin(auth.role)}
             isRecurring={!!groupId}
             seriesInfo={seriesInfo}
             onEdit={() => handleEditRequest(selectedEvent)}
