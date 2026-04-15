@@ -112,19 +112,24 @@ export function AuthProvider({ children }) {
   /**
    * @param {string} pin
    * @param {string} name
-   * @param {{ email?: string, emailVerified?: boolean }} [opts]
+   * @param {{ email?: string, emailClaimToken?: string|null }} [opts]
+   *
+   * emailVerified is determined server-side by verifying emailClaimToken.
+   * The frontend never self-asserts emailVerified = true.
    */
-  async function login(pin, name, { email = '', emailVerified = false } = {}) {
-    let role, token
+  async function login(pin, name, { email = '', emailClaimToken = null } = {}) {
+    let role, token, serverEmailVerified, serverEmail
     try {
       const deviceSessionId = getOrCreateDeviceSessionId()
       const res = await apiVerifyPin(pin, name.trim(), {
         email:           email.trim().toLowerCase(),
-        emailVerified:   emailVerified === true,
+        emailClaimToken,
         deviceSessionId,
       })
-      role  = res.role  || null
-      token = res.token || null
+      role                = res.role          || null
+      token               = res.token         || null
+      serverEmailVerified = res.emailVerified  ?? false
+      serverEmail         = res.email         || email.trim().toLowerCase()
     } catch {
       return false
     }
@@ -132,9 +137,9 @@ export function AuthProvider({ children }) {
 
     const newAuth = {
       role,
-      name:          name.trim(),
-      email:         email.trim(),
-      emailVerified,
+      name:            name.trim(),
+      email:           serverEmail,
+      emailVerified:   serverEmailVerified,
       deviceSessionId: getOrCreateDeviceSessionId(),
     }
     setAuth(newAuth)

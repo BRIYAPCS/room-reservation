@@ -199,3 +199,18 @@ export const validateEmail = (email) =>
     method: 'POST',
     body: JSON.stringify({ email }),
   })
+
+// Login OTP — step 1: send 6-digit code to the given @briya.org email
+// Returns { ok, maskedEmail, name }
+export const requestLoginOtp = (email, deviceSessionId) =>
+  request('/auth/request-login-otp', {
+    method: 'POST',
+    body: JSON.stringify({ email, deviceSessionId }),
+  })
+
+// Login OTP — step 2: verify the code; returns { ok, emailClaimToken } on success
+export const verifyLoginOtp = (email, otp, deviceSessionId) =>
+  request('/auth/verify-login-otp', {
+    method: 'POST',
+    body: JSON.stringify({ email, otp, deviceSessionId }),
+  })

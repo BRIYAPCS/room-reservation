@@ -425,6 +425,87 @@
   font-weight: 500;
 }
 
+/* ── Disabled button state ── */
+.lm-btn-gold:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* ── OTP step ── */
+.lm-otp-input {
+  font-size: clamp(1.4rem, 2.5vw, 1.8rem);
+  font-family: 'Courier New', monospace;
+  letter-spacing: 0.35em;
+  text-align: center;
+  padding: 12px 14px;
+}
+
+/* Expiry countdown */
+.lm-otp-countdown {
+  font-size: clamp(0.78rem, 1vw, 0.85rem);
+  color: #555;
+  background: #f0f7ff;
+  border: 1px solid #bce0fd;
+  border-radius: 6px;
+  padding: 6px 12px;
+  width: 100%;
+  box-sizing: border-box;
+  text-align: center;
+  transition: background 0.3s, border-color 0.3s, color 0.3s;
+}
+
+.lm-otp-countdown--urgent {
+  background: #fffbeb;
+  border-color: #fcd34d;
+  color: #92400e;
+}
+
+.lm-otp-countdown--expired {
+  background: #fef2f2;
+  border-color: #fecaca;
+  color: #b91c1c;
+  font-weight: 600;
+}
+
+/* Resend link */
+.lm-otp-resend-btn {
+  background: none;
+  border: none;
+  color: #1186c4;
+  font-size: clamp(0.78rem, 1vw, 0.85rem);
+  cursor: pointer;
+  margin-top: 6px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: color 0.15s, background 0.15s;
+}
+
+.lm-otp-resend-btn:hover:not(:disabled) {
+  background: #e3f2fd;
+}
+
+.lm-otp-resend-btn:disabled {
+  color: #aaa;
+  cursor: default;
+}
+
+/* Skip-email link on OTP step */
+.lm-otp-skip-btn {
+  background: none;
+  border: none;
+  color: #999;
+  font-size: clamp(0.75rem, 1vw, 0.82rem);
+  cursor: pointer;
+  margin-top: 4px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: color 0.15s;
+}
+
+.lm-otp-skip-btn:hover {
+  color: #555;
+}
+
 /* ── Mobile ≤ 480px — bottom sheet ── */
 @media (max-width: 480px) {
   .lm-overlay { align-items: flex-end; }
