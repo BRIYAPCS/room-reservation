@@ -184,14 +184,21 @@ export default function CalendarPage() {
     const now = new Date()
     return events.map(ev => {
       const isPast = new Date(ev.end) <= now
-      // Admins/superadmins can always drag-drop; standard users must own the event on this device
-      const editable = isAdmin(auth.role)
-        ? canEdit(ev)
-        : (!isPast && canEdit(ev) && isSameDeviceOwner(ev))
+      const ep     = ev.extendedProps || {}
+
+      // Drag-drop is intentionally restricted to device-type ownership only.
+      // Email-type owners must use the edit modal (which enforces OTP for cross-device)
+      // — silent drag-drop would bypass that confirmation step.
+      const isDeviceOwner =
+        ep.ownershipType === 'device' &&
+        !!auth.deviceSessionId &&
+        auth.deviceSessionId === ep.createdDeviceSessionId
+
+      const editable = isAdmin(auth.role) ? canEdit(ev) : (!isPast && isDeviceOwner)
       return { ...ev, editable, classNames: isPast && !isAdmin(auth.role) ? ['fc-event-past'] : [] }
     })
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [events, auth.role, auth.email, auth.emailVerified, auth.deviceSessionId])
+  }, [events, auth.role, auth.deviceSessionId])
 
   // ── Detect overlapping event IDs ─────────────────────────────
   // overlappingIds  = ALL events involved in any conflict (for ⚠ badge)
