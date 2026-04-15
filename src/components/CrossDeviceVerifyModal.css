@@ -183,6 +183,36 @@
   border-color: #aaa;
 }
 
+/* OTP expiry countdown */
+.cdv-countdown {
+  font-size: clamp(0.78rem, 1vw, 0.85rem);
+  color: #555;
+  background: #f0f7ff;
+  border: 1px solid #bce0fd;
+  border-radius: 6px;
+  padding: 6px 12px;
+  width: 100%;
+  box-sizing: border-box;
+  text-align: center;
+  margin-bottom: 12px;
+  transition: background 0.3s, border-color 0.3s, color 0.3s;
+}
+
+/* Last 60 seconds — amber warning */
+.cdv-countdown--urgent {
+  background: #fffbeb;
+  border-color: #fcd34d;
+  color: #92400e;
+}
+
+/* Expired */
+.cdv-countdown--expired {
+  background: #fef2f2;
+  border-color: #fecaca;
+  color: #b91c1c;
+  font-weight: 600;
+}
+
 /* Resend link */
 .cdv-resend-btn {
   background: none;

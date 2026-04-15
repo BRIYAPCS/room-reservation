@@ -2,8 +2,9 @@ import { useState, useEffect, useRef } from 'react'
 import { requestEditOtp, verifyEditOtp } from '../services/api'
 import './CrossDeviceVerifyModal.css'
 
-const BRIYA_DOMAIN = '@briya.org'
-const RESEND_COOLDOWN = 60 // seconds
+const BRIYA_DOMAIN    = '@briya.org'
+const RESEND_COOLDOWN = 300  // 5 minutes — matches OTP_RESEND_COOLDOWN_SECONDS in .env
+const OTP_TTL_SECS    = 600  // 10 minutes — matches OTP_EXPIRATION_MINUTES in .env
 
 export default function CrossDeviceVerifyModal({
   siteId,
@@ -26,12 +27,15 @@ export default function CrossDeviceVerifyModal({
   const [maskedEmail, setMaskedEmail] = useState('')
 
   // OTP step
-  const [otp, setOtp]                 = useState('')
-  const [otpError, setOtpError]       = useState('')
-  const [otpLoading, setOtpLoading]   = useState(false)
+  const [otp, setOtp]                       = useState('')
+  const [otpError, setOtpError]             = useState('')
+  const [otpLoading, setOtpLoading]         = useState(false)
   const [resendCooldown, setResendCooldown] = useState(0)
+  // Counts down from OTP_TTL_SECS → 0 while the code is valid
+  const [otpCountdown, setOtpCountdown]     = useState(0)
 
-  const cooldownRef = useRef(null)
+  const cooldownRef  = useRef(null)
+  const countdownRef = useRef(null)
   const emailInputRef = useRef(null)
   const otpInputRef   = useRef(null)
 
@@ -41,7 +45,8 @@ export default function CrossDeviceVerifyModal({
     document.body.style.overflow = 'hidden'
     return () => {
       document.body.style.overflow = prev
-      if (cooldownRef.current) clearInterval(cooldownRef.current)
+      if (cooldownRef.current)  clearInterval(cooldownRef.current)
+      if (countdownRef.current) clearInterval(countdownRef.current)
     }
   }, [])
 
@@ -62,6 +67,24 @@ export default function CrossDeviceVerifyModal({
     }, 1000)
   }
 
+  function startOtpCountdown() {
+    setOtpCountdown(OTP_TTL_SECS)
+    if (countdownRef.current) clearInterval(countdownRef.current)
+    countdownRef.current = setInterval(() => {
+      setOtpCountdown(prev => {
+        if (prev <= 1) { clearInterval(countdownRef.current); return 0 }
+        return prev - 1
+      })
+    }, 1000)
+  }
+
+  // Formats seconds → "m:ss"
+  function fmtCountdown(secs) {
+    const m = Math.floor(secs / 60)
+    const s = secs % 60
+    return `${m}:${String(s).padStart(2, '0')}`
+  }
+
   async function handleSendCode(emailOverride) {
     const target = (emailOverride || email).trim().toLowerCase()
     setEmailError('')
@@ -80,6 +103,7 @@ export default function CrossDeviceVerifyModal({
       setOtpError('')
       setStep('otp')
       startResendCooldown()
+      startOtpCountdown()
     } catch (err) {
       const msg = err.message || 'Failed to send code.'
       if (msg.toLowerCase().includes('does not match') || msg.toLowerCase().includes('mismatch')) {
@@ -104,7 +128,7 @@ export default function CrossDeviceVerifyModal({
     try {
       const res = await verifyEditOtp(siteId, roomId, reservationId, email.trim().toLowerCase(), trimmedOtp)
       if (res.ok && res.editToken) {
-        sessionStorage.setItem(`verified_edit_${reservationId}`, res.editToken)
+        // editToken is kept in memory only — never persisted to storage
         setStep('success')
         setTimeout(() => onSuccess(res.editToken), 1400)
       }
@@ -203,8 +227,13 @@ export default function CrossDeviceVerifyModal({
             <h2 className="cdv-title">Enter Verification Code</h2>
             <p className="cdv-body">
               A 6-digit code was sent to <strong>{maskedEmail}</strong>.
-              It expires in 10 minutes.
             </p>
+            {/* Live expiry countdown */}
+            <div className={`cdv-countdown${otpCountdown <= 60 && otpCountdown > 0 ? ' cdv-countdown--urgent' : ''}${otpCountdown === 0 ? ' cdv-countdown--expired' : ''}`}>
+              {otpCountdown > 0
+                ? <>Code expires in <strong>{fmtCountdown(otpCountdown)}</strong></>
+                : <>Code has expired — request a new one below</>}
+            </div>
             <form className="cdv-form" onSubmit={handleVerifyOtp}>
               <input
                 ref={otpInputRef}
@@ -243,7 +272,7 @@ export default function CrossDeviceVerifyModal({
               onClick={handleResend}
             >
               {resendCooldown > 0
-                ? `Resend code in ${resendCooldown}s`
+                ? `Resend code in ${fmtCountdown(resendCooldown)}`
                 : 'Resend code'}
             </button>
           </>
