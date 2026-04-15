@@ -186,9 +186,41 @@ export default function LoginModal({ onClose, onDismiss, required = false, onBac
     const isBriyaEmail = trimmedEmail.endsWith(BRIYA_DOMAIN)
 
     if (trimmedEmail && isBriyaEmail) {
+      // If the same email already has an active OTP (resend cooldown still running —
+      // meaning we sent a code within the last 5 min), skip the API call and just
+      // return the user to the OTP step rather than spamming a new code.
+      if (resendCooldown > 0 && pendingEmail === trimmedEmail) {
+        setPendingRole(role)
+        setPinLoading(false)
+        setStep('otp')
+        return
+      }
+
       // Send OTP to prove ownership of this email before we grant emailVerified
       try {
         const res = await requestLoginOtp(trimmedEmail, auth.deviceSessionId)
+
+        // Trusted device — backend verified the device server-side and skipped
+        // sending an OTP email entirely.  Skip the OTP step and go straight to
+        // name (or auto-login if PA already returned a display name).
+        if (res.trusted) {
+          setPendingRole(role)
+          setPendingEmail(trimmedEmail)
+          const resolvedName = res.name || pendingName
+          if (resolvedName) {
+            await login(pin, resolvedName, { email: trimmedEmail })
+            setPinLoading(false)
+            onClose()
+            return
+          }
+          const saved = getDeviceName(role)
+          setName(saved || '')
+          setNameFromDevice(!!saved)
+          setPinLoading(false)
+          setStep('name')
+          return
+        }
+
         setMaskedEmail(res.maskedEmail || trimmedEmail)
         setPendingName(res.name || '')
         setPendingRole(role)
