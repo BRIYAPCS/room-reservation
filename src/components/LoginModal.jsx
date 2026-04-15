@@ -224,6 +224,28 @@ export default function LoginModal({ onClose, onDismiss, required = false, onBac
       // Not trusted — send OTP to prove ownership of this email
       try {
         const res = await requestLoginOtp(trimmedEmail, auth.deviceSessionId)
+
+        // Safety net: requestLoginOtp also does a server-side trusted check and can
+        // return { trusted: true } without sending an email (e.g. if checkTrustedDevice
+        // failed silently above). Handle it here so the user is never left waiting for
+        // a code that was never sent.
+        if (res.trusted) {
+          setPendingRole(role)
+          setPendingEmail(trimmedEmail)
+          const saved = getDeviceName(role)
+          if (saved) {
+            await login(pin, saved, { email: trimmedEmail })
+            setPinLoading(false)
+            onClose()
+            return
+          }
+          setName('')
+          setNameFromDevice(false)
+          setPinLoading(false)
+          setStep('name')
+          return
+        }
+
         setMaskedEmail(res.maskedEmail || trimmedEmail)
         setPendingName(res.name || '')
         setPendingRole(role)
