@@ -79,16 +79,34 @@ export default function LoginModal({ onClose, onDismiss, required = false, onBac
   const [nameFromDevice, setNameFromDevice] = useState(false)
   const [nameError, setNameError]     = useState('')
 
-  const cooldownRef   = useRef(null)
-  const countdownRef  = useRef(null)
-  const pinInputRef   = useRef(null)
-  const otpInputRef   = useRef(null)
+  // ── Success step ──────────────────────────────────────────────
+  // isReturn: true = trusted device / device-remembered name (welcome back)
+  //           false = fresh OTP just verified (welcome, you're verified)
+  const [successContext, setSuccessContext] = useState({ name: '', isReturn: false })
 
-  // Clean up intervals on unmount
+  const cooldownRef     = useRef(null)
+  const countdownRef    = useRef(null)
+  const successTimerRef = useRef(null)
+  const pinInputRef     = useRef(null)
+  const otpInputRef     = useRef(null)
+
+  // Clean up intervals / timers on unmount
   useEffect(() => () => {
-    if (cooldownRef.current)  clearInterval(cooldownRef.current)
-    if (countdownRef.current) clearInterval(countdownRef.current)
+    if (cooldownRef.current)     clearInterval(cooldownRef.current)
+    if (countdownRef.current)    clearInterval(countdownRef.current)
+    if (successTimerRef.current) clearTimeout(successTimerRef.current)
   }, [])
+
+  // Shows the brief success screen, then auto-closes the modal.
+  // isReturn=true → "Welcome back" (faster dismiss, 1.8s)
+  // isReturn=false → "Email verified / Welcome" (slightly longer, 2.4s)
+  function completeLogin(displayName, isReturn) {
+    setSuccessContext({ name: displayName, isReturn })
+    setStep('success')
+    const delay = isReturn ? 1800 : 2400
+    if (successTimerRef.current) clearTimeout(successTimerRef.current)
+    successTimerRef.current = setTimeout(() => onClose(), delay)
+  }
 
   // Auto-focus inputs when step changes
   useEffect(() => {
@@ -204,7 +222,7 @@ export default function LoginModal({ onClose, onDismiss, required = false, onBac
             // Name already known from this device — skip the name step entirely
             await login(pin, saved, { email: trimmedEmail })
             setPinLoading(false)
-            onClose()
+            completeLogin(saved, true)   // "Welcome back, [name]"
             return
           }
           // Trusted device but no stored name (first time naming) — ask once
@@ -242,7 +260,7 @@ export default function LoginModal({ onClose, onDismiss, required = false, onBac
           if (saved) {
             await login(pin, saved, { email: trimmedEmail })
             setPinLoading(false)
-            onClose()
+            completeLogin(saved, true)   // "Welcome back, [name]" (safety-net trusted path)
             return
           }
           setName('')
@@ -314,7 +332,7 @@ export default function LoginModal({ onClose, onDismiss, required = false, onBac
         // If PA returned a display name, auto-login and skip the name step
         if (pendingName) {
           await login(pin, pendingName, { email: pendingEmail, emailClaimToken: res.emailClaimToken })
-          onClose()
+          completeLogin(pendingName, false)   // "Email verified · Welcome, [name]"
           return
         }
         // No name from PA — go to name step carrying the claim token
@@ -375,7 +393,9 @@ export default function LoginModal({ onClose, onDismiss, required = false, onBac
     setPinLoading(true)
     await login(pin, name.trim(), { email: pendingEmail, emailClaimToken: pendingEmailClaimToken })
     setPinLoading(false)
-    onClose()
+    // nameFromDevice = name was pre-filled from this device → returning user
+    // otherwise this is a fresh sign-in (OTP just done, or no email)
+    completeLogin(name.trim(), nameFromDevice)
   }
 
   // ── Reset ─────────────────────────────────────────────────────
@@ -675,6 +695,30 @@ export default function LoginModal({ onClose, onDismiss, required = false, onBac
             </div>
           </>
         )}
+        {/* ── Step: Success ── */}
+        {step === 'success' && (
+          <div className="lm-success">
+            <div className={`lm-success-icon-wrap ${successContext.isReturn ? 'lm-success-icon-wrap--return' : 'lm-success-icon-wrap--verified'}`}>
+              {successContext.isReturn ? '👋' : '✅'}
+            </div>
+            <p className="lm-success-greeting">
+              {successContext.isReturn ? 'Welcome back,' : 'Welcome,'}
+            </p>
+            <p className="lm-success-name">{successContext.name}</p>
+            <p className="lm-success-sub">
+              {successContext.isReturn
+                ? 'Trusted device — signed in automatically'
+                : 'Email verified · This device is now trusted'}
+            </p>
+            <div className="lm-success-bar">
+              <div
+                className="lm-success-bar-fill"
+                style={{ animationDuration: successContext.isReturn ? '1.8s' : '2.4s' }}
+              />
+            </div>
+          </div>
+        )}
+
       </div>
     </div>
   )
