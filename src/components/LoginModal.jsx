@@ -55,6 +55,8 @@ export default function LoginModal({ onClose, onDismiss, required = false, onBac
   const [email, setEmail] = useState('')
   const [emailDomainError, setEmailDomainError] = useState('')
   const [emailVerifyWarning, setEmailVerifyWarning] = useState('')
+  // true after a failed PA call — keeps user on PIN step, arms "Continue anyway" button
+  const [emailVerifyFailed, setEmailVerifyFailed] = useState(false)
 
   // Carried into name step after PIN validates
   const [pendingRole, setPendingRole] = useState(null)
@@ -81,6 +83,12 @@ export default function LoginModal({ onClose, onDismiss, required = false, onBac
   function handleEmailChange(e) {
     const val = e.target.value
     setEmail(val)
+    // Any edit to the email resets a previous failed-verification state so the
+    // user can retry or continue with a corrected address.
+    if (emailVerifyFailed) {
+      setEmailVerifyFailed(false)
+      setEmailVerifyWarning('')
+    }
     if (val && val.trim() && !val.trim().toLowerCase().endsWith(BRIYA_DOMAIN)) {
       setEmailDomainError(`Only ${BRIYA_DOMAIN} emails are allowed`)
     } else {
@@ -103,7 +111,6 @@ export default function LoginModal({ onClose, onDismiss, required = false, onBac
     const trimmedEmail = email.trim().toLowerCase()
     const isBriyaEmail = trimmedEmail.endsWith(BRIYA_DOMAIN)
 
-    // If a valid @briya.org email is entered — validate it via backend (Power Automate)
     if (trimmedEmail && isBriyaEmail) {
       let result = { valid: false, name: '' }
       try {
@@ -113,38 +120,46 @@ export default function LoginModal({ onClose, onDismiss, required = false, onBac
       }
 
       if (result.valid && result.name) {
-        // Email verified — auto-login, skip name step
+        // Email verified — auto-login, skip name step entirely
         await login(pin, result.name, { email: trimmedEmail, emailVerified: true })
         setPinLoading(false)
         onClose()
         return
       }
 
-      // Distinguish between service unavailable (fallback) and email not recognised
-      if (result.fallback) {
-        setEmailVerifyWarning('Verification unavailable — continue and enter your name manually.')
-      } else {
-        setEmailVerifyWarning('Could not verify email — please enter your name manually.')
-      }
+      // Validation failed — stay on PIN step so the user sees the message.
+      // Pre-load the pending state so "Continue anyway" goes straight to the name step.
+      const msg = result.fallback
+        ? 'Verification service unavailable.'
+        : 'This email could not be verified.'
+      setEmailVerifyWarning(msg)
+      setEmailVerifyFailed(true)
+      setPendingRole(role)
       setPendingEmail(trimmedEmail)
       setPendingEmailVerified(false)
-    } else {
-      // No email or non-briya email — carry as-is (unverified)
-      setPendingEmail(trimmedEmail)
-      setPendingEmailVerified(false)
+      const saved = getDeviceName(role)
+      setName(saved || '')
+      setNameFromDevice(!!saved)
+      setPinLoading(false)
+      return  // ← stay on PIN step, button becomes "Continue anyway →"
     }
 
-    // Proceed to name step
+    // No email or non-briya email — go straight to name step
+    setPendingEmail(trimmedEmail)
+    setPendingEmailVerified(false)
     setPendingRole(role)
     const saved = getDeviceName(role)
-    if (saved) {
-      setName(saved)
-      setNameFromDevice(true)
-    } else {
-      setName('')
-      setNameFromDevice(false)
-    }
+    setName(saved || '')
+    setNameFromDevice(!!saved)
     setPinLoading(false)
+    setStep('name')
+  }
+
+  // Called when the user clicks "Continue anyway →" after a failed email verification.
+  // The pending state was already loaded during handlePinSubmit.
+  function handleContinueAnyway() {
+    setEmailVerifyFailed(false)
+    setEmailVerifyWarning('')
     setStep('name')
   }
 
@@ -169,6 +184,7 @@ export default function LoginModal({ onClose, onDismiss, required = false, onBac
     setEmail('')
     setEmailDomainError('')
     setEmailVerifyWarning('')
+    setEmailVerifyFailed(false)
     setPendingRole(null)
     setPendingEmail('')
     setPendingEmailVerified(false)
@@ -287,7 +303,11 @@ export default function LoginModal({ onClose, onDismiss, required = false, onBac
               <div className="lm-email-wrap">
                 <input
                   type="email"
-                  className={`lm-input lm-email-input${emailDomainError ? ' lm-input--error' : ''}`}
+                  className={[
+                    'lm-input lm-email-input',
+                    emailDomainError  ? 'lm-input--error' : '',
+                    emailVerifyFailed ? 'lm-input--warn'  : '',
+                  ].filter(Boolean).join(' ')}
                   placeholder={`Optional — enter your ${BRIYA_DOMAIN} email`}
                   value={email}
                   onChange={handleEmailChange}
@@ -295,11 +315,32 @@ export default function LoginModal({ onClose, onDismiss, required = false, onBac
                 />
               </div>
               {emailDomainError && <p className="lm-error lm-domain-error">{emailDomainError}</p>}
-              {emailVerifyWarning && <p className="lm-warn lm-email-verify-warn">{emailVerifyWarning}</p>}
 
-              <button type="submit" className="lm-btn-gold lm-btn-full" disabled={pinLoading}>
-                {pinLoading ? 'Verifying…' : 'Continue →'}
-              </button>
+              {/* Inline verification-failed banner — shown on the same step so user sees it */}
+              {emailVerifyFailed && emailVerifyWarning && (
+                <div className="lm-verify-failed-banner">
+                  <span className="lm-verify-failed-icon">⚠</span>
+                  <div className="lm-verify-failed-text">
+                    <strong>{emailVerifyWarning}</strong>
+                    <span>Fix your email and try again, or continue and enter your name manually.</span>
+                  </div>
+                </div>
+              )}
+
+              {/* Button: "Continue →" normally, "Continue anyway →" after a failed verify */}
+              {emailVerifyFailed ? (
+                <button
+                  type="button"
+                  className="lm-btn-gold lm-btn-full"
+                  onClick={handleContinueAnyway}
+                >
+                  Continue anyway →
+                </button>
+              ) : (
+                <button type="submit" className="lm-btn-gold lm-btn-full" disabled={pinLoading}>
+                  {pinLoading ? 'Verifying…' : 'Continue →'}
+                </button>
+              )}
             </form>
             {onBack && (
               <button type="button" className="lm-back-btn" onClick={onBack}>

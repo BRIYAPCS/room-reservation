@@ -286,8 +286,54 @@
   border-color: #c0392b;
 }
 
+/* Amber border on the email input after a failed verification attempt */
+.lm-input--warn {
+  border-color: #d97706;
+  background: #fffbeb;
+}
+
+.lm-input--warn:focus {
+  border-color: #d97706;
+}
+
 .lm-domain-error {
   /* inherits .lm-error — shown directly below email field */
+}
+
+/* ── Verification-failed inline banner ── */
+.lm-verify-failed-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  background: #fffbeb;
+  border: 1.5px solid #fcd34d;
+  border-radius: 7px;
+  padding: 11px 14px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.lm-verify-failed-icon {
+  font-size: 1.1rem;
+  line-height: 1.3;
+  flex-shrink: 0;
+  color: #b45309;
+}
+
+.lm-verify-failed-text {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.lm-verify-failed-text strong {
+  font-size: clamp(0.82rem, 1.1vw, 0.9rem);
+  color: #92400e;
+}
+
+.lm-verify-failed-text span {
+  font-size: clamp(0.76rem, 1vw, 0.82rem);
+  color: #b45309;
 }
 
 /* ── Identity locked (verified email on status step) ── */
