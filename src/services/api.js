@@ -127,9 +127,10 @@ export const verifyEditOtp = (siteId, roomId, eventId, email, otp) =>
     body: JSON.stringify({ email, otp }),
   })
 
-export const deleteEvent = (siteId, roomId, eventId) =>
+export const deleteEvent = (siteId, roomId, eventId, editToken = null) =>
   request(`/events/${siteId}/${roomId}/${eventId}`, {
     method: 'DELETE',
+    headers: editToken ? { 'X-Edit-Token': editToken } : {},
   })
 
 // Attachments
