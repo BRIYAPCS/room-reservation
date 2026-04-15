@@ -41,6 +41,8 @@ export default function LegacyClaimModal({ siteId, roomId, event, onSuccess, onC
     setError('')
     setLoading(true)
     const normalizedEmail = email.trim().toLowerCase()
+    // TEMP DEBUG — remove before next release
+    console.debug(`[OTP-DEBUG-FE] claim verify | email=${normalizedEmail} | reservationId=${eventId} | otp=${otp} | otp_len=${otp.length} | endpoint=/events/${siteId}/${roomId}/${eventId}/claim-verify-otp`)
     try {
       await api.claimVerifyOtp(siteId, roomId, eventId, normalizedEmail, otp)
       onSuccess()
@@ -94,6 +96,8 @@ export default function LegacyClaimModal({ siteId, roomId, event, onSuccess, onC
               <input
                 type="text"
                 inputMode="numeric"
+                pattern="[0-9]*"
+                maxLength={6}
                 placeholder="6-digit code"
                 value={otp}
                 onChange={e => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}

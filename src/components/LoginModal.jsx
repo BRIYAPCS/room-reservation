@@ -238,6 +238,8 @@ export default function LoginModal({ onClose, onDismiss, required = false, onBac
 
     setOtpLoading(true)
     setOtpError('')
+    // TEMP DEBUG — remove before next release
+    console.debug(`[OTP-DEBUG-FE] login verify | email=${pendingEmail} | otp=${trimmed} | otp_len=${trimmed.length} | endpoint=/auth/verify-login-otp`)
     try {
       const res = await verifyLoginOtp(pendingEmail, trimmed, auth.deviceSessionId)
       if (res.ok && res.emailClaimToken) {

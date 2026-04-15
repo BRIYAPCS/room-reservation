@@ -125,6 +125,8 @@ export default function CrossDeviceVerifyModal({
 
     setOtpLoading(true)
     setOtpError('')
+    // TEMP DEBUG — remove before next release
+    console.debug(`[OTP-DEBUG-FE] edit verify | email=${email.trim().toLowerCase()} | reservationId=${reservationId} | otp=${trimmedOtp} | otp_len=${trimmedOtp.length} | endpoint=/events/${siteId}/${roomId}/${reservationId}/verify-otp`)
     try {
       const res = await verifyEditOtp(siteId, roomId, reservationId, email.trim().toLowerCase(), trimmedOtp)
       if (res.ok && res.editToken) {
