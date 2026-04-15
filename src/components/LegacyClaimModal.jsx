@@ -24,8 +24,9 @@ export default function LegacyClaimModal({ siteId, roomId, event, onSuccess, onC
     e.preventDefault()
     setError('')
     setLoading(true)
+    const normalizedEmail = email.trim().toLowerCase()
     try {
-      const result = await api.claimRequestOtp(siteId, roomId, eventId, email)
+      const result = await api.claimRequestOtp(siteId, roomId, eventId, normalizedEmail)
       setMaskedEmail(result.maskedEmail || email)
       setStep('otp')
     } catch (err) {
@@ -39,8 +40,9 @@ export default function LegacyClaimModal({ siteId, roomId, event, onSuccess, onC
     e.preventDefault()
     setError('')
     setLoading(true)
+    const normalizedEmail = email.trim().toLowerCase()
     try {
-      await api.claimVerifyOtp(siteId, roomId, eventId, email, otp)
+      await api.claimVerifyOtp(siteId, roomId, eventId, normalizedEmail, otp)
       onSuccess()
     } catch (err) {
       setError(err?.message || 'Verification failed. Try again.')
