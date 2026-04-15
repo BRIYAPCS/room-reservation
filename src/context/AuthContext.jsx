@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, useRef } from 'react'
-import { verifyPin as apiVerifyPin, logoutAllSessions } from '../services/api'
+import { verifyPin as apiVerifyPin, logoutAllSessions, checkSession } from '../services/api'
 
 const AuthContext = createContext(null)
 
@@ -184,6 +184,19 @@ export function AuthProvider({ children }) {
     window.addEventListener('briya:auth:expired', handleAuthExpired)
     return () => window.removeEventListener('briya:auth:expired', handleAuthExpired)
   }, [])
+
+  // Session-revocation poll — only for email-verified sessions, which are the
+  // only ones that can be invalidated by logout-all.  Polls GET /auth/session
+  // every 30 s; a 401 response fires briya:auth:expired (handled above) so the
+  // user is logged out within one polling cycle of another device calling logout-all.
+  const SESSION_POLL_MS = 30_000
+  useEffect(() => {
+    if (!auth.emailVerified || !auth.email) return
+    const id = setInterval(() => {
+      checkSession().catch(() => {})  // 401 path is handled by api.js → briya:auth:expired
+    }, SESSION_POLL_MS)
+    return () => clearInterval(id)
+  }, [auth.emailVerified, auth.email])
 
   // ADMIN and SUPERADMIN can delete — STANDARD cannot, regardless of ownership
   function canDelete() {

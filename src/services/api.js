@@ -182,6 +182,12 @@ export const getAttachmentUrl = (id) => `${BASE}/attachments/file/${id}`
 export const logoutAllSessions = () =>
   request('/auth/logout-all', { method: 'POST' })
 
+// Lightweight session-validity probe — returns 200 { ok: true } when the
+// token is still valid, 401 when it has been revoked (e.g. after logout-all).
+// Used by AuthContext to detect cross-device sign-outs within ~30 s.
+export const checkSession = () =>
+  request('/auth/session')
+
 // Used by AuthContext (returns lowercase role)
 // opts: { email?, emailVerified?, deviceSessionId? } — included in JWT payload by server
 export const verifyPin = (pin, name = '', opts = {}) =>
