@@ -211,7 +211,7 @@ export default function CalendarPage() {
       return { ...ev, editable, classNames: isPast && !isAdmin(auth.role) ? ['fc-event-past'] : [] }
     })
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [events, auth.role, auth.deviceSessionId])
+  }, [events, auth.role, auth.deviceSessionId, auth.emailVerified, auth.email])
 
   // ── Detect overlapping event IDs ─────────────────────────────
   // overlappingIds  = ALL events involved in any conflict (for ⚠ badge)
@@ -333,7 +333,7 @@ export default function CalendarPage() {
       return
     }
     if (state.status === 'otp_required' && !pendingEditToken) {
-      showToast(state.reason === 'Email not verified' ? 'Verify your email to edit this booking.' : 'Must verify via OTP to edit.', 'warning')
+      showToast('Sign in with your verified email to edit this booking.', 'warning')
       setCrossDeviceEvent(event)
       setCrossDeviceAction('edit')
       setShowCrossDeviceModal(true)
