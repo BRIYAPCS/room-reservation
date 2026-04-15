@@ -56,7 +56,16 @@ export default function CalendarPage() {
     // standard: only own bookings that have not yet ended
     const isPast = new Date(event?.end || event?.endStr) <= new Date()
     if (isPast) return false
-    return event?.extendedProps?.bookedBy === auth.name
+    // Ownership-aware: must match by email (if email-type) or device session (if device-type)
+    // Legacy rows (no ownershipType) cannot be verified — deny
+    const ep = event?.extendedProps || {}
+    if (!ep.ownershipType) return false
+    if (ep.ownershipType === 'email') {
+      return auth.emailVerified === true &&
+             !!auth.email &&
+             auth.email.toLowerCase() === (ep.ownerEmail || '').toLowerCase()
+    }
+    return !!auth.deviceSessionId && auth.deviceSessionId === ep.createdDeviceSessionId
   }
 
   const [site, setSite] = useState(null)
@@ -149,8 +158,16 @@ export default function CalendarPage() {
     if (!CAN_CREATE_ROLES.includes(auth.role)) return false
     if (EDIT_OTHERS_ROLE === 'all') return true
     if (isAdmin(auth.role)) return true
-    // standard: only own bookings
-    return event?.extendedProps?.bookedBy === auth.name
+    // standard: ownership-aware — must match by email (email-type) or device session (device-type)
+    // Legacy rows (no ownershipType) cannot be verified — deny
+    const ep = event?.extendedProps || {}
+    if (!ep.ownershipType) return false
+    if (ep.ownershipType === 'email') {
+      return auth.emailVerified === true &&
+             !!auth.email &&
+             auth.email.toLowerCase() === (ep.ownerEmail || '').toLowerCase()
+    }
+    return !!auth.deviceSessionId && auth.deviceSessionId === ep.createdDeviceSessionId
   }
 
   // ── Toast helper ──────────────────────────────────────────────
@@ -167,12 +184,14 @@ export default function CalendarPage() {
     const now = new Date()
     return events.map(ev => {
       const isPast = new Date(ev.end) <= now
-      // Admins can always edit; standard users cannot touch past events
-      const editable = isAdmin(auth.role) ? canEdit(ev) : (!isPast && canEdit(ev))
+      // Admins/superadmins can always drag-drop; standard users must own the event on this device
+      const editable = isAdmin(auth.role)
+        ? canEdit(ev)
+        : (!isPast && canEdit(ev) && isSameDeviceOwner(ev))
       return { ...ev, editable, classNames: isPast && !isAdmin(auth.role) ? ['fc-event-past'] : [] }
     })
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [events, auth.role, auth.name])
+  }, [events, auth.role, auth.email, auth.emailVerified, auth.deviceSessionId])
 
   // ── Detect overlapping event IDs ─────────────────────────────
   // overlappingIds  = ALL events involved in any conflict (for ⚠ badge)
@@ -269,7 +288,7 @@ export default function CalendarPage() {
   function isSameDeviceOwner(event) {
     const ep = event?.extendedProps || {}
     const ownershipType = ep.ownershipType
-    if (!ownershipType) return true // legacy booking — no ownership data; backend name-checks
+    if (!ownershipType) return false // legacy booking — backend now rejects these unconditionally
 
     if (ownershipType === 'email') {
       // Step 1: identity — email must match
@@ -1119,7 +1138,7 @@ export default function CalendarPage() {
                       {canEdit(ev) ? (
                         <button
                           className="list-edit-btn"
-                          onClick={() => { setSelectedEvent(ev); setShowEditModal(true) }}
+                          onClick={() => { setSelectedEvent(ev); handleEditRequest(ev) }}
                           title="Edit"
                         >
                           ✎
