@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from 'react'
 import './EditBookingModal.css'
 import { useConfig } from '../context/ConfigContext'
 import RichTextEditor from './RichTextEditor'
+import ClearableInput from './ClearableInput'
 
 function buildTimeOptions(startHour, endHour, slotMins) {
   const options = []
@@ -112,7 +113,7 @@ export default function EditBookingModal({ event, ownerEmail, roomName, onSave, 
         <form onSubmit={handleSubmit} className="ebm-form">
           <label className="ebm-label-block">
             Event Title <span className="ebm-required">*</span>
-            <input
+            <ClearableInput
               name="title"
               className="ebm-input"
               value={form.title}

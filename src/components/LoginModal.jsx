@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { getDeviceName } from '../context/AuthContext'
 import { validateEmail as apiValidateEmail } from '../services/api'
+import ClearableInput from './ClearableInput'
 import './LoginModal.css'
 
 // SVG icons
@@ -301,8 +302,9 @@ export default function LoginModal({ onClose, onDismiss, required = false, onBac
 
               {/* Optional email field */}
               <div className="lm-email-wrap">
-                <input
+                <ClearableInput
                   type="email"
+                  name="email"
                   className={[
                     'lm-input lm-email-input',
                     emailDomainError  ? 'lm-input--error' : '',

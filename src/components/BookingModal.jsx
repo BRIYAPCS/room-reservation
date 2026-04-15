@@ -3,6 +3,7 @@ import './BookingModal.css'
 import { useConfig } from '../context/ConfigContext'
 import { useAuth } from '../context/AuthContext'
 import RichTextEditor from './RichTextEditor'
+import ClearableInput from './ClearableInput'
 
 const LAST_IDENTITY_KEY = 'last_booking_identity'
 
@@ -247,12 +248,12 @@ export default function BookingModal({
 
           <label>
             Event Title <span className="required">*</span>
-            <input name="title" value={form.title} onChange={handleChange} placeholder="e.g. Team Meeting" />
+            <ClearableInput name="title" value={form.title} onChange={handleChange} placeholder="e.g. Team Meeting" />
           </label>
 
           <label>
             Booked By <span className="required">*</span>
-            <input
+            <ClearableInput
               name="bookedBy"
               value={form.bookedBy}
               onChange={handleChange}
@@ -265,7 +266,7 @@ export default function BookingModal({
           <label>
             Email
             {identityLocked && <span className="bm-identity-verified-tag">🔒 Verified</span>}
-            <input
+            <ClearableInput
               type="email"
               name="ownerEmail"
               value={form.ownerEmail}

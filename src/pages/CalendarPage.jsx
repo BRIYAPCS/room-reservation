@@ -18,6 +18,7 @@ import { useAuth } from '../context/AuthContext'
 import { useConfig } from '../context/ConfigContext'
 import VisitorCounter from '../components/VisitorCounter'
 import * as api from '../services/api'
+import ClearableInput from '../components/ClearableInput'
 import './CalendarPage.css'
 
 export default function CalendarPage() {
@@ -1036,7 +1037,7 @@ export default function CalendarPage() {
               )}
               <label className="filter-user">
                 Filter by User:
-                <input
+                <ClearableInput
                   type="text"
                   placeholder="Enter name"
                   value={filterUser}
