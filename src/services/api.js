@@ -200,6 +200,14 @@ export const validateEmail = (email) =>
     body: JSON.stringify({ email }),
   })
 
+// Trusted device probe — not rate-limited, returns { trusted: boolean }
+// Call this before requestLoginOtp so trusted devices never hit the OTP rate limit.
+export const checkTrustedDevice = (email, deviceSessionId) =>
+  request('/auth/check-trusted', {
+    method: 'POST',
+    body: JSON.stringify({ email, deviceSessionId }),
+  })
+
 // Login OTP — step 1: send 6-digit code to the given @briya.org email
 // Returns { ok, maskedEmail, name }
 export const requestLoginOtp = (email, deviceSessionId) =>

@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { getDeviceName } from '../context/AuthContext'
-import { requestLoginOtp, verifyLoginOtp } from '../services/api'
+import { checkTrustedDevice, requestLoginOtp, verifyLoginOtp } from '../services/api'
 import ClearableInput from './ClearableInput'
 import './LoginModal.css'
 
@@ -186,6 +186,24 @@ export default function LoginModal({ onClose, onDismiss, required = false, onBac
     const isBriyaEmail = trimmedEmail.endsWith(BRIYA_DOMAIN)
 
     if (trimmedEmail && isBriyaEmail) {
+      // ── Trusted device: probe first, before hitting the rate-limited OTP endpoint ──
+      // checkTrustedDevice is not rate-limited so trusted users are never blocked
+      // by the OTP request limiter.
+      if (auth.deviceSessionId) {
+        const { trusted } = await checkTrustedDevice(trimmedEmail, auth.deviceSessionId).catch(() => ({ trusted: false }))
+        if (trusted) {
+          setPendingRole(role)
+          setPendingEmail(trimmedEmail)
+          // /auth/verify will set emailVerified=true via the server-side trusted device fallback
+          const saved = getDeviceName(role)
+          setName(saved || '')
+          setNameFromDevice(!!saved)
+          setPinLoading(false)
+          setStep('name')
+          return
+        }
+      }
+
       // If the same email already has an active OTP (resend cooldown still running —
       // meaning we sent a code within the last 5 min), skip the API call and just
       // return the user to the OTP step rather than spamming a new code.
@@ -196,31 +214,9 @@ export default function LoginModal({ onClose, onDismiss, required = false, onBac
         return
       }
 
-      // Send OTP to prove ownership of this email before we grant emailVerified
+      // Not trusted — send OTP to prove ownership of this email
       try {
         const res = await requestLoginOtp(trimmedEmail, auth.deviceSessionId)
-
-        // Trusted device — backend verified the device server-side and skipped
-        // sending an OTP email entirely.  Skip the OTP step and go straight to
-        // name (or auto-login if PA already returned a display name).
-        if (res.trusted) {
-          setPendingRole(role)
-          setPendingEmail(trimmedEmail)
-          const resolvedName = res.name || pendingName
-          if (resolvedName) {
-            await login(pin, resolvedName, { email: trimmedEmail })
-            setPinLoading(false)
-            onClose()
-            return
-          }
-          const saved = getDeviceName(role)
-          setName(saved || '')
-          setNameFromDevice(!!saved)
-          setPinLoading(false)
-          setStep('name')
-          return
-        }
-
         setMaskedEmail(res.maskedEmail || trimmedEmail)
         setPendingName(res.name || '')
         setPendingRole(role)
