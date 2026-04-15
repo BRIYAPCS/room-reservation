@@ -380,15 +380,9 @@ export default function CalendarPage() {
   }
 
   // ── Find first available slot on a given date ────────────────
-  // When date is today, the cursor starts at the current clock slot rather than
-  // the booking-start hour, so the suggestion is always a present/future time:
-  //
-  //   3:28 PM  (15-min slots) → floor(208/15)*15 = 195 → 3:15 slot (still open, ends at 3:30)
-  //   3:30 PM  (15-min slots) → floor(210/15)*15 = 210 → 3:30 slot (3:15 has just ended)
-  //   3:00 AM  (before hours) → clamped up to BOOKING_START_HOUR
-  //
-  // If the resulting cursor has no free slot before end-of-day, fall back to
-  // booking start (same behaviour as before for future dates).
+  // Walks sorted dayEvents from `startFrom`, advancing past any that overlap
+  // the cursor.  Works correctly even when startFrom > all event start times
+  // (e.g. a late-night fallback that resets to 8 AM still skips booked slots).
   function findFirstAvailableSlot(date) {
     const pad = n => String(n).padStart(2, '0')
     const toMins = iso => {
@@ -406,30 +400,40 @@ export default function CalendarPage() {
     const bookingStart = BOOKING_START_HOUR * 60
     const limit        = BOOKING_END_HOUR   * 60
 
-    // For today: begin from the current clock slot, not necessarily 8 AM
-    const todayStr = new Date().toISOString().split('T')[0]
-    let cursor = bookingStart
-    if (date === todayStr) {
-      const now = new Date()
-      const nowMins = now.getHours() * 60 + now.getMinutes()
-      // Snap down to the slot boundary that contains now.
-      // Math.floor gives the start of the current slot:
-      //   at 3:28 → 3:15 (slot still running — valid to offer)
-      //   at 3:30 → 3:30 (slot boundary — old slot ended, start here)
-      const currentSlotStart = Math.floor(nowMins / SLOT_DURATION_MINUTES) * SLOT_DURATION_MINUTES
-      cursor = Math.max(currentSlotStart, bookingStart)
-    }
-
-    for (const ev of dayEvents) {
-      if (cursor + SLOT_DURATION_MINUTES <= ev.start) break  // free gap at cursor
-      if (ev.end > cursor) {
-        // Event overlaps — jump cursor to the next slot after it ends
-        cursor = Math.ceil(ev.end / SLOT_DURATION_MINUTES) * SLOT_DURATION_MINUTES
+    // Scan from `from`, jumping past any overlapping events
+    function scanFrom(from) {
+      let cur = from
+      for (const ev of dayEvents) {
+        if (cur + SLOT_DURATION_MINUTES <= ev.start) break  // free gap before this event
+        if (ev.end > cur) {
+          cur = Math.ceil(ev.end / SLOT_DURATION_MINUTES) * SLOT_DURATION_MINUTES
+        }
       }
+      return cur
     }
 
-    // No room left before end-of-day → fall back to booking start
-    if (cursor + SLOT_DURATION_MINUTES > limit) cursor = bookingStart
+    // Use local date for today comparison (toISOString() returns UTC which is
+    // wrong for users in negative-offset timezones after ~8 PM local time)
+    const now = new Date()
+    const p2 = n => String(n).padStart(2, '0')
+    const todayStr = `${now.getFullYear()}-${p2(now.getMonth()+1)}-${p2(now.getDate())}`
+
+    // For today: start at current clock slot; for other dates: booking start
+    let startFrom = bookingStart
+    if (date === todayStr) {
+      const nowMins = now.getHours() * 60 + now.getMinutes()
+      const currentSlotStart = Math.floor(nowMins / SLOT_DURATION_MINUTES) * SLOT_DURATION_MINUTES
+      startFrom = Math.max(currentSlotStart, bookingStart)
+    }
+
+    let cursor = scanFrom(startFrom)
+
+    // No slot left from startFrom (after hours / end of day) → fall back to
+    // bookingStart and rescan so we still skip already-booked morning slots
+    if (cursor + SLOT_DURATION_MINUTES > limit) {
+      cursor = scanFrom(bookingStart)
+      if (cursor + SLOT_DURATION_MINUTES > limit) cursor = bookingStart
+    }
 
     return {
       start: `${date}T${toTimeStr(cursor)}:00`,
@@ -812,8 +816,18 @@ export default function CalendarPage() {
             className="btn-new-booking"
             onClick={() => {
               if (REQUIRE_LOGIN_FOR_CALENDAR && auth.role === 'none') { setShowLoginModal(true); return }
-              const today = new Date().toISOString().split('T')[0]
-              const date = resolveBookingDate(today)
+              const now = new Date()
+              const p = n => String(n).padStart(2, '0')
+              // Use local date (not UTC) so late-night users get the correct day
+              let base = `${now.getFullYear()}-${p(now.getMonth()+1)}-${p(now.getDate())}`
+              // After booking hours → advance to next day so we don't suggest a past date
+              const nowMins = now.getHours() * 60 + now.getMinutes()
+              if (nowMins >= BOOKING_END_HOUR * 60) {
+                const tomorrow = new Date(now)
+                tomorrow.setDate(tomorrow.getDate() + 1)
+                base = `${tomorrow.getFullYear()}-${p(tomorrow.getMonth()+1)}-${p(tomorrow.getDate())}`
+              }
+              const date = resolveBookingDate(base)
               setNewBookingTimes(findFirstAvailableSlot(date))
               setShowBookingModal(true)
             }}
