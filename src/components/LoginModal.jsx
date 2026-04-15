@@ -232,7 +232,10 @@ export default function LoginModal({ onClose, onDismiss, required = false, onBac
         setStep('otp')
       } catch (err) {
         // OTP send failed — stay on PIN step, let user proceed without email
-        const msg = err.message || 'Failed to send verification code.'
+        const raw = err.message || ''
+        const msg = raw === 'RATE_LIMIT_EXCEEDED'
+          ? 'Too many attempts. Please wait a few minutes before trying again.'
+          : raw || 'Failed to send verification code.'
         setEmailSendError(msg)
         setEmailSendFailed(true)
         setPendingRole(role)
