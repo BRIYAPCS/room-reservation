@@ -214,3 +214,17 @@ export const verifyLoginOtp = (email, otp, deviceSessionId) =>
     method: 'POST',
     body: JSON.stringify({ email, otp, deviceSessionId }),
   })
+
+// Legacy booking claim — sends OTP to the provided email (booking must be unclaimed)
+export const claimRequestOtp = (siteId, roomId, eventId, email) =>
+  request(`/events/${siteId}/${roomId}/${eventId}/claim-request-otp`, {
+    method: 'POST',
+    body: JSON.stringify({ email }),
+  })
+
+// Legacy booking claim — verifies OTP and assigns ownership_type='email' to the booking
+export const claimVerifyOtp = (siteId, roomId, eventId, email, otp) =>
+  request(`/events/${siteId}/${roomId}/${eventId}/claim-verify-otp`, {
+    method: 'POST',
+    body: JSON.stringify({ email, otp }),
+  })

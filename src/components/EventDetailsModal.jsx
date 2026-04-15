@@ -30,7 +30,7 @@ function formatEditedAt(iso) {
   })
 }
 
-export default function EventDetailsModal({ event, canEdit, canDelete, onEdit, onDelete, onClose, isRecurring, seriesInfo }) {
+export default function EventDetailsModal({ event, canEdit, canDelete, canClaim, onEdit, onDelete, onClaim, onClose, isRecurring, seriesInfo }) {
   const [confirmDelete, setConfirmDelete] = useState(false)
 
   useEffect(() => {
@@ -130,6 +130,11 @@ export default function EventDetailsModal({ event, canEdit, canDelete, onEdit, o
                   Delete
                 </button>
               )}
+              <button className="edm-btn-close" onClick={onClose}>Close</button>
+            </>
+          ) : canClaim ? (
+            <>
+              <button className="edm-btn-edit" onClick={onClaim}>Claim Booking</button>
               <button className="edm-btn-close" onClick={onClose}>Close</button>
             </>
           ) : (

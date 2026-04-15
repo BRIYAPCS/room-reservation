@@ -13,6 +13,7 @@ import UserAvatar from '../components/UserAvatar'
 import EventDetailsModal from '../components/EventDetailsModal'
 import EditBookingModal from '../components/EditBookingModal'
 import CrossDeviceVerifyModal from '../components/CrossDeviceVerifyModal'
+import LegacyClaimModal from '../components/LegacyClaimModal'
 import RecurrenceActionSheet from '../components/RecurrenceActionSheet'
 import { useAuth } from '../context/AuthContext'
 import { useConfig } from '../context/ConfigContext'
@@ -133,6 +134,10 @@ export default function CalendarPage() {
   const [selectedEvent, setSelectedEvent] = useState(null)
   const [showEventDetails, setShowEventDetails] = useState(false)
   const [showEditModal, setShowEditModal] = useState(false)
+
+  // Legacy booking claim
+  const [showClaimModal, setShowClaimModal] = useState(false)
+  const [claimEvent,     setClaimEvent]     = useState(null)
 
   // Cross-device ownership verification
   const [showCrossDeviceModal, setShowCrossDeviceModal] = useState(false)
@@ -1226,10 +1231,16 @@ export default function CalendarPage() {
             event={selectedEvent}
             canEdit={canEdit(selectedEvent) && (auth.role === 'superadmin' || isAdmin(auth.role) || new Date(selectedEvent?.end || selectedEvent?.extendedProps?.end) > new Date())}
             canDelete={canDelete(selectedEvent)}
+            canClaim={!selectedEvent?.extendedProps?.ownershipType && auth.role !== 'none'}
             isRecurring={!!groupId}
             seriesInfo={seriesInfo}
             onEdit={() => handleEditRequest(selectedEvent)}
             onDelete={() => handleDeleteRequest(selectedEvent)}
+            onClaim={() => {
+              setClaimEvent(selectedEvent)
+              setShowEventDetails(false)
+              setShowClaimModal(true)
+            }}
             onClose={() => { setShowEventDetails(false); setSelectedEvent(null) }}
           />
         )
@@ -1272,6 +1283,26 @@ export default function CalendarPage() {
           roomName={room?.name}
           onSave={handleUpdateEvent}
           onClose={() => { setShowEditModal(false); setSelectedEvent(null); setRecurEditMeta(null) }}
+        />
+      )}
+
+      {/* Legacy booking claim */}
+      {showClaimModal && claimEvent && (
+        <LegacyClaimModal
+          siteId={siteId}
+          roomId={roomId}
+          event={claimEvent}
+          onSuccess={() => {
+            setShowClaimModal(false)
+            setClaimEvent(null)
+            setSelectedEvent(null)
+            refreshEvents(true)
+            showToast('Booking claimed successfully.')
+          }}
+          onCancel={() => {
+            setShowClaimModal(false)
+            setClaimEvent(null)
+          }}
         />
       )}
 
