@@ -79,10 +79,9 @@ export default function LoginModal({ onClose, onDismiss, required = false, onBac
   const [nameFromDevice, setNameFromDevice] = useState(false)
   const [nameError, setNameError]     = useState('')
 
-  // ── Success step ──────────────────────────────────────────────
-  // isReturn: true = trusted device / device-remembered name (welcome back)
-  //           false = fresh OTP just verified (welcome, you're verified)
-  const [successContext, setSuccessContext] = useState({ name: '', isReturn: false })
+  // ── Success / goodbye step ────────────────────────────────────
+  // type: 'welcome_back' | 'verified' | 'goodbye'
+  const [successContext, setSuccessContext] = useState({ name: '', type: 'welcome_back' })
 
   const cooldownRef     = useRef(null)
   const countdownRef    = useRef(null)
@@ -98,14 +97,24 @@ export default function LoginModal({ onClose, onDismiss, required = false, onBac
   }, [])
 
   // Shows the brief success screen, then auto-closes the modal.
-  // isReturn=true → "Welcome back" (faster dismiss, 1.8s)
-  // isReturn=false → "Email verified / Welcome" (slightly longer, 2.4s)
+  // isReturn=true → "Welcome back" (1.8s), false → "Email verified" (2.4s)
   function completeLogin(displayName, isReturn) {
-    setSuccessContext({ name: displayName, isReturn })
+    const type = isReturn ? 'welcome_back' : 'verified'
+    setSuccessContext({ name: displayName, type })
     setStep('success')
     const delay = isReturn ? 1800 : 2400
     if (successTimerRef.current) clearTimeout(successTimerRef.current)
     successTimerRef.current = setTimeout(() => onClose(), delay)
+  }
+
+  // Shows the goodbye screen, then executes the provided logout callback.
+  // Must capture auth.name BEFORE calling logout (which clears auth state).
+  function completeLogout(afterFn) {
+    const savedName = auth.name || ''
+    setSuccessContext({ name: savedName, type: 'goodbye' })
+    setStep('success')
+    if (successTimerRef.current) clearTimeout(successTimerRef.current)
+    successTimerRef.current = setTimeout(afterFn, 1800)
   }
 
   // Auto-focus inputs when step changes
@@ -416,9 +425,11 @@ export default function LoginModal({ onClose, onDismiss, required = false, onBac
   function handleSwitchAccount() { logout(); resetModalState(); setStep('pin') }
 
   function handleSignOut() {
-    logout()
-    if (required) { resetModalState(); setStep('pin') }
-    else { onDismiss?.() }
+    completeLogout(() => {
+      logout()
+      if (required) { resetModalState(); setStep('pin') }
+      else { onDismiss?.() }
+    })
   }
 
   const overlayMouseTarget = useRef(null)
@@ -687,7 +698,7 @@ export default function LoginModal({ onClose, onDismiss, required = false, onBac
                 <button
                   className="lm-btn-outlined-red lm-btn-full"
                   style={{ marginTop: 4, fontSize: '0.85rem' }}
-                  onClick={() => { logoutAll(); onDismiss?.() }}
+                  onClick={() => completeLogout(() => { logoutAll(); onDismiss?.() })}
                 >
                   Sign out all devices
                 </button>
@@ -695,25 +706,31 @@ export default function LoginModal({ onClose, onDismiss, required = false, onBac
             </div>
           </>
         )}
-        {/* ── Step: Success ── */}
+        {/* ── Step: Success / Goodbye ── */}
         {step === 'success' && (
           <div className="lm-success">
-            <div className={`lm-success-icon-wrap ${successContext.isReturn ? 'lm-success-icon-wrap--return' : 'lm-success-icon-wrap--verified'}`}>
-              {successContext.isReturn ? '👋' : '✅'}
+            <div className={`lm-success-icon-wrap lm-success-icon-wrap--${successContext.type}`}>
+              {successContext.type === 'verified'      ? '✅'
+               : successContext.type === 'goodbye'    ? '👋'
+               :                                        '👋'}
             </div>
             <p className="lm-success-greeting">
-              {successContext.isReturn ? 'Welcome back,' : 'Welcome,'}
+              {successContext.type === 'goodbye'      ? 'See you next time,'
+               : successContext.type === 'welcome_back' ? 'Welcome back,'
+               :                                          'Welcome,'}
             </p>
             <p className="lm-success-name">{successContext.name}</p>
             <p className="lm-success-sub">
-              {successContext.isReturn
+              {successContext.type === 'goodbye'
+                ? 'You have been signed out'
+                : successContext.type === 'welcome_back'
                 ? 'Trusted device — signed in automatically'
                 : 'Email verified · This device is now trusted'}
             </p>
             <div className="lm-success-bar">
               <div
                 className="lm-success-bar-fill"
-                style={{ animationDuration: successContext.isReturn ? '1.8s' : '2.4s' }}
+                style={{ animationDuration: successContext.type === 'verified' ? '2.4s' : '1.8s' }}
               />
             </div>
           </div>

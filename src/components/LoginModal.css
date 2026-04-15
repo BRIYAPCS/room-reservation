@@ -542,7 +542,7 @@
   animation: lm-success-pop 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) both;
 }
 
-.lm-success-icon-wrap--return {
+.lm-success-icon-wrap--welcome_back {
   background: #fff8e1;
   box-shadow: 0 0 0 6px #fff3cd;
 }
@@ -550,6 +550,11 @@
 .lm-success-icon-wrap--verified {
   background: #f0fdf4;
   box-shadow: 0 0 0 6px #dcfce7;
+}
+
+.lm-success-icon-wrap--goodbye {
+  background: #eff6ff;
+  box-shadow: 0 0 0 6px #dbeafe;
 }
 
 .lm-success-greeting {
