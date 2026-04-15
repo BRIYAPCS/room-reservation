@@ -30,7 +30,7 @@ const RESEND_COOLDOWN = 300   // 5 minutes — matches OTP_RESEND_COOLDOWN_SECON
 const OTP_TTL_SECS    = 600   // 10 minutes — matches OTP_EXPIRATION_MINUTES
 
 export default function LoginModal({ onClose, onDismiss, required = false, onBack }) {
-  const { auth, login, logout, validatePin } = useAuth()
+  const { auth, login, logout, logoutAll, validatePin } = useAuth()
 
   // Lock body scroll while modal is open
   useEffect(() => {
@@ -194,10 +194,17 @@ export default function LoginModal({ onClose, onDismiss, required = false, onBac
         if (trusted) {
           setPendingRole(role)
           setPendingEmail(trimmedEmail)
-          // /auth/verify will set emailVerified=true via the server-side trusted device fallback
           const saved = getDeviceName(role)
-          setName(saved || '')
-          setNameFromDevice(!!saved)
+          if (saved) {
+            // Name already known from this device — skip the name step entirely
+            await login(pin, saved, { email: trimmedEmail })
+            setPinLoading(false)
+            onClose()
+            return
+          }
+          // Trusted device but no stored name (first time naming) — ask once
+          setName('')
+          setNameFromDevice(false)
           setPinLoading(false)
           setStep('name')
           return
@@ -625,6 +632,16 @@ export default function LoginModal({ onClose, onDismiss, required = false, onBac
                 <button className="lm-btn-outlined lm-btn-full" onClick={handleSwitchAccount}>Switch Account</button>
               )}
               <button className="lm-btn-outlined-red lm-btn-full" onClick={handleSignOut}>Sign Out</button>
+              {/* Only show if email-verified — logout-all requires an email session to revoke */}
+              {auth.emailVerified && auth.email && (
+                <button
+                  className="lm-btn-outlined-red lm-btn-full"
+                  style={{ marginTop: 4, fontSize: '0.85rem' }}
+                  onClick={() => { logoutAll(); onDismiss?.() }}
+                >
+                  Sign out all devices
+                </button>
+              )}
             </div>
           </>
         )}

@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, useRef } from 'react'
-import { verifyPin as apiVerifyPin } from '../services/api'
+import { verifyPin as apiVerifyPin, logoutAllSessions } from '../services/api'
 
 const AuthContext = createContext(null)
 
@@ -161,6 +161,17 @@ export function AuthProvider({ children }) {
     })
   }
 
+  /**
+   * Signs out of ALL devices simultaneously.
+   * Calls /auth/logout-all to stamp last_logout_at and delete all trusted
+   * devices on the server, then clears the local session.
+   * Never throws — if the API call fails the local session is still cleared.
+   */
+  async function logoutAll() {
+    try { await logoutAllSessions() } catch (_) {}
+    logout()
+  }
+
   // Use a ref so the event listener always calls the current logout without
   // needing to re-register on every render.
   const logoutRef = useRef(logout)
@@ -180,7 +191,7 @@ export function AuthProvider({ children }) {
   }
 
   return (
-    <AuthContext.Provider value={{ auth, login, logout, validatePin, canDelete }}>
+    <AuthContext.Provider value={{ auth, login, logout, logoutAll, validatePin, canDelete }}>
       {children}
     </AuthContext.Provider>
   )

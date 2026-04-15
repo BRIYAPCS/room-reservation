@@ -177,6 +177,11 @@ export const deleteAttachment = (id) =>
 
 export const getAttachmentUrl = (id) => `${BASE}/attachments/file/${id}`
 
+// Revokes all sessions for the authenticated user (sets last_logout_at,
+// deletes all trusted devices). Requires a valid Bearer token.
+export const logoutAllSessions = () =>
+  request('/auth/logout-all', { method: 'POST' })
+
 // Used by AuthContext (returns lowercase role)
 // opts: { email?, emailVerified?, deviceSessionId? } — included in JWT payload by server
 export const verifyPin = (pin, name = '', opts = {}) =>
