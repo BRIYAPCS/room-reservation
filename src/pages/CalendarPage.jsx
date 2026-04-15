@@ -167,12 +167,12 @@ export default function CalendarPage() {
     if (!ep.ownershipType) return { status: 'legacy_claim' }
 
     if (ep.ownershipType === 'email') {
-      if (!auth.emailVerified) return { status: 'otp_required', reason: 'Email not verified' }
-      if (auth.email?.toLowerCase() === (ep.ownerEmail || '').toLowerCase()) {
-        if (!!auth.deviceSessionId && auth.deviceSessionId === ep.createdDeviceSessionId) return { status: 'allowed' }
-        return { status: 'otp_required', reason: 'Must use OTP for cross-device edit' }
+      // emailVerified is set by the server after the user proves inbox access at login.
+      // Once proven, the user can edit their own bookings from any device — no second OTP.
+      if (auth.emailVerified && auth.email?.toLowerCase() === (ep.ownerEmail || '').toLowerCase()) {
+        return { status: 'allowed' }
       }
-      return { status: 'denied', reason: 'You are not the owner of this booking' }
+      return { status: 'otp_required', reason: 'Email verification required to edit this booking' }
     }
 
     if (ep.ownershipType === 'device') {
@@ -180,6 +180,13 @@ export default function CalendarPage() {
       return { status: 'otp_required', reason: 'Must use OTP' }
     }
     return { status: 'denied', reason: 'Unknown ownership type' }
+  }
+
+  // Returns true when the list view should show an edit button (rather than view-only).
+  // Includes otp_required so users can still initiate the OTP flow from the list.
+  const canEdit = (event) => {
+    const state = getActionState(event)
+    return state.status === 'allowed' || state.status === 'otp_required'
   }
 
   // ── Toast helper ──────────────────────────────────────────────

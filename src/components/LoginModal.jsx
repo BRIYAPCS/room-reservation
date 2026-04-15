@@ -190,7 +190,12 @@ export default function LoginModal({ onClose, onDismiss, required = false, onBac
       // checkTrustedDevice is not rate-limited so trusted users are never blocked
       // by the OTP request limiter.
       if (auth.deviceSessionId) {
-        const { trusted } = await checkTrustedDevice(trimmedEmail, auth.deviceSessionId).catch(() => ({ trusted: false }))
+        const checkResult = await checkTrustedDevice(trimmedEmail, auth.deviceSessionId).catch(err => {
+          console.debug(`[TRUSTED-DEBUG] checkTrustedDevice THREW | err=${err?.message}`)
+          return { trusted: false }
+        })
+        console.debug(`[TRUSTED-DEBUG] checkTrustedDevice | email=${trimmedEmail} | dsid=${auth.deviceSessionId?.slice(0,8)}… | trusted=${checkResult?.trusted}`)
+        const { trusted } = checkResult
         if (trusted) {
           setPendingRole(role)
           setPendingEmail(trimmedEmail)
@@ -229,7 +234,8 @@ export default function LoginModal({ onClose, onDismiss, required = false, onBac
         // return { trusted: true } without sending an email (e.g. if checkTrustedDevice
         // failed silently above). Handle it here so the user is never left waiting for
         // a code that was never sent.
-        if (res.trusted) {
+        console.debug(`[TRUSTED-DEBUG] requestLoginOtp | email=${trimmedEmail} | res.trusted=${res?.trusted} | res.ok=${res?.ok}`)
+        if (res?.trusted) {
           setPendingRole(role)
           setPendingEmail(trimmedEmail)
           const saved = getDeviceName(role)
@@ -246,6 +252,8 @@ export default function LoginModal({ onClose, onDismiss, required = false, onBac
           return
         }
 
+        // res could be undefined if the auth token was rejected (401 path in request())
+        if (!res) throw new Error('No response from server.')
         setMaskedEmail(res.maskedEmail || trimmedEmail)
         setPendingName(res.name || '')
         setPendingRole(role)
