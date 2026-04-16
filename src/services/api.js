@@ -190,6 +190,12 @@ export const logoutAllSessions = () =>
 export const checkSession = () =>
   request('/auth/session')
 
+// Returns { count: number } — the number of active (non-expired) trusted devices
+// for the authenticated user's email.  Used to decide whether to show the
+// "Sign out all devices" button: only meaningful when count > 1 (other devices exist).
+export const getTrustedDeviceCount = () =>
+  request('/auth/trusted-devices/count')
+
 // Used by AuthContext (returns lowercase role)
 // opts: { email?, emailVerified?, deviceSessionId? } — included in JWT payload by server
 export const verifyPin = (pin, name = '', opts = {}) =>

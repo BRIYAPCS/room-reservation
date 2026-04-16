@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { getDeviceName } from '../context/AuthContext'
-import { checkTrustedDevice, requestLoginOtp, verifyLoginOtp } from '../services/api'
+import { checkTrustedDevice, requestLoginOtp, verifyLoginOtp, getTrustedDeviceCount } from '../services/api'
 import './LoginModal.css'
 
 // SVG icons
@@ -91,6 +91,11 @@ export default function LoginModal({ onClose, onDismiss, required = false, onBac
   // type: 'welcome_back' | 'verified' | 'goodbye'
   const [successContext, setSuccessContext] = useState({ name: '', type: 'welcome_back' })
 
+  // ── Status step — trusted device count ───────────────────────
+  // Fetched when the status step becomes active.  null = loading, 0+ = resolved.
+  // "Sign out all devices" is only shown when count > 1 (other devices exist).
+  const [trustedDeviceCount, setTrustedDeviceCount] = useState(null)
+
   const cooldownRef     = useRef(null)
   const countdownRef    = useRef(null)
   const successTimerRef = useRef(null)
@@ -138,6 +143,16 @@ export default function LoginModal({ onClose, onDismiss, required = false, onBac
       return () => clearTimeout(t)
     }
   }, [step])
+
+  // Fetch the number of active trusted devices when the status step is shown.
+  // This determines whether "Sign out all devices" is relevant to display.
+  useEffect(() => {
+    if (step !== 'status' || !auth.emailVerified || !auth.email) return
+    setTrustedDeviceCount(null)   // reset to loading state on each open
+    getTrustedDeviceCount()
+      .then(data => setTrustedDeviceCount(data?.count ?? 0))
+      .catch(() => setTrustedDeviceCount(0))
+  }, [step, auth.emailVerified, auth.email])
 
   // Push modal above the virtual keyboard on mobile
   const overlayRef = useRef(null)
@@ -800,8 +815,9 @@ export default function LoginModal({ onClose, onDismiss, required = false, onBac
                 <button className="lm-btn-outlined lm-btn-full" onClick={handleSwitchAccount}>Switch Account</button>
               )}
               <button className="lm-btn-outlined-red lm-btn-full" onClick={handleSignOut}>Sign Out</button>
-              {/* Only show if email-verified — logout-all requires an email session to revoke */}
-              {auth.emailVerified && auth.email && (
+              {/* "Sign out all devices" is only meaningful when other trusted devices
+                   exist (count > 1).  Hidden while loading (null) to avoid flicker. */}
+              {auth.emailVerified && auth.email && trustedDeviceCount > 1 && (
                 <button
                   className="lm-btn-outlined-red lm-btn-full"
                   style={{ marginTop: 4, fontSize: '0.85rem' }}
