@@ -1100,7 +1100,8 @@ export default function CalendarPage() {
                           {bookedBy && <span className="fc-event-who">{bookedBy}</span>}
                         </>
                       )}
-                      {editable && <span className="fc-event-drag-hint" aria-hidden="true" />}
+                      {/* Show drag hint only when not active — the green live dot takes its place */}
+                      {editable && !isActive && <span className="fc-event-drag-hint" aria-hidden="true" />}
                     </div>
                   )
                 }}
