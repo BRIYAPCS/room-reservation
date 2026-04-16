@@ -252,6 +252,7 @@ export default function LoginModal({ onClose, onDismiss, required = false, onBac
     // doesn't remain visible while the new request is in flight.
     setEmailSendError('')
     setEmailSendFailed(false)
+    setEmailNotInDomain(false)
 
     const role = await validatePin(pin)
     if (!role) {
@@ -417,13 +418,6 @@ export default function LoginModal({ onClose, onDismiss, required = false, onBac
     setStep('name')
   }
 
-  // Called when PA said the email is not in the directory and the user
-  // wants to correct their email — clear the field and focus it.
-  function handleTryDifferentEmail() {
-    setEmailNotInDomain(false)
-    setEmail('')
-    setTimeout(() => emailInputRef.current?.focus(), 60)
-  }
 
   // ── OTP step handlers ─────────────────────────────────────────
   async function handleOtpVerify(e) {
@@ -685,12 +679,16 @@ export default function LoginModal({ onClose, onDismiss, required = false, onBac
 
               {/* Action buttons — order: not-found > send-failed > default */}
               {emailNotInDomain ? (
-                <div className="lm-btn-row">
-                  <button type="button" className="lm-btn-outlined lm-btn-half" onClick={handleTryDifferentEmail}>
-                    ← Update email
+                <div className={pendingRole !== 'admin' && pendingRole !== 'superadmin' ? 'lm-btn-row' : ''}>
+                  <button
+                    type="submit"
+                    className={pendingRole !== 'admin' && pendingRole !== 'superadmin' ? 'lm-btn-gold lm-btn-half' : 'lm-btn-gold lm-btn-full'}
+                    disabled={pinLoading}
+                  >
+                    {pinLoading ? 'Checking…' : 'Try again →'}
                   </button>
                   {pendingRole !== 'admin' && pendingRole !== 'superadmin' && (
-                    <button type="button" className="lm-btn-gold lm-btn-half" onClick={handleContinueWithoutEmail}>
+                    <button type="button" className="lm-btn-outlined lm-btn-half" onClick={handleContinueWithoutEmail}>
                       Skip →
                     </button>
                   )}
