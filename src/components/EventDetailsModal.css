@@ -22,13 +22,38 @@
   padding: 28px 32px 24px;
 }
 
-/* Header row — title left, series badge right */
+/* Header row — title left, badge + X right */
 .edm-header-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
   margin: 0 0 16px 0;
+}
+
+.edm-header-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.edm-close-x {
+  background: none;
+  border: none;
+  font-size: 1.1rem;
+  color: #888;
+  line-height: 1;
+  padding: 4px 6px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: color 0.15s, background 0.15s;
+  flex-shrink: 0;
+}
+
+.edm-close-x:hover {
+  color: #333;
+  background: #f0f0f0;
 }
 
 .edm-header {

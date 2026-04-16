@@ -80,11 +80,14 @@ export default function EventDetailsModal({ event, actionState, isAdmin, onEdit,
       <div className="edm-modal">
         <div className="edm-header-row">
           <h2 className="edm-header">Event Details</h2>
-          {seriesInfo && (
-            <span className="edm-series-badge" title={`This is occurrence ${seriesInfo.position} of ${seriesInfo.total} in the series`}>
-              🔁 {seriesInfo.position} / {seriesInfo.total}
-            </span>
-          )}
+          <div className="edm-header-right">
+            {seriesInfo && (
+              <span className="edm-series-badge" title={`This is occurrence ${seriesInfo.position} of ${seriesInfo.total} in the series`}>
+                🔁 {seriesInfo.position} / {seriesInfo.total}
+              </span>
+            )}
+            <button className="edm-close-x" onClick={onClose} title="Close">✕</button>
+          </div>
         </div>
         <div className="edm-divider" />
 
@@ -131,35 +134,34 @@ export default function EventDetailsModal({ event, actionState, isAdmin, onEdit,
           )}
         </div>
 
-        <div className="edm-divider" />
-
-        <div className="edm-actions">
-          {actionState?.status === 'legacy_claim' ? (
-            <>
-              <button className="edm-btn-edit" onClick={onClaim}>Claim Booking</button>
-              <button className="edm-btn-close" onClick={onClose}>Close</button>
-            </>
-          ) : actionState?.status !== 'denied' ? (
-            <>
-              {/* Both Edit and Delete are hidden for past events for standard users.
-                  Admins can always edit/delete regardless of event time. */}
-              {(!isPastEvent || isAdmin) && (
-                <button className="edm-btn-edit" onClick={onEdit}>Edit</button>
+        {/* Footer actions — hidden entirely for past events (standard users) since
+            the X button in the header already handles closing */}
+        {!(isPastEvent && !isAdmin) && (
+          <>
+            <div className="edm-divider" />
+            <div className="edm-actions">
+              {actionState?.status === 'legacy_claim' ? (
+                <>
+                  <button className="edm-btn-edit" onClick={onClaim}>Claim Booking</button>
+                  <button className="edm-btn-close" onClick={onClose}>Close</button>
+                </>
+              ) : actionState?.status !== 'denied' ? (
+                <>
+                  <button className="edm-btn-edit" onClick={onEdit}>Edit</button>
+                  <button
+                    className="edm-btn-delete"
+                    onClick={() => isRecurring ? onDelete() : setConfirmDelete(true)}
+                  >
+                    Delete
+                  </button>
+                  <button className="edm-btn-close" onClick={onClose}>Close</button>
+                </>
+              ) : (
+                <button className="edm-btn-gold-full" onClick={onClose}>Close</button>
               )}
-              {(!isPastEvent || isAdmin) && (
-                <button
-                  className="edm-btn-delete"
-                  onClick={() => isRecurring ? onDelete() : setConfirmDelete(true)}
-                >
-                  Delete
-                </button>
-              )}
-              <button className="edm-btn-close" onClick={onClose}>Close</button>
-            </>
-          ) : (
-            <button className="edm-btn-gold-full" onClick={onClose}>Close</button>
-          )}
-        </div>
+            </div>
+          </>
+        )}
       </div>
     </div>
   )
