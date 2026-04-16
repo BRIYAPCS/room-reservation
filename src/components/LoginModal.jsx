@@ -2,7 +2,6 @@ import { useState, useEffect, useRef } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { getDeviceName } from '../context/AuthContext'
 import { checkTrustedDevice, requestLoginOtp, verifyLoginOtp } from '../services/api'
-import ClearableInput from './ClearableInput'
 import './LoginModal.css'
 
 // SVG icons
@@ -55,11 +54,12 @@ export default function LoginModal({ onClose, onDismiss, required = false, onBac
   const [pinError, setPinError]           = useState('')
   const [pinLoading, setPinLoading]       = useState(false)
 
-  const [email, setEmail]                         = useState('')
-  const [emailDomainError, setEmailDomainError]   = useState('')
+  // email stores only the local part (before @briya.org)
+  const [email, setEmail]                           = useState('')
   const [emailRequiredError, setEmailRequiredError] = useState('')  // admin/superadmin enforcement
-  const [emailSendError, setEmailSendError]       = useState('')   // OTP send failure
-  const [emailSendFailed, setEmailSendFailed]     = useState(false)
+  const [emailSendError, setEmailSendError]         = useState('')  // OTP send failure
+  const [emailSendFailed, setEmailSendFailed]       = useState(false)
+  const [rateLimitCountdown, setRateLimitCountdown] = useState(0)   // seconds until unblocked
 
   // ── OTP step ──────────────────────────────────────────────────
   const [otpCode, setOtpCode]               = useState('')
@@ -87,6 +87,7 @@ export default function LoginModal({ onClose, onDismiss, required = false, onBac
   const cooldownRef     = useRef(null)
   const countdownRef    = useRef(null)
   const successTimerRef = useRef(null)
+  const rateLimitRef    = useRef(null)
   const pinInputRef     = useRef(null)
   const otpInputRef     = useRef(null)
 
@@ -95,6 +96,7 @@ export default function LoginModal({ onClose, onDismiss, required = false, onBac
     if (cooldownRef.current)     clearInterval(cooldownRef.current)
     if (countdownRef.current)    clearInterval(countdownRef.current)
     if (successTimerRef.current) clearTimeout(successTimerRef.current)
+    if (rateLimitRef.current)    clearInterval(rateLimitRef.current)
   }, [])
 
   // Shows the brief success screen, then auto-closes the modal.
@@ -178,6 +180,23 @@ export default function LoginModal({ onClose, onDismiss, required = false, onBac
     return `${m}:${String(s).padStart(2, '0')}`
   }
 
+  function startRateLimitCountdown(seconds) {
+    const secs = seconds > 0 ? seconds : 60
+    setRateLimitCountdown(secs)
+    if (rateLimitRef.current) clearInterval(rateLimitRef.current)
+    rateLimitRef.current = setInterval(() => {
+      setRateLimitCountdown(prev => {
+        if (prev <= 1) {
+          clearInterval(rateLimitRef.current)
+          setEmailSendFailed(false)
+          setEmailSendError('')
+          return 0
+        }
+        return prev - 1
+      })
+    }, 1000)
+  }
+
   // ── PIN step handlers ─────────────────────────────────────────
   function handlePinChange(e) {
     const raw = e.target.value
@@ -188,15 +207,11 @@ export default function LoginModal({ onClose, onDismiss, required = false, onBac
   }
 
   function handleEmailChange(e) {
-    const val = e.target.value
+    // Strip any @ and everything after it — user only types the local part
+    const val = e.target.value.replace(/@.*$/, '')
     setEmail(val)
-    if (emailSendFailed) { setEmailSendFailed(false); setEmailSendError('') }
+    if (emailSendFailed) { setEmailSendFailed(false); setEmailSendError(''); setRateLimitCountdown(0); if (rateLimitRef.current) clearInterval(rateLimitRef.current) }
     if (emailRequiredError) setEmailRequiredError('')
-    if (val && val.trim() && !val.trim().toLowerCase().endsWith(BRIYA_DOMAIN)) {
-      setEmailDomainError(`Only ${BRIYA_DOMAIN} emails are allowed`)
-    } else {
-      setEmailDomainError('')
-    }
   }
 
   async function handlePinSubmit(e) {
@@ -211,12 +226,13 @@ export default function LoginModal({ onClose, onDismiss, required = false, onBac
       return
     }
 
-    const trimmedEmail = email.trim().toLowerCase()
-    const isBriyaEmail = trimmedEmail.endsWith(BRIYA_DOMAIN)
+    // email state holds only the local part; append domain to build full address
+    const localPart    = email.trim().toLowerCase()
+    const trimmedEmail = localPart ? localPart + BRIYA_DOMAIN : ''
 
     // Admin and superadmin must verify via @briya.org email — no bypass allowed
     const isPrivileged = role === 'admin' || role === 'superadmin'
-    if (isPrivileged && (!trimmedEmail || !isBriyaEmail)) {
+    if (isPrivileged && !localPart) {
       setPinLoading(false)
       setEmailRequiredError(
         `${role === 'superadmin' ? 'Super Admin' : 'Admin'} access requires a verified ${BRIYA_DOMAIN} email.`
@@ -224,7 +240,7 @@ export default function LoginModal({ onClose, onDismiss, required = false, onBac
       return
     }
 
-    if (trimmedEmail && isBriyaEmail) {
+    if (trimmedEmail) {
       // ── Trusted device: probe first, before hitting the rate-limited OTP endpoint ──
       // checkTrustedDevice is not rate-limited so trusted users are never blocked
       // by the OTP request limiter.
@@ -305,11 +321,15 @@ export default function LoginModal({ onClose, onDismiss, required = false, onBac
       } catch (err) {
         // OTP send failed — stay on PIN step, let user proceed without email
         const raw = err.message || ''
-        const msg = raw === 'RATE_LIMIT_EXCEEDED'
-          ? 'Too many attempts. Please wait a few minutes before trying again.'
+        const isRateLimit = raw === 'RATE_LIMIT_EXCEEDED'
+        const msg = isRateLimit
+          ? 'Too many OTP requests — please wait before trying again.'
           : raw || 'Failed to send verification code.'
         setEmailSendError(msg)
         setEmailSendFailed(true)
+        if (isRateLimit && err.retryAfterSeconds) {
+          startRateLimitCountdown(err.retryAfterSeconds)
+        }
         setPendingRole(role)
         setPendingEmail(trimmedEmail)
         const saved = getDeviceName(role)
@@ -320,7 +340,7 @@ export default function LoginModal({ onClose, onDismiss, required = false, onBac
       return
     }
 
-    // No email or non-briya email → name step, no email verification
+    // No email → name step, no email verification
     setPendingEmail(trimmedEmail)
     setPendingRole(role)
     const saved = getDeviceName(role)
@@ -390,7 +410,15 @@ export default function LoginModal({ onClose, onDismiss, required = false, onBac
       startResendCooldown()
       startOtpCountdown()
     } catch (err) {
-      setOtpError(err.message || 'Failed to resend code.')
+      const raw = err.message || ''
+      const isRateLimit = raw === 'RATE_LIMIT_EXCEEDED'
+      if (isRateLimit && err.retryAfterSeconds) {
+        startResendCooldown()  // show the existing 5-min cooldown UI
+        startRateLimitCountdown(err.retryAfterSeconds)
+      }
+      setOtpError(isRateLimit
+        ? `Too many requests — try again in ${err.retryAfterSeconds ? fmtCountdown(err.retryAfterSeconds) : 'a few minutes'}.`
+        : raw || 'Failed to resend code.')
     }
   }
 
@@ -425,12 +453,13 @@ export default function LoginModal({ onClose, onDismiss, required = false, onBac
   function resetModalState() {
     setPin(''); setShowPin(false); setPinTypeWarning('')
     setPinError(''); setPinLoading(false)
-    setEmail(''); setEmailDomainError(''); setEmailRequiredError(''); setEmailSendError('')
-    setEmailSendFailed(false)
+    setEmail(''); setEmailRequiredError(''); setEmailSendError('')
+    setEmailSendFailed(false); setRateLimitCountdown(0)
     setOtpCode(''); setOtpError(''); setOtpLoading(false)
     setMaskedEmail(''); setResendCooldown(0); setOtpCountdown(0)
-    if (cooldownRef.current)  clearInterval(cooldownRef.current)
-    if (countdownRef.current) clearInterval(countdownRef.current)
+    if (cooldownRef.current)     clearInterval(cooldownRef.current)
+    if (countdownRef.current)    clearInterval(countdownRef.current)
+    if (rateLimitRef.current)    clearInterval(rateLimitRef.current)
     setPendingRole(null); setPendingEmail('')
     setPendingEmailClaimToken(null); setPendingName('')
     setName(''); setNameFromDevice(false); setNameError('')
@@ -504,45 +533,54 @@ export default function LoginModal({ onClose, onDismiss, required = false, onBac
               {pinError && <p className="lm-error">{pinError}</p>}
 
               {/* Email field — optional for standard, required for admin/superadmin */}
-              <div className="lm-email-wrap">
-                <ClearableInput
-                  type="email"
+              <div className={[
+                'lm-email-split',
+                emailRequiredError ? 'lm-email-split--error' : '',
+                emailSendFailed    ? 'lm-email-split--warn'  : '',
+              ].filter(Boolean).join(' ')}>
+                <input
+                  type="text"
                   name="email"
-                  className={[
-                    'lm-input lm-email-input',
-                    emailDomainError || emailRequiredError ? 'lm-input--error' : '',
-                    emailSendFailed                        ? 'lm-input--warn'  : '',
-                  ].filter(Boolean).join(' ')}
-                  placeholder={`Enter your ${BRIYA_DOMAIN} email`}
+                  inputMode="email"
+                  className="lm-email-local"
+                  placeholder="your.name"
                   value={email}
                   onChange={handleEmailChange}
                   autoComplete="email"
+                  spellCheck={false}
+                  autoCapitalize="none"
                 />
+                <span className="lm-email-domain">@briya.org</span>
               </div>
-              {emailDomainError   && <p className="lm-error lm-domain-error">{emailDomainError}</p>}
               {emailRequiredError && <p className="lm-error lm-domain-error">{emailRequiredError}</p>}
 
-              {/* OTP send failure banner */}
+              {/* OTP send failure / rate-limit banner */}
               {emailSendFailed && emailSendError && (
                 <div className="lm-verify-failed-banner">
                   <span className="lm-verify-failed-icon">⚠</span>
                   <div className="lm-verify-failed-text">
                     <strong>{emailSendError}</strong>
-                    <span>
-                      {pendingRole === 'admin' || pendingRole === 'superadmin'
-                        ? 'Fix your email and try again — verification is required for this role.'
-                        : 'Fix your email and try again, or continue without email verification.'}
-                    </span>
+                    {rateLimitCountdown > 0 ? (
+                      <span className="lm-rate-limit-countdown">
+                        Try again in <strong>{fmtCountdown(rateLimitCountdown)}</strong>
+                      </span>
+                    ) : (
+                      <span>
+                        {pendingRole === 'admin' || pendingRole === 'superadmin'
+                          ? 'Fix your email and try again — verification is required for this role.'
+                          : 'Fix your email and try again, or continue without email verification.'}
+                      </span>
+                    )}
                   </div>
                 </div>
               )}
 
-              {emailSendFailed && pendingRole !== 'admin' && pendingRole !== 'superadmin' ? (
+              {emailSendFailed && pendingRole !== 'admin' && pendingRole !== 'superadmin' && rateLimitCountdown === 0 ? (
                 <button type="button" className="lm-btn-gold lm-btn-full" onClick={handleContinueWithoutEmail}>
                   Continue without email →
                 </button>
               ) : (
-                <button type="submit" className="lm-btn-gold lm-btn-full" disabled={pinLoading || !!emailSendFailed}>
+                <button type="submit" className="lm-btn-gold lm-btn-full" disabled={pinLoading || (!!emailSendFailed && rateLimitCountdown > 0)}>
                   {pinLoading ? 'Sending code…' : 'Continue →'}
                 </button>
               )}

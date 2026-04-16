@@ -277,6 +277,76 @@
   /* inherits .lm-input — just a semantic hook for overrides */
 }
 
+/* ── Split email input (local part + fixed @briya.org suffix) ── */
+.lm-email-split {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  border: 1.5px solid #d1d5db;
+  border-radius: 7px;
+  background: #fff;
+  overflow: hidden;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.lm-email-split:focus-within {
+  border-color: #1186c4;
+  box-shadow: 0 0 0 3px rgba(17, 134, 196, 0.15);
+}
+
+.lm-email-split--error {
+  border-color: #c0392b;
+  background: #fff5f5;
+}
+
+.lm-email-split--error:focus-within {
+  border-color: #c0392b;
+  box-shadow: 0 0 0 3px rgba(192, 57, 43, 0.12);
+}
+
+.lm-email-split--warn {
+  border-color: #d97706;
+  background: #fffbeb;
+}
+
+.lm-email-split--warn:focus-within {
+  border-color: #d97706;
+  box-shadow: 0 0 0 3px rgba(217, 119, 6, 0.12);
+}
+
+.lm-email-local {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: clamp(0.88rem, 1.2vw, 0.95rem);
+  color: #111;
+  padding: 10px 0 10px 12px;
+  font-family: inherit;
+}
+
+.lm-email-domain {
+  flex-shrink: 0;
+  padding: 10px 12px 10px 2px;
+  font-size: clamp(0.88rem, 1.2vw, 0.95rem);
+  color: #6b7280;
+  user-select: none;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+/* ── Rate-limit countdown inside the failed-banner ── */
+.lm-rate-limit-countdown {
+  font-size: clamp(0.76rem, 1vw, 0.82rem);
+  color: #92400e;
+}
+
+.lm-rate-limit-countdown strong {
+  font-variant-numeric: tabular-nums;
+  color: #b45309;
+}
+
 .lm-input--error {
   border-color: #c0392b;
   background: #fff5f5;

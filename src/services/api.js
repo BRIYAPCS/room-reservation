@@ -27,7 +27,9 @@ async function request(path, options = {}) {
   }
   if (!res.ok) {
     const err = await res.json().catch(() => ({}))
-    throw new Error(err.error || `API error ${res.status}`)
+    const error = new Error(err.error || `API error ${res.status}`)
+    if (err.retryAfterSeconds != null) error.retryAfterSeconds = err.retryAfterSeconds
+    throw error
   }
   return res.json()
 }
