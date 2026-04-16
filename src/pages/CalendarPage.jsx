@@ -308,6 +308,17 @@ export default function CalendarPage() {
   }
 
   const handleDeleteEvent = async (eventId, editToken = null) => {
+    // Safety net: re-check pastness here so the OTP success path cannot
+    // delete a past event if time elapsed between request and verification.
+    const eventToDelete = events.find(ev => String(ev.id) === String(eventId)) || selectedEvent
+    if (eventToDelete && !isAdmin(auth.role)) {
+      const end = new Date(eventToDelete.end || eventToDelete.endStr)
+      if (end <= new Date()) {
+        showToast('Past bookings cannot be deleted.', 'error')
+        setPendingEditToken(null)
+        return
+      }
+    }
     const token = editToken !== null ? editToken : pendingEditToken
     setPendingEditToken(null)
     await api.deleteEvent(siteId, roomId, eventId, token).catch(() => {})

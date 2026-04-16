@@ -141,16 +141,19 @@ export default function EventDetailsModal({ event, actionState, isAdmin, onEdit,
             </>
           ) : actionState?.status !== 'denied' ? (
             <>
-              {/* Edit is hidden for past events unless the user is an admin */}
+              {/* Both Edit and Delete are hidden for past events for standard users.
+                  Admins can always edit/delete regardless of event time. */}
               {(!isPastEvent || isAdmin) && (
                 <button className="edm-btn-edit" onClick={onEdit}>Edit</button>
               )}
-              <button
-                className="edm-btn-delete"
-                onClick={() => isRecurring ? onDelete() : setConfirmDelete(true)}
-              >
-                Delete
-              </button>
+              {(!isPastEvent || isAdmin) && (
+                <button
+                  className="edm-btn-delete"
+                  onClick={() => isRecurring ? onDelete() : setConfirmDelete(true)}
+                >
+                  Delete
+                </button>
+              )}
               <button className="edm-btn-close" onClick={onClose}>Close</button>
             </>
           ) : (
