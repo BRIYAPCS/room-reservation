@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { getDeviceName } from '../context/AuthContext'
-import { checkTrustedDevice, requestLoginOtp, verifyLoginOtp, getTrustedDeviceCount } from '../services/api'
+import { checkTrustedDevice, requestLoginOtp, verifyLoginOtp, getTrustedDeviceCount, validateEmail } from '../services/api'
 import './LoginModal.css'
 
 // SVG icons
@@ -66,6 +66,7 @@ export default function LoginModal({ onClose, onDismiss, required = false, onBac
   const [emailRequiredError, setEmailRequiredError] = useState('')  // admin/superadmin enforcement
   const [emailSendError, setEmailSendError]         = useState('')  // OTP send failure
   const [emailSendFailed, setEmailSendFailed]       = useState(false)
+  const [emailNotInDomain, setEmailNotInDomain]     = useState(false) // PA returned: not in directory
   const [rateLimitCountdown, setRateLimitCountdown] = useState(0)   // seconds until unblocked
 
   // ── OTP step ──────────────────────────────────────────────────
@@ -102,6 +103,7 @@ export default function LoginModal({ onClose, onDismiss, required = false, onBac
   const rateLimitRef    = useRef(null)
   const pinInputRef     = useRef(null)
   const otpInputRef     = useRef(null)
+  const emailInputRef   = useRef(null)
 
   // Clean up intervals / timers on unmount
   useEffect(() => () => {
@@ -238,7 +240,8 @@ export default function LoginModal({ onClose, onDismiss, required = false, onBac
     // Strip any @ and everything after it — user only types the local part
     const val = e.target.value.replace(/@.*$/, '')
     setEmail(val)
-    if (emailSendFailed) { setEmailSendFailed(false); setEmailSendError(''); setRateLimitCountdown(0); if (rateLimitRef.current) clearInterval(rateLimitRef.current) }
+    if (emailSendFailed)   { setEmailSendFailed(false); setEmailSendError(''); setRateLimitCountdown(0); if (rateLimitRef.current) clearInterval(rateLimitRef.current) }
+    if (emailNotInDomain)  setEmailNotInDomain(false)
     if (emailRequiredError) setEmailRequiredError('')
   }
 
@@ -272,6 +275,23 @@ export default function LoginModal({ onClose, onDismiss, required = false, onBac
     }
 
     if (trimmedEmail) {
+      // ── Power Automate domain validation ─────────────────────────
+      // Verify the email exists in the Briya directory before doing anything else.
+      // If PA is unreachable (fallback: true), allow the user through gracefully.
+      // If PA says the account is not found, stop and ask the user to correct it.
+      try {
+        const paResult = await validateEmail(trimmedEmail).catch(() => ({ valid: false, fallback: true }))
+        if (paResult?.valid === false && !paResult?.fallback) {
+          // PA responded and explicitly said this account is not in the directory
+          setEmailNotInDomain(true)
+          setPendingRole(role)   // carry role so the banner knows admin vs standard
+          setPinLoading(false)
+          setTimeout(() => emailInputRef.current?.focus(), 60)
+          return
+        }
+        // valid === true OR fallback === true (PA unreachable) → proceed
+      } catch { /* network error treated as fallback — allow through */ }
+
       // ── Trusted device: probe first, before hitting the rate-limited OTP endpoint ──
       // checkTrustedDevice is not rate-limited so trusted users are never blocked
       // by the OTP request limiter.
@@ -393,7 +413,16 @@ export default function LoginModal({ onClose, onDismiss, required = false, onBac
     if (pendingRole === 'admin' || pendingRole === 'superadmin') return
     setEmailSendFailed(false)
     setEmailSendError('')
+    setEmailNotInDomain(false)
     setStep('name')
+  }
+
+  // Called when PA said the email is not in the directory and the user
+  // wants to correct their email — clear the field and focus it.
+  function handleTryDifferentEmail() {
+    setEmailNotInDomain(false)
+    setEmail('')
+    setTimeout(() => emailInputRef.current?.focus(), 60)
   }
 
   // ── OTP step handlers ─────────────────────────────────────────
@@ -517,7 +546,7 @@ export default function LoginModal({ onClose, onDismiss, required = false, onBac
     // person who actually logged in on this device.
     try { setEmail(localStorage.getItem(LAST_EMAIL_KEY) || '') } catch { setEmail('') }
     setEmailRequiredError(''); setEmailSendError('')
-    setEmailSendFailed(false); setRateLimitCountdown(0)
+    setEmailSendFailed(false); setEmailNotInDomain(false); setRateLimitCountdown(0)
     setOtpCode(''); setOtpError(''); setOtpLoading(false)
     setMaskedEmail(''); setResendCooldown(0); setOtpCountdown(0)
     if (cooldownRef.current)     clearInterval(cooldownRef.current)
@@ -599,14 +628,15 @@ export default function LoginModal({ onClose, onDismiss, required = false, onBac
               <div className={[
                 'lm-email-split',
                 emailRequiredError ? 'lm-email-split--error' : '',
-                emailSendFailed    ? 'lm-email-split--warn'  : '',
+                emailSendFailed || emailNotInDomain ? 'lm-email-split--warn'  : '',
               ].filter(Boolean).join(' ')}>
                 <input
+                  ref={emailInputRef}
                   type="text"
                   name="email"
                   inputMode="email"
                   className="lm-email-local"
-                  placeholder="your.name"
+                  placeholder={emailNotInDomain ? 'Enter a valid email' : 'your.name'}
                   value={email}
                   onChange={handleEmailChange}
                   autoComplete="email"
@@ -616,6 +646,21 @@ export default function LoginModal({ onClose, onDismiss, required = false, onBac
                 <span className="lm-email-domain">@briya.org</span>
               </div>
               {emailRequiredError && <p className="lm-error lm-domain-error">{emailRequiredError}</p>}
+
+              {/* PA: email not found in Briya directory */}
+              {emailNotInDomain && (
+                <div className="lm-verify-failed-banner">
+                  <span className="lm-verify-failed-icon">⚠</span>
+                  <div className="lm-verify-failed-text">
+                    <strong>Email not found in the Briya directory</strong>
+                    <span>
+                      {pendingRole === 'admin' || pendingRole === 'superadmin'
+                        ? 'Verification is required for this role. Please update your email and try again.'
+                        : 'We couldn\'t find that account. Update your email and try again, or continue without verification.'}
+                    </span>
+                  </div>
+                </div>
+              )}
 
               {/* OTP send failure / rate-limit banner */}
               {emailSendFailed && emailSendError && (
@@ -638,13 +683,25 @@ export default function LoginModal({ onClose, onDismiss, required = false, onBac
                 </div>
               )}
 
-              {emailSendFailed && pendingRole !== 'admin' && pendingRole !== 'superadmin' && rateLimitCountdown === 0 ? (
+              {/* Action buttons — order: not-found > send-failed > default */}
+              {emailNotInDomain ? (
+                <div className="lm-btn-row">
+                  <button type="button" className="lm-btn-outlined lm-btn-half" onClick={handleTryDifferentEmail}>
+                    ← Update email
+                  </button>
+                  {pendingRole !== 'admin' && pendingRole !== 'superadmin' && (
+                    <button type="button" className="lm-btn-gold lm-btn-half" onClick={handleContinueWithoutEmail}>
+                      Skip →
+                    </button>
+                  )}
+                </div>
+              ) : emailSendFailed && pendingRole !== 'admin' && pendingRole !== 'superadmin' && rateLimitCountdown === 0 ? (
                 <button type="button" className="lm-btn-gold lm-btn-full" onClick={handleContinueWithoutEmail}>
                   Continue without email →
                 </button>
               ) : (
                 <button type="submit" className="lm-btn-gold lm-btn-full" disabled={pinLoading || (!!emailSendFailed && rateLimitCountdown > 0)}>
-                  {pinLoading ? 'Sending code…' : 'Continue →'}
+                  {pinLoading ? 'Checking…' : 'Continue →'}
                 </button>
               )}
             </form>
