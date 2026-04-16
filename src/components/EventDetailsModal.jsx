@@ -41,6 +41,11 @@ export default function EventDetailsModal({ event, actionState, isAdmin, onEdit,
 
   if (!event) return null
 
+  // Past events cannot be edited by standard users — hide the Edit button entirely
+  // so they never see an action that would be immediately blocked by the handler.
+  // Admins are exempt and can always edit/delete regardless of event time.
+  const isPastEvent = new Date(event.end || event.endStr) <= new Date()
+
   const title = getDisplayTitle(event)
   const bookedBy = event.extendedProps?.bookedBy || '—'
   const ownerEmail = event.extendedProps?.ownerEmail || ''
@@ -126,7 +131,10 @@ export default function EventDetailsModal({ event, actionState, isAdmin, onEdit,
             </>
           ) : actionState?.status !== 'denied' ? (
             <>
-              <button className="edm-btn-edit" onClick={onEdit}>Edit</button>
+              {/* Edit is hidden for past events unless the user is an admin */}
+              {(!isPastEvent || isAdmin) && (
+                <button className="edm-btn-edit" onClick={onEdit}>Edit</button>
+              )}
               <button
                 className="edm-btn-delete"
                 onClick={() => isRecurring ? onDelete() : setConfirmDelete(true)}

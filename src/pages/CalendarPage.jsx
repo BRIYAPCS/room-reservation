@@ -184,7 +184,9 @@ export default function CalendarPage() {
 
   // Returns true when the list view should show an edit button (rather than view-only).
   // Includes otp_required so users can still initiate the OTP flow from the list.
+  // Past events are never editable for non-admin users regardless of ownership.
   const canEdit = (event) => {
+    if (!isAdmin(auth.role) && new Date(event.end || event.endStr) <= new Date()) return false
     const state = getActionState(event)
     return state.status === 'allowed' || state.status === 'otp_required'
   }
