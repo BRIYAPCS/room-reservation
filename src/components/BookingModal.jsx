@@ -85,9 +85,15 @@ export default function BookingModal({
     return Math.min(Math.max(mins, startBound), endBound)
   }
 
-  const parsedDate      = initialStart
+  // Today in YYYY-MM-DD — used as min for date pickers to prevent past bookings
+  const todayStr = toDateStr(new Date())
+
+  // Clamp initial date to today so clicking a past slot on the calendar
+  // still opens the modal defaulting to today, not the past date.
+  const rawParsedDate = initialStart
     ? initialStart.split('T')[0]
-    : (initialDate || new Date().toISOString().split('T')[0])
+    : (initialDate || todayStr)
+  const parsedDate = rawParsedDate < todayStr ? todayStr : rawParsedDate
   const rawStart        = initialStart ? (initialStart.split('T')[1] || '').slice(0, 5) : null
   const rawEnd          = initialEnd   ? (initialEnd.split('T')[1]   || '').slice(0, 5) : null
   const parsedStartMins = clampMins(rawStart ? timeToMins(rawStart) : startBound)
@@ -245,6 +251,8 @@ export default function BookingModal({
         </div>
 
         <form onSubmit={handleSubmit} className="bm-form">
+          {/* bm-form-body scrolls independently; bm-actions stays pinned to the bottom */}
+          <div className="bm-form-body">
 
           <label>
             Event Title <span className="required">*</span>
@@ -315,16 +323,18 @@ export default function BookingModal({
           <div className="bm-datetime-grid">
             <label className={isRecurring ? 'bm-span-full' : ''}>
               Start Date
-              <input type="date" name="date" value={form.date} onChange={handleChange} />
+              {/* min prevents selecting past dates; the native picker grays them out */}
+              <input type="date" name="date" value={form.date} min={todayStr} onChange={handleChange} />
             </label>
             {!isRecurring && (
               <label>
                 End Date
+                {/* min is the greater of today and the selected start date */}
                 <input
                   type="date"
                   name="endDate"
                   value={form.endDate}
-                  min={form.date}
+                  min={form.date >= todayStr ? form.date : todayStr}
                   onChange={handleChange}
                 />
               </label>
@@ -435,6 +445,9 @@ export default function BookingModal({
 
           {error && <p className="bm-error">{error}</p>}
 
+          </div>{/* end bm-form-body */}
+
+          {/* Pinned footer — always visible, never scrolls behind content */}
           <div className="bm-actions">
             <button type="button" className="bm-cancel" onClick={onClose}>Cancel</button>
             <button type="submit" className="bm-save">

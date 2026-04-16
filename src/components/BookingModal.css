@@ -16,16 +16,23 @@
   width: 480px;
   max-width: 95vw;
   max-height: 90vh;
-  overflow-y: auto;
+  /* Flex column so header + footer are always visible and only the body scrolls */
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
   box-shadow: 0 8px 32px rgba(0,0,0,0.25);
 }
 
 .bm-header {
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 20px 24px 16px;
   border-bottom: 1px solid #eee;
+  /* Stays at the top even while the body scrolls */
+  background: #fff;
+  border-radius: 8px 8px 0 0;
 }
 
 .bm-title-block {
@@ -59,10 +66,23 @@
 .bm-close:hover { color: #222; }
 
 .bm-form {
+  /* Flex column: body grows + scrolls, actions stay pinned at the bottom */
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  overflow: hidden;
+  min-height: 0;
+}
+
+/* Scrollable field area — all form fields live here */
+.bm-form-body {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
   display: flex;
   flex-direction: column;
   gap: 14px;
-  padding: 20px 24px 24px;
+  padding: 20px 24px;
 }
 
 .bm-form label {
@@ -215,10 +235,14 @@
 }
 
 .bm-actions {
+  /* Pinned footer — never scrolls behind content */
+  flex-shrink: 0;
   display: flex;
   justify-content: flex-end;
   gap: 10px;
-  margin-top: 4px;
+  padding: 12px 24px 20px;
+  border-top: 1px solid #eee;
+  background: #fff;
 }
 
 .bm-cancel {
@@ -410,10 +434,17 @@
     border-radius: 16px 16px 0 0;
     max-height: 92vh;
   }
-  .bm-header { padding: 14px 16px 12px; }
-  .bm-form { padding: 14px 16px 20px; gap: 12px; }
+  .bm-header {
+    padding: 14px 16px 12px;
+    border-radius: 16px 16px 0 0;
+  }
+  .bm-form-body { padding: 14px 16px; gap: 12px; }
   .bm-row { grid-template-columns: 1fr; gap: 8px; }
-  .bm-actions { flex-direction: column-reverse; gap: 8px; }
+  .bm-actions {
+    flex-direction: column-reverse;
+    gap: 8px;
+    padding: 10px 16px 20px;
+  }
   .bm-cancel,
   .bm-save { width: 100%; text-align: center; padding: 11px; }
   .bm-recur-type-row  { gap: 14px; }
@@ -437,7 +468,8 @@
   .bm-room-name { font-size: 1.4rem; }
   .bm-user-name { font-size: 1rem; }
   .bm-header { padding: 26px 32px 20px; }
-  .bm-form { padding: 26px 32px 32px; gap: 18px; }
+  .bm-form-body { padding: 26px 32px; gap: 18px; }
+  .bm-actions { padding: 14px 32px 28px; }
   .bm-form input,
   .bm-form select,
   .bm-form textarea { font-size: 1.1rem; padding: 12px 16px; }
