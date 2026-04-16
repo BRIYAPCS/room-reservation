@@ -290,6 +290,9 @@ export default function LoginModal({ onClose, onDismiss, required = false, onBac
           setTimeout(() => emailInputRef.current?.focus(), 60)
           return
         }
+        // Save the display name now — this prevents the name step showing even
+        // when the backend's own PA call later times out during requestLoginOtp
+        if (paResult?.name) setPendingName(paResult.name)
         // valid === true OR fallback === true (PA unreachable) → proceed
       } catch { /* network error treated as fallback — allow through */ }
 
@@ -368,7 +371,9 @@ export default function LoginModal({ onClose, onDismiss, required = false, onBac
         // OTP sent successfully — email is valid, save local part for next open
         saveLastEmail(localPart)
         setMaskedEmail(res.maskedEmail || trimmedEmail)
-        setPendingName(res.name || '')
+        // Only update if backend's PA call also returned a name — never overwrite
+        // the name we already captured from validateEmail with an empty string
+        if (res.name) setPendingName(res.name)
         setPendingRole(role)
         setPendingEmail(trimmedEmail)
         setOtpCode('')
