@@ -1370,6 +1370,7 @@ export default function CalendarPage() {
           defaultBookedBy={auth.name || ''}
           roomName={room?.name}
           userName={auth.name}
+          existingEvents={events}
           onSave={handleSaveBooking}
           onClose={() => {
             calendarRef.current?.getApi().unselect()

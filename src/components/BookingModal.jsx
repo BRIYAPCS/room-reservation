@@ -55,6 +55,7 @@ const WEEK_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 export default function BookingModal({
   onSave, onClose, initialDate, defaultBookedBy,
   initialStart, initialEnd, roomName, userName,
+  existingEvents = [],   // all loaded events — used to grey out occupied time slots
 }) {
   const {
     bookingStartHour:    BOOKING_START_HOUR,
@@ -124,9 +125,100 @@ export default function BookingModal({
   })
   const [error, setError] = useState('')
 
+  // ── Past-time cutoff (minutes since midnight) ─────────────────
+  // Only active when form.date === today; -1 means "no cutoff" (future date).
+  // Re-evaluated whenever the date field changes.
+  const nowMins = useMemo(() => {
+    if (!form.date || form.date !== toDateStr(new Date())) return -1
+    const n = new Date()
+    return n.getHours() * 60 + n.getMinutes()
+  }, [form.date])
+
+  // ── Occupied intervals for form.date ─────────────────────────
+  // Each existing event that falls on the selected day becomes a blocked
+  // {start, end} interval (in minutes since midnight) that prevents overlap.
+  const occupiedIntervals = useMemo(() => {
+    if (!existingEvents?.length || !form.date) return []
+    return existingEvents
+      .filter(ev => ev.start && toDateStr(new Date(ev.start)) === form.date)
+      .map(ev => {
+        const s = new Date(ev.start)
+        const e = new Date(ev.end || ev.start)
+        const sMins = s.getHours() * 60 + s.getMinutes()
+        // If the event ends on a later date, treat it as ending at the booking end hour
+        const eMins = toDateStr(e) === form.date
+          ? e.getHours() * 60 + e.getMinutes()
+          : endBound
+        return { start: sMins, end: eMins }
+      })
+  }, [existingEvents, form.date, endBound])
+
+  // ── Valid start-time options ───────────────────────────────────
+  // Filters out:
+  //   • past times when today (nowMins cutoff)
+  //   • times that land inside an already-booked interval (A ≤ t < B)
+  const validStartOptions = useMemo(() => {
+    return TIME_OPTIONS.filter(opt => {
+      const t = timeToMins(opt.value)
+      if (nowMins >= 0 && t < nowMins) return false
+      return !occupiedIntervals.some(({ start: A, end: B }) => t >= A && t < B)
+    })
+  }, [TIME_OPTIONS, nowMins, occupiedIntervals])
+
+  // ── Valid end-time options ────────────────────────────────────
+  // Given the selected start time S, the end time E must satisfy:
+  //   • E ≥ S + SLOT_DURATION_MINUTES (minimum booking length)
+  //   • E ≤ first occupied-interval start A where A > S
+  //     (we cannot extend into the next booking's window)
+  const validEndOptions = useMemo(() => {
+    const S = timeToMins(form.startTime || minsToTime(startBound))
+    // Find the earliest booking that starts after our chosen start time
+    let ceiling = endBound
+    for (const { start: A, end: B } of occupiedIntervals) {
+      if (A > S && B > S) ceiling = Math.min(ceiling, A)
+    }
+    return TIME_OPTIONS.filter(opt => {
+      const t = timeToMins(opt.value)
+      return t >= S + SLOT_DURATION_MINUTES && t <= ceiling
+    })
+  }, [TIME_OPTIONS, form.startTime, occupiedIntervals, endBound, SLOT_DURATION_MINUTES])
+
   const isRecurring = ['daily', 'weekly', 'biweekly', 'monthly'].includes(form.recurring)
   // Multi-day is auto-detected: same-day unless end date > start date (and not a recurring series)
   const isMultiDay  = !isRecurring && form.endDate > form.date
+
+  // ── Auto-snap start time when it becomes invalid ──────────────
+  // Fires when the selected date changes (today ↔ future) or when the
+  // occupiedIntervals list changes.  Picks the first valid start option
+  // so the form is never left with a time that cannot be submitted.
+  useEffect(() => {
+    if (!validStartOptions.length) return
+    if (!validStartOptions.some(o => o.value === form.startTime)) {
+      const newStart = validStartOptions[0].value
+      const newStartMins = timeToMins(newStart)
+      setForm(prev => ({
+        ...prev,
+        startTime: newStart,
+        // Preserve the user's preferred duration, clamped to endBound
+        endTime: minsToTime(Math.min(
+          newStartMins + Math.max(SLOT_DURATION_MINUTES, timeToMins(prev.endTime) - timeToMins(prev.startTime)),
+          endBound
+        )),
+      }))
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [validStartOptions])
+
+  // ── Auto-snap end time when it falls outside valid range ──────
+  // Fires after start time snaps or the user picks a new start manually.
+  useEffect(() => {
+    if (!validEndOptions.length) return
+    if (!validEndOptions.some(o => o.value === form.endTime)) {
+      // Prefer the last valid end (keeps longest possible booking), not the first
+      setForm(prev => ({ ...prev, endTime: validEndOptions[validEndOptions.length - 1].value }))
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [validEndOptions])
 
   // Max date for "Repeat Until" — RECURRING_MAX_MONTHS from start date
   const maxRecurDate = useMemo(() => {
@@ -347,7 +439,7 @@ export default function BookingModal({
               <label>
                 Start Time
                 <select name="startTime" value={form.startTime} onChange={handleChange}>
-                  {TIME_OPTIONS.map(opt => (
+                  {validStartOptions.map(opt => (
                     <option key={opt.value} value={opt.value}>{opt.label}</option>
                   ))}
                 </select>
@@ -355,11 +447,9 @@ export default function BookingModal({
               <label>
                 End Time
                 <select name="endTime" value={form.endTime} onChange={handleChange}>
-                  {TIME_OPTIONS
-                    .filter(opt => timeToMins(opt.value) >= timeToMins(form.startTime) + SLOT_DURATION_MINUTES)
-                    .map(opt => (
-                      <option key={opt.value} value={opt.value}>{opt.label}</option>
-                    ))}
+                  {validEndOptions.map(opt => (
+                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                  ))}
                 </select>
               </label>
             </div>
