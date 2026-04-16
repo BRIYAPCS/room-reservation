@@ -57,6 +57,7 @@ export default function LoginModal({ onClose, onDismiss, required = false, onBac
 
   const [email, setEmail]                         = useState('')
   const [emailDomainError, setEmailDomainError]   = useState('')
+  const [emailRequiredError, setEmailRequiredError] = useState('')  // admin/superadmin enforcement
   const [emailSendError, setEmailSendError]       = useState('')   // OTP send failure
   const [emailSendFailed, setEmailSendFailed]     = useState(false)
 
@@ -190,6 +191,7 @@ export default function LoginModal({ onClose, onDismiss, required = false, onBac
     const val = e.target.value
     setEmail(val)
     if (emailSendFailed) { setEmailSendFailed(false); setEmailSendError('') }
+    if (emailRequiredError) setEmailRequiredError('')
     if (val && val.trim() && !val.trim().toLowerCase().endsWith(BRIYA_DOMAIN)) {
       setEmailDomainError(`Only ${BRIYA_DOMAIN} emails are allowed`)
     } else {
@@ -211,6 +213,16 @@ export default function LoginModal({ onClose, onDismiss, required = false, onBac
 
     const trimmedEmail = email.trim().toLowerCase()
     const isBriyaEmail = trimmedEmail.endsWith(BRIYA_DOMAIN)
+
+    // Admin and superadmin must verify via @briya.org email — no bypass allowed
+    const isPrivileged = role === 'admin' || role === 'superadmin'
+    if (isPrivileged && (!trimmedEmail || !isBriyaEmail)) {
+      setPinLoading(false)
+      setEmailRequiredError(
+        `${role === 'superadmin' ? 'Super Admin' : 'Admin'} access requires a verified ${BRIYA_DOMAIN} email.`
+      )
+      return
+    }
 
     if (trimmedEmail && isBriyaEmail) {
       // ── Trusted device: probe first, before hitting the rate-limited OTP endpoint ──
@@ -318,8 +330,10 @@ export default function LoginModal({ onClose, onDismiss, required = false, onBac
     setStep('name')
   }
 
-  // Called when OTP send failed and user wants to continue without email
+  // Called when OTP send failed and user wants to continue without email.
+  // Not available for admin/superadmin — they must fix their email.
   function handleContinueWithoutEmail() {
+    if (pendingRole === 'admin' || pendingRole === 'superadmin') return
     setEmailSendFailed(false)
     setEmailSendError('')
     setStep('name')
@@ -411,7 +425,7 @@ export default function LoginModal({ onClose, onDismiss, required = false, onBac
   function resetModalState() {
     setPin(''); setShowPin(false); setPinTypeWarning('')
     setPinError(''); setPinLoading(false)
-    setEmail(''); setEmailDomainError(''); setEmailSendError('')
+    setEmail(''); setEmailDomainError(''); setEmailRequiredError(''); setEmailSendError('')
     setEmailSendFailed(false)
     setOtpCode(''); setOtpError(''); setOtpLoading(false)
     setMaskedEmail(''); setResendCooldown(0); setOtpCountdown(0)
@@ -489,23 +503,24 @@ export default function LoginModal({ onClose, onDismiss, required = false, onBac
               {pinTypeWarning && <p className="lm-warn">{pinTypeWarning}</p>}
               {pinError && <p className="lm-error">{pinError}</p>}
 
-              {/* Optional email field */}
+              {/* Email field — optional for standard, required for admin/superadmin */}
               <div className="lm-email-wrap">
                 <ClearableInput
                   type="email"
                   name="email"
                   className={[
                     'lm-input lm-email-input',
-                    emailDomainError  ? 'lm-input--error' : '',
-                    emailSendFailed   ? 'lm-input--warn'  : '',
+                    emailDomainError || emailRequiredError ? 'lm-input--error' : '',
+                    emailSendFailed                        ? 'lm-input--warn'  : '',
                   ].filter(Boolean).join(' ')}
-                  placeholder={`Optional — enter your ${BRIYA_DOMAIN} email`}
+                  placeholder={`Enter your ${BRIYA_DOMAIN} email`}
                   value={email}
                   onChange={handleEmailChange}
                   autoComplete="email"
                 />
               </div>
-              {emailDomainError && <p className="lm-error lm-domain-error">{emailDomainError}</p>}
+              {emailDomainError   && <p className="lm-error lm-domain-error">{emailDomainError}</p>}
+              {emailRequiredError && <p className="lm-error lm-domain-error">{emailRequiredError}</p>}
 
               {/* OTP send failure banner */}
               {emailSendFailed && emailSendError && (
@@ -513,17 +528,21 @@ export default function LoginModal({ onClose, onDismiss, required = false, onBac
                   <span className="lm-verify-failed-icon">⚠</span>
                   <div className="lm-verify-failed-text">
                     <strong>{emailSendError}</strong>
-                    <span>Fix your email and try again, or continue without email verification.</span>
+                    <span>
+                      {pendingRole === 'admin' || pendingRole === 'superadmin'
+                        ? 'Fix your email and try again — verification is required for this role.'
+                        : 'Fix your email and try again, or continue without email verification.'}
+                    </span>
                   </div>
                 </div>
               )}
 
-              {emailSendFailed ? (
+              {emailSendFailed && pendingRole !== 'admin' && pendingRole !== 'superadmin' ? (
                 <button type="button" className="lm-btn-gold lm-btn-full" onClick={handleContinueWithoutEmail}>
                   Continue without email →
                 </button>
               ) : (
-                <button type="submit" className="lm-btn-gold lm-btn-full" disabled={pinLoading}>
+                <button type="submit" className="lm-btn-gold lm-btn-full" disabled={pinLoading || !!emailSendFailed}>
                   {pinLoading ? 'Sending code…' : 'Continue →'}
                 </button>
               )}
@@ -597,9 +616,11 @@ export default function LoginModal({ onClose, onDismiss, required = false, onBac
                 : 'Resend code'}
             </button>
 
-            <button type="button" className="lm-otp-skip-btn" onClick={handleSkipOtp}>
-              Skip email verification
-            </button>
+            {pendingRole !== 'admin' && pendingRole !== 'superadmin' && (
+              <button type="button" className="lm-otp-skip-btn" onClick={handleSkipOtp}>
+                Skip email verification
+              </button>
+            )}
           </>
         )}
 

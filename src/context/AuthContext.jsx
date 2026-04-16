@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, useRef } from 'react'
-import { verifyPin as apiVerifyPin, logoutAllSessions, checkSession } from '../services/api'
+import { verifyPin as apiVerifyPin, logoutAllSessions } from '../services/api'
+import ForcedLogoutBanner from '../components/ForcedLogoutBanner'
 
 const AuthContext = createContext(null)
 
@@ -98,6 +99,10 @@ function saveDeviceName(role, name) {
 
 export function AuthProvider({ children }) {
   const [auth, setAuth] = useState(loadFromSession)
+  const [forcedLogoutName, setForcedLogoutName] = useState('')
+  const forcedLogoutTimerRef = useRef(null)
+  const authRef = useRef(auth)
+  authRef.current = auth
 
   // PIN is verified server-side — never exposed in the frontend bundle
   async function validatePin(pin) {
@@ -187,13 +192,37 @@ export function AuthProvider({ children }) {
 
   // Session-revocation poll — only for email-verified sessions, which are the
   // only ones that can be invalidated by logout-all.  Polls GET /auth/session
-  // every 30 s; a 401 response fires briya:auth:expired (handled above) so the
-  // user is logged out within one polling cycle of another device calling logout-all.
+  // every 30 s; a 401 means another device called logout-all, so we show the
+  // ForcedLogoutBanner before clearing the session.
   const SESSION_POLL_MS = 30_000
+  const BASE = import.meta.env.VITE_API_BASE || '/api'
   useEffect(() => {
     if (!auth.emailVerified || !auth.email) return
-    const id = setInterval(() => {
-      checkSession().catch(() => {})  // 401 path is handled by api.js → briya:auth:expired
+    const id = setInterval(async () => {
+      try {
+        const token = localStorage.getItem('authToken') || ''
+        if (!token) return
+        const res = await fetch(`${BASE}/auth/session`, {
+          headers: { 'Authorization': `Bearer ${token}` },
+        })
+        if (res.status === 401) {
+          // Capture name before clearing state
+          const nameBeforeLogout = authRef.current.name || ''
+          localStorage.removeItem('authToken')
+          localStorage.removeItem(SESSION_KEY)
+          setAuth({
+            role: 'none',
+            name: '',
+            email: '',
+            emailVerified: false,
+            deviceSessionId: getOrCreateDeviceSessionId(),
+          })
+          // Show the banner with a 6-second auto-dismiss
+          setForcedLogoutName(nameBeforeLogout)
+          if (forcedLogoutTimerRef.current) clearTimeout(forcedLogoutTimerRef.current)
+          forcedLogoutTimerRef.current = setTimeout(() => setForcedLogoutName(''), 6000)
+        }
+      } catch (_) {}
     }, SESSION_POLL_MS)
     return () => clearInterval(id)
   }, [auth.emailVerified, auth.email])
@@ -206,6 +235,15 @@ export function AuthProvider({ children }) {
   return (
     <AuthContext.Provider value={{ auth, login, logout, logoutAll, validatePin, canDelete }}>
       {children}
+      {forcedLogoutName !== '' && (
+        <ForcedLogoutBanner
+          name={forcedLogoutName}
+          onDismiss={() => {
+            if (forcedLogoutTimerRef.current) clearTimeout(forcedLogoutTimerRef.current)
+            setForcedLogoutName('')
+          }}
+        />
+      )}
     </AuthContext.Provider>
   )
 }
