@@ -280,6 +280,7 @@ export default function LoginModal({ onClose, onDismiss, required = false, onBac
       // Verify the email exists in the Briya directory before doing anything else.
       // If PA is unreachable (fallback: true), allow the user through gracefully.
       // If PA says the account is not found, stop and ask the user to correct it.
+      let paName = ''
       try {
         const paResult = await validateEmail(trimmedEmail).catch(() => ({ valid: false, fallback: true }))
         if (paResult?.valid === false && !paResult?.fallback) {
@@ -290,9 +291,12 @@ export default function LoginModal({ onClose, onDismiss, required = false, onBac
           setTimeout(() => emailInputRef.current?.focus(), 60)
           return
         }
-        // Save the display name now — this prevents the name step showing even
-        // when the backend's own PA call later times out during requestLoginOtp
-        if (paResult?.name) setPendingName(paResult.name)
+        // Capture name locally so trusted-device paths can use it without React
+        // state timing issues — setPendingName updates async, paName is immediate
+        if (paResult?.name) {
+          paName = paResult.name
+          setPendingName(paResult.name)
+        }
         // valid === true OR fallback === true (PA unreachable) → proceed
       } catch { /* network error treated as fallback — allow through */ }
 
@@ -319,7 +323,14 @@ export default function LoginModal({ onClose, onDismiss, required = false, onBac
             completeLogin(saved, true)   // "Welcome back, [name]"
             return
           }
-          // Trusted device but no stored name (first time naming) — ask once
+          // Trusted device — use PA name if available to skip name step
+          if (paName) {
+            await login(pin, paName, { email: trimmedEmail })
+            setPinLoading(false)
+            completeLogin(paName, true)   // "Welcome back, [name from PA]"
+            return
+          }
+          // No PA name — ask the user once
           setName('')
           setNameFromDevice(false)
           setPinLoading(false)
@@ -357,6 +368,13 @@ export default function LoginModal({ onClose, onDismiss, required = false, onBac
             await login(pin, saved, { email: trimmedEmail })
             setPinLoading(false)
             completeLogin(saved, true)   // "Welcome back, [name]" (safety-net trusted path)
+            return
+          }
+          // Trusted device (safety-net path) — use PA name if available
+          if (paName) {
+            await login(pin, paName, { email: trimmedEmail })
+            setPinLoading(false)
+            completeLogin(paName, true)   // "Welcome back, [name from PA]"
             return
           }
           setName('')
