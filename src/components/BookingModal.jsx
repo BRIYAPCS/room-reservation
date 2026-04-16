@@ -265,17 +265,24 @@ export default function BookingModal({
 
           <label>
             Email
-            {identityLocked && <span className="bm-identity-verified-tag">🔒 Verified</span>}
-            <ClearableInput
-              type="email"
-              name="ownerEmail"
-              value={form.ownerEmail}
-              onChange={handleChange}
-              placeholder="Optional — your @briya.org email"
-              disabled={identityLocked}
-              className={identityLocked ? 'bm-input--locked' : undefined}
-              autoComplete="email"
-            />
+            {identityLocked ? (
+              /* Read-only verified email — styled as a distinct display, not a
+                 disabled input, so it looks intentional on every screen size. */
+              <div className="bm-email-locked">
+                <span className="bm-email-locked-icon">🔒</span>
+                <span className="bm-email-locked-address">{form.ownerEmail}</span>
+                <span className="bm-email-locked-badge">Verified</span>
+              </div>
+            ) : (
+              <ClearableInput
+                type="email"
+                name="ownerEmail"
+                value={form.ownerEmail}
+                onChange={handleChange}
+                placeholder="Optional — your @briya.org email"
+                autoComplete="email"
+              />
+            )}
           </label>
 
           {/* ── All Day + Recurring Event — same row ── */}

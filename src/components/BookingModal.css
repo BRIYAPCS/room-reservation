@@ -129,20 +129,48 @@
   border-color: #d1d5db;
 }
 
-/* Verified badge shown inline next to the Email label */
-.bm-identity-verified-tag {
-  display: inline-flex;
+/* ── Locked (verified) email display ── */
+/* Replaces the disabled ClearableInput so the read-only state looks
+   intentional on every screen size, not just a grayed-out input. */
+.bm-email-locked {
+  display: flex;
   align-items: center;
-  gap: 3px;
-  margin-left: 6px;
-  font-size: clamp(0.68rem, 0.9vw, 0.75rem);
+  gap: 8px;
+  margin-top: 5px;
+  padding: 8px 12px;
+  background: #f0fdf4;
+  border: 1.5px solid #86efac;
+  border-radius: 7px;
+  min-height: 38px;
+  box-sizing: border-box;
+}
+
+.bm-email-locked-icon {
+  flex-shrink: 0;
+  font-size: 0.85rem;
+  line-height: 1;
+}
+
+.bm-email-locked-address {
+  flex: 1;
+  min-width: 0;
+  font-size: clamp(0.82rem, 1.1vw, 0.92rem);
+  color: #166534;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.bm-email-locked-badge {
+  flex-shrink: 0;
+  font-size: clamp(0.65rem, 0.85vw, 0.72rem);
   font-weight: 700;
   color: #15803d;
   background: #dcfce7;
   border: 1px solid #86efac;
   border-radius: 10px;
-  padding: 1px 7px;
-  vertical-align: middle;
+  padding: 2px 8px;
+  white-space: nowrap;
   user-select: none;
 }
 
