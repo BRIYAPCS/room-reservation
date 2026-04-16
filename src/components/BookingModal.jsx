@@ -127,12 +127,15 @@ export default function BookingModal({
 
   // ── Past-time cutoff (minutes since midnight) ─────────────────
   // Only active when form.date === today; -1 means "no cutoff" (future date).
-  // Re-evaluated whenever the date field changes.
+  // Floored to the current slot boundary so a partially-elapsed slot
+  // (e.g. 3:00–3:15 when the clock reads 3:10) stays selectable —
+  // consistent with CalendarPage.findFirstAvailableSlot which does the same.
   const nowMins = useMemo(() => {
     if (!form.date || form.date !== toDateStr(new Date())) return -1
     const n = new Date()
-    return n.getHours() * 60 + n.getMinutes()
-  }, [form.date])
+    const mins = n.getHours() * 60 + n.getMinutes()
+    return Math.floor(mins / SLOT_DURATION_MINUTES) * SLOT_DURATION_MINUTES
+  }, [form.date, SLOT_DURATION_MINUTES])
 
   // ── Occupied intervals for form.date ─────────────────────────
   // Each existing event that falls on the selected day becomes a blocked
