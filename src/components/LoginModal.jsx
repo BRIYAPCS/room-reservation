@@ -27,6 +27,9 @@ function PersonIcon() {
 const BRIYA_DOMAIN    = '@briya.org'
 const RESEND_COOLDOWN = 300   // 5 minutes — matches OTP_RESEND_COOLDOWN_SECONDS
 const OTP_TTL_SECS    = 600   // 10 minutes — matches OTP_EXPIRATION_MINUTES
+// Persists the last successfully used email local part across sessions so
+// the field is pre-filled on next open, enabling trusted-device fast-login.
+const LAST_EMAIL_KEY  = 'briya_last_login_email'
 
 export default function LoginModal({ onClose, onDismiss, required = false, onBack }) {
   const { auth, login, logout, logoutAll, validatePin } = useAuth()
@@ -54,8 +57,12 @@ export default function LoginModal({ onClose, onDismiss, required = false, onBac
   const [pinError, setPinError]           = useState('')
   const [pinLoading, setPinLoading]       = useState(false)
 
-  // email stores only the local part (before @briya.org)
-  const [email, setEmail]                           = useState('')
+  // email stores only the local part (before @briya.org).
+  // Pre-populated from the last successfully used email so trusted-device
+  // users don't have to re-type it on every login.
+  const [email, setEmail] = useState(() => {
+    try { return localStorage.getItem(LAST_EMAIL_KEY) || '' } catch { return '' }
+  })
   const [emailRequiredError, setEmailRequiredError] = useState('')  // admin/superadmin enforcement
   const [emailSendError, setEmailSendError]         = useState('')  // OTP send failure
   const [emailSendFailed, setEmailSendFailed]       = useState(false)
@@ -197,6 +204,12 @@ export default function LoginModal({ onClose, onDismiss, required = false, onBac
     }, 1000)
   }
 
+  // Persists the local part of the email so the field is pre-filled next time.
+  // Only called after a successful API action (OTP sent, trusted device recognised).
+  function saveLastEmail(localPart) {
+    try { if (localPart) localStorage.setItem(LAST_EMAIL_KEY, localPart) } catch {}
+  }
+
   // ── PIN step handlers ─────────────────────────────────────────
   function handlePinChange(e) {
     const raw = e.target.value
@@ -217,7 +230,10 @@ export default function LoginModal({ onClose, onDismiss, required = false, onBac
   async function handlePinSubmit(e) {
     e.preventDefault()
     setPinLoading(true)
+    // Clear any stale failure state from a previous attempt so the banner
+    // doesn't remain visible while the new request is in flight.
     setEmailSendError('')
+    setEmailSendFailed(false)
 
     const role = await validatePin(pin)
     if (!role) {
@@ -252,6 +268,8 @@ export default function LoginModal({ onClose, onDismiss, required = false, onBac
         console.debug(`[TRUSTED-DEBUG] checkTrustedDevice | email=${trimmedEmail} | dsid=${auth.deviceSessionId?.slice(0,8)}… | trusted=${checkResult?.trusted}`)
         const { trusted } = checkResult
         if (trusted) {
+          // Email confirmed as owned by this device — persist local part for next open
+          saveLastEmail(localPart)
           setPendingRole(role)
           setPendingEmail(trimmedEmail)
           const saved = getDeviceName(role)
@@ -291,6 +309,8 @@ export default function LoginModal({ onClose, onDismiss, required = false, onBac
         // a code that was never sent.
         console.debug(`[TRUSTED-DEBUG] requestLoginOtp | email=${trimmedEmail} | res.trusted=${res?.trusted} | res.ok=${res?.ok}`)
         if (res?.trusted) {
+          // Server confirmed device is trusted (safety-net for silently-failed client check)
+          saveLastEmail(localPart)
           setPendingRole(role)
           setPendingEmail(trimmedEmail)
           const saved = getDeviceName(role)
@@ -309,6 +329,8 @@ export default function LoginModal({ onClose, onDismiss, required = false, onBac
 
         // res could be undefined if the auth token was rejected (401 path in request())
         if (!res) throw new Error('No response from server.')
+        // OTP sent successfully — email is valid, save local part for next open
+        saveLastEmail(localPart)
         setMaskedEmail(res.maskedEmail || trimmedEmail)
         setPendingName(res.name || '')
         setPendingRole(role)
@@ -405,6 +427,27 @@ export default function LoginModal({ onClose, onDismiss, required = false, onBac
     setOtpCode('')
     try {
       const res = await requestLoginOtp(pendingEmail, auth.deviceSessionId)
+
+      // Safety guard: api.js returns undefined on a 401 (token revoked mid-session)
+      if (!res) throw new Error('No response from server.')
+
+      // The server performs its own trusted-device check in request-login-otp.
+      // If it returns { trusted: true }, no email was sent — auto-login immediately
+      // so the user is never left waiting for a code that will never arrive.
+      if (res.trusted) {
+        const saved = getDeviceName(pendingRole)
+        if (saved) {
+          await login(pin, saved, { email: pendingEmail })
+          completeLogin(saved, true)   // "Welcome back, [name]"
+        } else {
+          // Device is trusted but name not yet stored on this device — ask once
+          setName('')
+          setNameFromDevice(false)
+          setStep('name')
+        }
+        return
+      }
+
       setMaskedEmail(res.maskedEmail || pendingEmail)
       if (res.name) setPendingName(res.name)
       startResendCooldown()
@@ -413,7 +456,8 @@ export default function LoginModal({ onClose, onDismiss, required = false, onBac
       const raw = err.message || ''
       const isRateLimit = raw === 'RATE_LIMIT_EXCEEDED'
       if (isRateLimit && err.retryAfterSeconds) {
-        startResendCooldown()  // show the existing 5-min cooldown UI
+        // Show both the resend cooldown UI and the exact server-reported wait time
+        startResendCooldown()
         startRateLimitCountdown(err.retryAfterSeconds)
       }
       setOtpError(isRateLimit
@@ -453,7 +497,11 @@ export default function LoginModal({ onClose, onDismiss, required = false, onBac
   function resetModalState() {
     setPin(''); setShowPin(false); setPinTypeWarning('')
     setPinError(''); setPinLoading(false)
-    setEmail(''); setEmailRequiredError(''); setEmailSendError('')
+    // Restore the persisted email so the field is still pre-filled after Switch Account.
+    // localStorage only updates on successful login, so it always reflects the last
+    // person who actually logged in on this device.
+    try { setEmail(localStorage.getItem(LAST_EMAIL_KEY) || '') } catch { setEmail('') }
+    setEmailRequiredError(''); setEmailSendError('')
     setEmailSendFailed(false); setRateLimitCountdown(0)
     setOtpCode(''); setOtpError(''); setOtpLoading(false)
     setMaskedEmail(''); setResendCooldown(0); setOtpCountdown(0)
