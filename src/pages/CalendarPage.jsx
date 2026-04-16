@@ -155,7 +155,7 @@ export default function CalendarPage() {
   const [toast, setToast] = useState({ show: false, message: '', type: 'success' })
 
   // Hover tooltip (desktop only)
-  const [tooltip, setTooltip] = useState({ show: false, x: 0, y: 0, title: '', bookedBy: '', desc: '', time: '' })
+  const [tooltip, setTooltip] = useState({ show: false, x: 0, y: 0, title: '', bookedBy: '', desc: '', time: '', isActive: false })
 
   // ── Auth helpers ──────────────────────────────────────────────
   const getActionState = (event) => {
@@ -576,6 +576,9 @@ export default function CalendarPage() {
 
   const handleEventMouseEnter = (info) => {
     const e = info.jsEvent
+    const now = new Date()
+    const isActive = !!(info.event.start && info.event.end &&
+      info.event.start <= now && now < info.event.end)
     setTooltip({
       show: true,
       x: e.clientX,
@@ -584,6 +587,7 @@ export default function CalendarPage() {
       bookedBy: info.event.extendedProps?.bookedBy || '',
       desc: '',
       time: `${formatTime(info.event.startStr)} – ${formatTime(info.event.endStr)}`,
+      isActive,
     })
   }
 
@@ -1056,6 +1060,10 @@ export default function CalendarPage() {
                   const durationMins = (arg.event.end - arg.event.start) / 60000
                   const isShort      = durationMins <= 20
                   const isMonthView  = arg.view.type === 'dayGridMonth'
+                  // Green live-dot: event is currently happening right now
+                  const nowTs   = Date.now()
+                  const isActive = !!(arg.event.start && arg.event.end &&
+                    arg.event.start.getTime() <= nowTs && nowTs < arg.event.end.getTime())
 
                   if (isMonthView) {
                     return (
@@ -1064,7 +1072,7 @@ export default function CalendarPage() {
                         isSecondary ? 'fc-month-pill--conflict' : '',
                       ].filter(Boolean).join(' ')}>
                         {isConflict && <span className="fc-month-pill-warn" title="Overlapping booking">⚠</span>}
-                        <span className="fc-month-pill-dot" />
+                        <span className={['fc-month-pill-dot', isActive ? 'fc-month-pill-dot--live' : ''].filter(Boolean).join(' ')} />
                         <span className="fc-month-pill-title">{displayTitle}</span>
                         {bookedBy && <span className="fc-month-pill-who">{bookedBy}</span>}
                       </div>
@@ -1078,6 +1086,8 @@ export default function CalendarPage() {
                       isShort     ? 'fc-event-inner--short'    : '',
                     ].filter(Boolean).join(' ')}>
                       {isConflict && <span className="fc-event-conflict-badge" title="Overlapping booking">⚠</span>}
+                      {/* Green pulsing dot when this event is currently in progress */}
+                      {isActive && <span className="fc-event-live-dot" aria-label="Meeting in progress" />}
                       {isShort ? (
                         <span className="fc-event-short-row">
                           <span className="fc-event-time">{arg.timeText}</span>
@@ -1203,6 +1213,11 @@ export default function CalendarPage() {
           {tooltip.bookedBy && <div className="cal-tooltip-row">👤 {tooltip.bookedBy}</div>}
           {tooltip.time && <div className="cal-tooltip-row">🕐 {tooltip.time}</div>}
           {tooltip.desc && <div className="cal-tooltip-row cal-tooltip-desc">{tooltip.desc}</div>}
+          {tooltip.isActive && (
+            <div className="cal-tooltip-live">
+              <span>●</span> Meeting in progress
+            </div>
+          )}
         </div>
       )}
 

@@ -44,7 +44,11 @@ export default function EventDetailsModal({ event, actionState, isAdmin, onEdit,
   // Past events cannot be edited by standard users — hide the Edit button entirely
   // so they never see an action that would be immediately blocked by the handler.
   // Admins are exempt and can always edit/delete regardless of event time.
-  const isPastEvent = new Date(event.end || event.endStr) <= new Date()
+  const now = new Date()
+  const eventStart = new Date(event.start || event.startStr)
+  const eventEnd   = new Date(event.end   || event.endStr)
+  const isPastEvent   = eventEnd   <= now
+  const isActiveNow   = eventStart <= now && now < eventEnd
 
   const title = getDisplayTitle(event)
   const bookedBy = event.extendedProps?.bookedBy || '—'
@@ -85,6 +89,12 @@ export default function EventDetailsModal({ event, actionState, isAdmin, onEdit,
         <div className="edm-divider" />
 
         <div className="edm-body">
+          {isActiveNow && (
+            <div className="edm-live-banner">
+              <span className="edm-live-dot" />
+              Meeting in progress
+            </div>
+          )}
           <div className="edm-row">
             <span className="edm-label">Title:</span>
             <span className="edm-value">{title}</span>
