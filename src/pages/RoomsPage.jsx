@@ -1,11 +1,12 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, lazy, Suspense } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import BriyaFullLogo from '../components/BriyaFullLogo'
 import Breadcrumb from '../components/Breadcrumb'
 import UserAvatar from '../components/UserAvatar'
 import LoginModal from '../components/LoginModal'
-import WeatherWidget from '../components/WeatherWidget'
-import VisitorCounter from '../components/VisitorCounter'
+
+const WeatherWidget  = lazy(() => import('../components/WeatherWidget'))
+const VisitorCounter = lazy(() => import('../components/VisitorCounter'))
 import SortModal from '../components/SortModal'
 import AddRoomModal from '../components/AddRoomModal'
 import EditCardModal from '../components/EditCardModal'
@@ -136,7 +137,7 @@ export default function RoomsPage() {
       <header className="rooms-header">
         <div className="rooms-header-left">
           <button className="back-btn" onClick={() => navigate('/')}>← Sites</button>
-          {weatherEnabled && <WeatherWidget />}
+          {weatherEnabled && <Suspense fallback={null}><WeatherWidget /></Suspense>}
         </div>
         <div className={`header-logo rp-anim rp-anim-logo${pageReady ? ' rp-entered' : ''}`}>
           <BriyaFullLogo />
@@ -208,7 +209,7 @@ export default function RoomsPage() {
                   src={room.image_url ? getImageUrl(room.image_url) : comingSoon}
                   alt={room.name}
                   className="room-card-img"
-                  loading="eager"
+                  loading={index === 0 ? 'eager' : 'lazy'}
                   decoding="async"
                   onLoad={onImageSettled}
                   onError={e => {
@@ -266,7 +267,7 @@ export default function RoomsPage() {
         © 2025 | Designed &amp; Engineered by the Briya IT Team | All Rights Reserved.
       </footer>
 
-      {visitorCounterEnabled && <VisitorCounter />}
+      {visitorCounterEnabled && <Suspense fallback={null}><VisitorCounter /></Suspense>}
 
       {showSort && (
         <SortModal

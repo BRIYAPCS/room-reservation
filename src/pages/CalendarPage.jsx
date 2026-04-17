@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback, useMemo, useEffect } from 'react'
+import { useState, useRef, useCallback, useMemo, useEffect, lazy, Suspense } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { isAdmin } from '../utils/roles'
 import FullCalendar from '@fullcalendar/react'
@@ -17,7 +17,7 @@ import LegacyClaimModal from '../components/LegacyClaimModal'
 import RecurrenceActionSheet from '../components/RecurrenceActionSheet'
 import { useAuth } from '../context/AuthContext'
 import { useConfig } from '../context/ConfigContext'
-import VisitorCounter from '../components/VisitorCounter'
+const VisitorCounter = lazy(() => import('../components/VisitorCounter'))
 import * as api from '../services/api'
 import ClearableInput from '../components/ClearableInput'
 import './CalendarPage.css'
@@ -1386,7 +1386,7 @@ export default function CalendarPage() {
       )}
 
       {/* Live visitor counter */}
-      {visitorCounterEnabled && <VisitorCounter />}
+      {visitorCounterEnabled && <Suspense fallback={null}><VisitorCounter /></Suspense>}
 
       {/* New Booking Modal */}
       {showBookingModal && (

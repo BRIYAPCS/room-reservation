@@ -1,10 +1,14 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, lazy, Suspense } from 'react'
 import { useNavigate } from 'react-router-dom'
 import BriyaFullLogo from '../components/BriyaFullLogo'
 import UserAvatar from '../components/UserAvatar'
 import LoginModal from '../components/LoginModal'
-import WeatherWidget from '../components/WeatherWidget'
-import VisitorCounter from '../components/VisitorCounter'
+
+// Lazy-loaded: only downloaded after the page renders, not before.
+// Both are conditionally shown (feature flags), so there's no visible
+// delay — the widgets simply appear once their chunk arrives.
+const WeatherWidget   = lazy(() => import('../components/WeatherWidget'))
+const VisitorCounter  = lazy(() => import('../components/VisitorCounter'))
 import SortModal from '../components/SortModal'
 import AddSiteModal from '../components/AddSiteModal'
 import EditCardModal from '../components/EditCardModal'
@@ -93,7 +97,7 @@ export default function HomePage() {
 
       <header className="home-header">
         <div className="home-header-left">
-          {weatherEnabled && <WeatherWidget />}
+          {weatherEnabled && <Suspense fallback={null}><WeatherWidget /></Suspense>}
         </div>
         <div className="header-logo">
           <BriyaFullLogo />
@@ -179,7 +183,7 @@ export default function HomePage() {
                   src={comingSoon}
                   alt={site.name}
                   className="site-card-img"
-                  loading="eager"
+                  loading={index === 0 ? 'eager' : 'lazy'}
                   decoding="async"
                   onLoad={e => {
                     clearTimeout(e.target._loadTimer)
@@ -262,7 +266,7 @@ export default function HomePage() {
         © 2025 | Designed &amp; Engineered by the Briya IT Team | All Rights Reserved.
       </footer>
 
-      {visitorCounterEnabled && <VisitorCounter />}
+      {visitorCounterEnabled && <Suspense fallback={null}><VisitorCounter /></Suspense>}
 
       {showSort && (
         <SortModal
