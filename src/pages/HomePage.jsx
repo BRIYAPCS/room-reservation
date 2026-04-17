@@ -78,7 +78,7 @@ export default function HomePage() {
   }, [sites])
 
   return (
-    <div className="home-page">
+    <div className={`home-page${pageReady ? ' hp-entered' : ''}`}>
       {/* Full-page loading overlay — hides until data + images are ready */}
       {!pageReady && (
         <div style={{
@@ -162,7 +162,11 @@ export default function HomePage() {
 
         <div className="site-grid">
           {sites.map((site, index) => (
-            <div key={site.id} className={`site-card-wrap${manageMode && siteManagementEnabled ? ' site-card-wrap--manage' : ''}`}>
+            <div
+              key={site.id}
+              className={`site-card-wrap${manageMode && siteManagementEnabled ? ' site-card-wrap--manage' : ''}`}
+              style={{ '--card-i': index }}
+            >
               <button
                 className="site-card"
                 onMouseEnter={e => {

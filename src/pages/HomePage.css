@@ -282,6 +282,81 @@
 }
 
 /* ────────────────────────────────────────────────────────────
+   ENTRANCE ANIMATIONS
+   All use transform+opacity only (GPU-composited, no layout
+   reflow). Triggered by .hp-entered added when pageReady=true.
+   Initial opacity:0 prevents flash; no visible state before JS.
+   ──────────────────────────────────────────────────────────── */
+
+@keyframes hp-fade-down {
+  from { opacity: 0; transform: translateY(-18px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes hp-fade-up {
+  from { opacity: 0; transform: translateY(18px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes hp-fade-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes hp-card-in {
+  from { opacity: 0; transform: translateY(22px) scale(0.96); }
+  to   { opacity: 1; transform: translateY(0)   scale(1); }
+}
+
+/* Pre-animation: hidden until hp-entered fires */
+.home-header,
+.home-title,
+.home-subtitle-box,
+.site-card-wrap,
+.home-footer {
+  opacity: 0;
+}
+
+/* Header slides down */
+.hp-entered .home-header {
+  animation: hp-fade-down 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: 0.05s;
+}
+
+/* Title fades in from slight below */
+.hp-entered .home-title {
+  animation: hp-fade-in 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: 0.18s;
+}
+
+/* Subtitle pill fades in */
+.hp-entered .home-subtitle-box {
+  animation: hp-fade-in 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: 0.28s;
+}
+
+/* Cards stagger via CSS custom property --card-i */
+.hp-entered .site-card-wrap {
+  animation: hp-card-in 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: calc(0.36s + var(--card-i, 0) * 0.08s);
+}
+
+/* Footer slides up */
+.hp-entered .home-footer {
+  animation: hp-fade-up 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: 0.45s;
+}
+
+/* Accessibility: instant reveal, no motion */
+@media (prefers-reduced-motion: reduce) {
+  .home-header,
+  .home-title,
+  .home-subtitle-box,
+  .site-card-wrap,
+  .home-footer { opacity: 1; animation: none; }
+}
+
+/* ────────────────────────────────────────────────────────────
    MOBILE (≤640px) — restore natural scroll; aspect-ratio cards
    ──────────────────────────────────────────────────────────── */
 @media (max-width: 640px) {
