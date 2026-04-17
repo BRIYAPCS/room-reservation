@@ -30,6 +30,38 @@ const OTP_TTL_SECS    = 600   // 10 minutes — matches OTP_EXPIRATION_MINUTES
 // Persists the last successfully used email local part across sessions so
 // the field is pre-filled on next open, enabling trusted-device fast-login.
 const LAST_EMAIL_KEY  = 'briya_last_login_email'
+// Survives a mobile browser reload (switching to email app and back).
+// Cleared on successful login, back navigation, or OTP skip.
+const OTP_SESSION_KEY = 'briya_otp_session'
+
+function saveOtpSession({ pin, pendingEmail, pendingRole, maskedEmail, pendingName }) {
+  try {
+    sessionStorage.setItem(OTP_SESSION_KEY, JSON.stringify({
+      pin, pendingEmail, pendingRole, maskedEmail, pendingName,
+      otpSentAt: Date.now(),
+    }))
+  } catch {}
+}
+
+function updateOtpSessionTimestamp() {
+  try {
+    const raw = sessionStorage.getItem(OTP_SESSION_KEY)
+    if (!raw) return
+    const data = JSON.parse(raw)
+    sessionStorage.setItem(OTP_SESSION_KEY, JSON.stringify({ ...data, otpSentAt: Date.now() }))
+  } catch {}
+}
+
+function clearOtpSession() {
+  try { sessionStorage.removeItem(OTP_SESSION_KEY) } catch {}
+}
+
+function loadOtpSession() {
+  try {
+    const raw = sessionStorage.getItem(OTP_SESSION_KEY)
+    return raw ? JSON.parse(raw) : null
+  } catch { return null }
+}
 
 export default function LoginModal({ onClose, onDismiss, required = false, onBack }) {
   const { auth, login, logout, logoutAll, validatePin } = useAuth()
@@ -116,6 +148,7 @@ export default function LoginModal({ onClose, onDismiss, required = false, onBac
   // Shows the brief success screen, then auto-closes the modal.
   // isReturn=true → "Welcome back" (1.8s), false → "Email verified" (2.4s)
   function completeLogin(displayName, isReturn) {
+    clearOtpSession()
     const type = isReturn ? 'welcome_back' : 'verified'
     setSuccessContext({ name: displayName, type })
     setStep('success')
@@ -175,9 +208,37 @@ export default function LoginModal({ onClose, onDismiss, required = false, onBac
     }
   }, [])
 
+  // ── Restore OTP session after mobile browser reload ───────────
+  // When the user switches to their email app, iOS/Android may unload
+  // the page. On return the tab reloads fresh — this effect detects a
+  // saved OTP session and restores the user to the OTP step so they
+  // don't have to re-enter their PIN.
+  useEffect(() => {
+    if (auth.role !== 'none') return   // already logged in, nothing to restore
+    const saved = loadOtpSession()
+    if (!saved) return
+    const elapsed = Math.floor((Date.now() - saved.otpSentAt) / 1000)
+    const remainingOtp = OTP_TTL_SECS - elapsed
+    if (remainingOtp <= 0) { clearOtpSession(); return }   // OTP already expired
+
+    // Restore all state needed to complete the OTP flow
+    setPin(saved.pin || '')
+    setPendingEmail(saved.pendingEmail || '')
+    setPendingRole(saved.pendingRole || null)
+    setMaskedEmail(saved.maskedEmail || saved.pendingEmail || '')
+    if (saved.pendingName) setPendingName(saved.pendingName)
+
+    // Resume countdowns from wherever they left off
+    startOtpCountdown(remainingOtp)
+    const remainingResend = Math.max(0, RESEND_COOLDOWN - elapsed)
+    if (remainingResend > 0) startResendCooldown(remainingResend)
+
+    setStep('otp')
+  }, [])   // eslint-disable-line react-hooks/exhaustive-deps
+
   // ── Countdown helpers ─────────────────────────────────────────
-  function startResendCooldown() {
-    setResendCooldown(RESEND_COOLDOWN)
+  function startResendCooldown(initialSecs = RESEND_COOLDOWN) {
+    setResendCooldown(initialSecs)
     if (cooldownRef.current) clearInterval(cooldownRef.current)
     cooldownRef.current = setInterval(() => {
       setResendCooldown(prev => {
@@ -187,8 +248,8 @@ export default function LoginModal({ onClose, onDismiss, required = false, onBac
     }, 1000)
   }
 
-  function startOtpCountdown() {
-    setOtpCountdown(OTP_TTL_SECS)
+  function startOtpCountdown(initialSecs = OTP_TTL_SECS) {
+    setOtpCountdown(initialSecs)
     if (countdownRef.current) clearInterval(countdownRef.current)
     countdownRef.current = setInterval(() => {
       setOtpCountdown(prev => {
@@ -398,6 +459,9 @@ export default function LoginModal({ onClose, onDismiss, required = false, onBac
         setOtpError('')
         startResendCooldown()
         startOtpCountdown()
+        // Persist session so a mobile browser reload (switching to email app)
+        // brings the user back to the OTP step instead of the PIN step.
+        saveOtpSession({ pin, pendingEmail: trimmedEmail, pendingRole: role, maskedEmail: res.maskedEmail || trimmedEmail, pendingName: res.name || '' })
         setStep('otp')
       } catch (err) {
         // OTP send failed — stay on PIN step, let user proceed without email
@@ -513,6 +577,7 @@ export default function LoginModal({ onClose, onDismiss, required = false, onBac
       if (res.name) setPendingName(res.name)
       startResendCooldown()
       startOtpCountdown()
+      updateOtpSessionTimestamp()
     } catch (err) {
       const raw = err.message || ''
       const isRateLimit = raw === 'RATE_LIMIT_EXCEEDED'
@@ -529,6 +594,7 @@ export default function LoginModal({ onClose, onDismiss, required = false, onBac
 
   // Skip email verification — go to name step without emailClaimToken
   function handleSkipOtp() {
+    clearOtpSession()
     setPendingEmailClaimToken(null)
     const saved = getDeviceName(pendingRole)
     setName(saved || '')
@@ -564,6 +630,7 @@ export default function LoginModal({ onClose, onDismiss, required = false, onBac
     try { setEmail(localStorage.getItem(LAST_EMAIL_KEY) || '') } catch { setEmail('') }
     setEmailRequiredError(''); setEmailSendError('')
     setEmailSendFailed(false); setEmailNotInDomain(false); setRateLimitCountdown(0)
+    clearOtpSession()
     setOtpCode(''); setOtpError(''); setOtpLoading(false)
     setMaskedEmail(''); setResendCooldown(0); setOtpCountdown(0)
     if (cooldownRef.current)     clearInterval(cooldownRef.current)
@@ -770,7 +837,7 @@ export default function LoginModal({ onClose, onDismiss, required = false, onBac
                 <button
                   type="button"
                   className="lm-btn-outlined lm-btn-half"
-                  onClick={() => { setStep('pin'); setOtpCode(''); setOtpError('') }}
+                  onClick={() => { clearOtpSession(); setStep('pin'); setOtpCode(''); setOtpError('') }}
                 >
                   ← Back
                 </button>
