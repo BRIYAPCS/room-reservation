@@ -135,29 +135,6 @@ export const deleteEvent = (siteId, roomId, eventId, editToken = null) =>
     headers: editToken ? { 'X-Edit-Token': editToken } : {},
   })
 
-// Attachments
-export const getAttachments = (reservationId) =>
-  request(`/attachments/${reservationId}`)
-
-export async function uploadAttachment(reservationId, file) {
-  const formData = new FormData()
-  formData.append('file', file)
-  const token = getStoredToken()
-  const res = await fetch(`${BASE}/attachments/${reservationId}`, {
-    method: 'POST',
-    headers: {
-      // Legacy headers removed after JWT migration
-      ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
-    },
-    body: formData,
-  })
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}))
-    throw new Error(err.error || `Upload error ${res.status}`)
-  }
-  return res.json()
-}
-
 // Recurrence group operations
 export const deleteRecurrenceGroup = (siteId, roomId, groupId, scope, fromIndex) => {
   const params = new URLSearchParams({ scope })
@@ -173,11 +150,6 @@ export const updateRecurrenceGroup = (siteId, roomId, groupId, scope, fromIndex,
     body: JSON.stringify(event),
   })
 }
-
-export const deleteAttachment = (id) =>
-  request(`/attachments/${id}`, { method: 'DELETE' })
-
-export const getAttachmentUrl = (id) => `${BASE}/attachments/file/${id}`
 
 // Revokes all sessions for the authenticated user (sets last_logout_at,
 // deletes all trusted devices). Requires a valid Bearer token.
