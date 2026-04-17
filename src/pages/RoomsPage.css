@@ -244,60 +244,72 @@
 }
 
 /* ─────────────────────────────────────────────────────────────
-   Entrance animations — only play once page overlay dismisses
+   Entrance animations — triggered by .rp-entered on .rooms-page
+   All use transform+opacity (GPU-composited, no layout reflow).
 ───────────────────────────────────────────────────────────── */
 @keyframes rp-fade-down {
-  from { opacity: 0; transform: translateY(-20px); }
+  from { opacity: 0; transform: translateY(-18px); }
   to   { opacity: 1; transform: translateY(0); }
 }
 @keyframes rp-fade-up {
-  from { opacity: 0; transform: translateY(24px); }
+  from { opacity: 0; transform: translateY(18px); }
   to   { opacity: 1; transform: translateY(0); }
 }
 @keyframes rp-fade-in {
-  from { opacity: 0; }
-  to   { opacity: 1; }
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes rp-card-in {
+  from { opacity: 0; transform: translateY(22px) scale(0.96); }
+  to   { opacity: 1; transform: translateY(0)   scale(1); }
 }
 
-/* Pre-ready: keep elements invisible so they don't flash before animating */
-.rp-anim { opacity: 0; }
-
-/* Logo — slides down from above */
-.rp-anim-logo.rp-entered {
-  animation: rp-fade-down 0.65s cubic-bezier(0.22, 1, 0.36, 1) both;
+/* Pre-animation: hidden until rp-entered fires */
+.rooms-header,
+.rooms-title,
+.rooms-subtitle-box,
+.room-card-wrap,
+.rooms-footer {
+  opacity: 0;
 }
 
-/* Title — slides up */
-.rp-anim-title.rp-entered {
-  animation: rp-fade-up 0.6s cubic-bezier(0.22, 1, 0.36, 1) 0.12s both;
+/* Header — whole bar slides down */
+.rp-entered .rooms-header {
+  animation: rp-fade-down 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: 0.05s;
 }
 
-/* Subtitle chip — slides up, slight extra delay */
-.rp-anim-subtitle.rp-entered {
-  animation: rp-fade-up 0.55s cubic-bezier(0.22, 1, 0.36, 1) 0.22s both;
+/* Title */
+.rp-entered .rooms-title {
+  animation: rp-fade-in 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: 0.18s;
 }
 
-/* Room cards — delay set via inline style for stagger */
-.rp-anim-card.rp-entered {
+/* Subtitle pill */
+.rp-entered .rooms-subtitle-box {
+  animation: rp-fade-in 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: 0.28s;
+}
+
+/* Cards — stagger via CSS custom property --card-i */
+.rp-entered .room-card-wrap {
+  animation: rp-card-in 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: calc(0.36s + var(--card-i, 0) * 0.08s);
+}
+
+/* Footer — slides up last */
+.rp-entered .rooms-footer {
   animation: rp-fade-up 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: 0.45s;
 }
 
-/* Footer — simple fade, last to appear */
-.rp-anim-footer.rp-entered {
-  animation: rp-fade-in 0.5s ease 0.45s both;
-}
-
-/* Respect user's motion preference — skip all animations */
+/* Accessibility: instant reveal, no motion */
 @media (prefers-reduced-motion: reduce) {
-  .rp-anim,
-  .rp-anim-logo.rp-entered,
-  .rp-anim-title.rp-entered,
-  .rp-anim-subtitle.rp-entered,
-  .rp-anim-card.rp-entered,
-  .rp-anim-footer.rp-entered {
-    animation: none;
-    opacity: 1;
-  }
+  .rooms-header,
+  .rooms-title,
+  .rooms-subtitle-box,
+  .room-card-wrap,
+  .rooms-footer { opacity: 1; animation: none; }
 }
 
 /* ── Mobile logo + header ── */

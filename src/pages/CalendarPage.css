@@ -1064,3 +1064,37 @@
   .list-table th,
   .list-table td { padding: 14px 20px; }
 }
+
+/* ────────────────────────────────────────────────────────────
+   ENTRANCE ANIMATIONS
+   Triggered by .cp-entered added on first RAF after mount.
+   transform+opacity only — no layout reflow.
+   ──────────────────────────────────────────────────────────── */
+@keyframes cp-fade-down {
+  from { opacity: 0; transform: translateY(-18px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes cp-fade-up {
+  from { opacity: 0; transform: translateY(18px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.cal-topbar,
+.cal-content {
+  opacity: 0;
+}
+
+.cp-entered .cal-topbar {
+  animation: cp-fade-down 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: 0.04s;
+}
+
+.cp-entered .cal-content {
+  animation: cp-fade-up 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: 0.14s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cal-topbar,
+  .cal-content { opacity: 1; animation: none; }
+}

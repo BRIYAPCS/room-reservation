@@ -117,7 +117,7 @@ export default function RoomsPage() {
   }
 
   return (
-    <div className="rooms-page">
+    <div className={`rooms-page${pageReady ? ' rp-entered' : ''}`}>
       {/* Full-page loading overlay */}
       {!pageReady && (
         <div style={{
@@ -139,7 +139,7 @@ export default function RoomsPage() {
           <button className="back-btn" onClick={() => navigate('/')}>← Sites</button>
           {weatherEnabled && <Suspense fallback={null}><WeatherWidget /></Suspense>}
         </div>
-        <div className={`header-logo rp-anim rp-anim-logo${pageReady ? ' rp-entered' : ''}`}>
+        <div className="header-logo">
           <BriyaFullLogo />
         </div>
         <div className="rooms-header-right">
@@ -178,8 +178,8 @@ export default function RoomsPage() {
       </header>
 
       <main className="rooms-main">
-        <h1 className={`rooms-title rp-anim rp-anim-title${pageReady ? ' rp-entered' : ''}`}>Briya Room Reservations</h1>
-        <div className={`rooms-subtitle-box rp-anim rp-anim-subtitle${pageReady ? ' rp-entered' : ''}`}>{site.name} — Choose a Room to Book</div>
+        <h1 className="rooms-title">Briya Room Reservations</h1>
+        <div className="rooms-subtitle-box">{site.name} — Choose a Room to Book</div>
 
         <Breadcrumb
           variant="on-blue"
@@ -193,8 +193,8 @@ export default function RoomsPage() {
           {rooms.map((room, index) => (
             <div
               key={room.id}
-              className={`room-card-wrap rp-anim rp-anim-card${pageReady ? ' rp-entered' : ''}${manageMode && roomManagementEnabled ? ' room-card-wrap--manage' : ''}`}
-              style={pageReady ? { animationDelay: `${0.28 + index * 0.06}s` } : undefined}
+              className={`room-card-wrap${manageMode && roomManagementEnabled ? ' room-card-wrap--manage' : ''}`}
+              style={{ '--card-i': index }}
             >
               <button
                 className="room-card"
@@ -263,7 +263,7 @@ export default function RoomsPage() {
         </div>
       </main>
 
-      <footer className={`rooms-footer rp-anim rp-anim-footer${pageReady ? ' rp-entered' : ''}`}>
+      <footer className="rooms-footer">
         © 2025 | Designed &amp; Engineered by the Briya IT Team | All Rights Reserved.
       </footer>
 

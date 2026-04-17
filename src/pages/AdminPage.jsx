@@ -79,8 +79,13 @@ export default function AdminPage() {
   const navigate = useNavigate()
   const { auth, logout } = useAuth()
   const config = useConfig()
-  const [saving, setSaving] = useState(null) // key currently being saved
-  const [error,  setError]  = useState(null)
+  const [saving,  setSaving]  = useState(null) // key currently being saved
+  const [error,   setError]   = useState(null)
+  const [entered, setEntered] = useState(false)
+  useEffect(() => {
+    const id = requestAnimationFrame(() => setEntered(true))
+    return () => cancelAnimationFrame(id)
+  }, [])
 
   // Guard — non-superadmins are immediately bounced to home
   useEffect(() => {
@@ -103,7 +108,7 @@ export default function AdminPage() {
   }
 
   return (
-    <div className="admin-page">
+    <div className={`admin-page${entered ? ' ap-entered' : ''}`}>
       <header className="admin-header">
         <div className="admin-header-left">
           <button className="back-btn" onClick={() => navigate('/')}>← Home</button>
@@ -128,8 +133,8 @@ export default function AdminPage() {
 
         {error && <div className="admin-error">{error}</div>}
 
-        {SECTIONS.map(section => (
-          <section key={section.id} className="admin-section">
+        {SECTIONS.map((section, index) => (
+          <section key={section.id} className="admin-section" style={{ '--section-i': index }}>
             <div className="admin-section-header">
               <h2 className="admin-section-title">{section.title}</h2>
               <p className="admin-section-desc">{section.desc}</p>

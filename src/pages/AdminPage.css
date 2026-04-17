@@ -229,3 +229,54 @@
 @media (max-width: 360px) {
   .admin-toggle-desc { display: none; }
 }
+
+/* ────────────────────────────────────────────────────────────
+   ENTRANCE ANIMATIONS
+   Triggered by .ap-entered added on first RAF after mount.
+   ──────────────────────────────────────────────────────────── */
+@keyframes ap-fade-down {
+  from { opacity: 0; transform: translateY(-18px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes ap-fade-up {
+  from { opacity: 0; transform: translateY(18px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes ap-section-in {
+  from { opacity: 0; transform: translateY(20px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0)   scale(1); }
+}
+
+.admin-header,
+.admin-hero,
+.admin-section,
+.admin-footer {
+  opacity: 0;
+}
+
+.ap-entered .admin-header {
+  animation: ap-fade-down 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: 0.04s;
+}
+
+.ap-entered .admin-hero {
+  animation: ap-fade-up 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: 0.16s;
+}
+
+.ap-entered .admin-section {
+  animation: ap-section-in 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: calc(0.26s + var(--section-i, 0) * 0.1s);
+}
+
+.ap-entered .admin-footer {
+  animation: ap-fade-up 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: 0.58s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .admin-header,
+  .admin-hero,
+  .admin-section,
+  .admin-footer { opacity: 1; animation: none; }
+}

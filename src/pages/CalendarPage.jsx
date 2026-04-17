@@ -73,6 +73,12 @@ export default function CalendarPage() {
   const [room, setRoom] = useState(null)
   const { visitorCounterEnabled } = useConfig()
 
+  const [entered, setEntered] = useState(false)
+  useEffect(() => {
+    const id = requestAnimationFrame(() => setEntered(true))
+    return () => cancelAnimationFrame(id)
+  }, [])
+
   useEffect(() => {
     api.getSite(siteId).then(setSite).catch(() => {})
     api.getRoom(siteId, roomId).then(setRoom).catch(() => {})
@@ -826,7 +832,7 @@ export default function CalendarPage() {
 
   // ── Render ────────────────────────────────────────────────────
   return (
-    <div className="cal-page">
+    <div className={`cal-page${entered ? ' cp-entered' : ''}`}>
       {/* Top nav bar */}
       <div className="cal-topbar">
         <button className="back-btn" onClick={() => navigate(`/rooms/${siteId}`)}>← Rooms</button>
