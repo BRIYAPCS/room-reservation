@@ -688,7 +688,11 @@
 
 /* ── Tablet 481px – 768px ── */
 @media (min-width: 481px) and (max-width: 768px) {
-  .lm-modal { width: min(380px, 92vw); }
+  .lm-modal { width: min(380px, 92vw); padding: 28px 28px 28px; }
+  .lm-title { font-size: 1.15rem; }
+  .lm-btn-gold,
+  .lm-btn-outlined,
+  .lm-btn-outlined-red { font-size: 0.95rem; padding: 11px 14px; word-break: break-word; overflow-wrap: break-word; }
 }
 
 /* ── 4K ≥ 2560px ── */

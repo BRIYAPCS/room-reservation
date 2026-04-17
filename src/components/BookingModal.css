@@ -446,7 +446,7 @@
     padding: 10px 16px 20px;
   }
   .bm-cancel,
-  .bm-save { width: 100%; text-align: center; padding: 11px; }
+  .bm-save { width: 100%; text-align: center; padding: 11px; word-break: break-word; overflow-wrap: break-word; }
   .bm-recur-type-row  { gap: 14px; }
   .bm-datetime-grid   { grid-template-columns: 1fr 1fr; gap: 8px; }
   .bm-weekday-btn     { width: 38px; height: 38px; }

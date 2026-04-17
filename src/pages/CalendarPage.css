@@ -638,7 +638,7 @@
   white-space: nowrap;
 }
 /* On mobile keep it compact — just the icon */
-@media (max-width: 600px) {
+@media (max-width: 640px) {
   .cal-day-header-past-badge span.cal-past-label {
     display: none;
   }
