@@ -12,7 +12,7 @@ const pool = mysql.createPool({
   idleTimeout:        60_000,  // release idle connections after 60 s
   enableKeepAlive:    true,    // send TCP keep-alives to prevent firewall drops
   keepAliveInitialDelay: 10_000,
-  timezone:           'America/New_York', // TIMESTAMP columns read/write in Eastern time
+  timezone:           '+00:00',          // UTC — APP_TIMEZONE in .env handles display conversion
   dateStrings:        true,              // return DATETIME as plain strings — no JS timezone conversion
 })
 
