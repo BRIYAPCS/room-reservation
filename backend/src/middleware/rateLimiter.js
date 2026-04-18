@@ -1,4 +1,4 @@
-import rateLimit from 'express-rate-limit'
+import rateLimit, { ipKeyGenerator } from 'express-rate-limit'
 import { writeAuditLog, ACTION_TYPES } from '../services/auditLog.js'
 
 // PIN login — strict: 5 attempts per minute
@@ -65,7 +65,7 @@ export const otpRequestEmailLimiter = rateLimit({
   skipSuccessfulRequests: true,
   keyGenerator:           (req) => {
     const email = typeof req.body?.email === 'string' ? req.body.email.trim().toLowerCase() : ''
-    return email || req.ip
+    return email || ipKeyGenerator(req)
   },
   handler:                makeOtpRateLimitHandler('OTP_REQUEST_EMAIL'),
 })
