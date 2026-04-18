@@ -17,7 +17,7 @@
 module.exports = {
   apps: [
     {
-      name: 'briya-api',
+      name: 'Briya-Backend-Room-Reservation',
       script: 'src/server.js',
 
       // Use 'cluster' mode with 2 workers (good for a 1-2 vCPU Linode).
@@ -34,8 +34,8 @@ module.exports = {
       min_uptime: '10s',
 
       // Log rotation
-      error_file: '/var/log/briya-api/error.log',
-      out_file:   '/var/log/briya-api/out.log',
+      error_file: '/var/log/Briya-Backend-Room-Reservation/error.log',
+      out_file:   '/var/log/Briya-Backend-Room-Reservation/out.log',
       log_date_format: 'YYYY-MM-DD HH:mm:ss Z',
 
       env: {
