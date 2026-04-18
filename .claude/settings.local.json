@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run:*)",
+      "Read(//c/Users/Briya/.claude/projects/c--Users-Briya-Desktop-Room-Reservation/memory/**)"
+    ]
+  }
+}
