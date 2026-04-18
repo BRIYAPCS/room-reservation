@@ -1,0 +1,155 @@
+.ras-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1100;
+  padding: 16px;
+}
+
+.ras-sheet {
+  background: #fff;
+  border-radius: 12px;
+  width: 100%;
+  max-width: 440px;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.28);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── Header ── */
+.ras-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 20px 20px 16px;
+  border-bottom: 1px solid #eee;
+}
+
+.ras-icon {
+  font-size: clamp(1.1rem, 1.8vw, 1.4rem);
+  line-height: 1;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.ras-title {
+  font-size: clamp(1rem, 1.5vw, 1.2rem);
+  font-weight: 700;
+  color: #1a3557;
+  margin: 0 0 3px;
+}
+
+.ras-subtitle {
+  font-size: clamp(0.75rem, 1vw, 0.82rem);
+  color: #666;
+  margin: 0;
+}
+
+.ras-close {
+  margin-left: auto;
+  background: none;
+  border: none;
+  font-size: clamp(0.88rem, 1.2vw, 1rem);
+  color: #999;
+  padding: 4px 6px;
+  flex-shrink: 0;
+}
+.ras-close:hover { color: #333; }
+
+/* ── Options ── */
+.ras-options {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  padding: 8px 16px;
+}
+
+.ras-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  width: 100%;
+  padding: 13px 14px;
+  border: 1.5px solid transparent;
+  border-radius: 8px;
+  margin: 4px 0;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.ras-btn--primary {
+  background: #eef6fc;
+  border-color: #c8e4f5;
+  color: #1186c4;
+}
+.ras-btn--primary:hover {
+  background: #d6edf9;
+  border-color: #1186c4;
+}
+
+.ras-btn--danger {
+  background: #fef2f2;
+  border-color: #fdd;
+  color: #c0392b;
+}
+.ras-btn--danger:hover {
+  background: #fde8e8;
+  border-color: #c0392b;
+}
+
+.ras-btn-label {
+  font-size: clamp(0.88rem, 1.2vw, 1rem);
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.ras-btn-desc {
+  font-size: clamp(0.72rem, 0.9vw, 0.82rem);
+  opacity: 0.75;
+  font-weight: 400;
+}
+
+/* ── Cancel ── */
+.ras-cancel {
+  margin: 8px 16px 16px;
+  padding: 10px;
+  border: 1.5px solid #ddd;
+  border-radius: 8px;
+  background: none;
+  color: #555;
+  font-size: clamp(0.82rem, 1.1vw, 0.95rem);
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.ras-cancel:hover { background: #f5f5f5; }
+
+/* ── Mobile — full-width bottom sheet ── */
+@media (max-width: 480px) {
+  .ras-overlay {
+    align-items: flex-end;
+    padding: 0;
+  }
+  .ras-sheet {
+    max-width: 100%;
+    border-radius: 16px 16px 0 0;
+  }
+  .ras-btn { padding: 14px 12px; }
+  .ras-btn-label { font-size: 0.95rem; }
+  .ras-cancel { margin: 8px 12px 20px; padding: 12px; }
+}
+
+/* ── 4K ── */
+@media (min-width: 2560px) {
+  .ras-sheet { max-width: 560px; }
+  .ras-title { font-size: 1.2rem; }
+  .ras-subtitle { font-size: 0.95rem; }
+  .ras-btn-label { font-size: 1.05rem; }
+  .ras-btn-desc { font-size: 0.88rem; }
+}

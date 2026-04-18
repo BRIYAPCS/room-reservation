@@ -1,6 +1,25 @@
-node_modules/
-dist/
+# Environment files — never commit secrets
 .env
 .env.local
+.env.*.local
+backend/.env
+frontend/.env.local
+
+# Dependencies
+node_modules/
+frontend/node_modules/
+backend/node_modules/
+
+# Build output
+frontend/dist/
+
+# Uploads (binary assets — deploy manually via SCP)
+backend/uploads/
+
+# Logs
 *.log
+backend/*.log
+
+# OS
 .DS_Store
+Thumbs.db

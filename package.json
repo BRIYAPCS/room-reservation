@@ -1,26 +1,15 @@
 {
-  "name": "briya-room-reservations",
+  "name": "briya-room-reservations-root",
   "version": "1.0.0",
   "private": true,
-  "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "preview": "vite preview"
-  },
-  "dependencies": {
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1",
-    "react-router-dom": "^6.22.3",
-    "@fullcalendar/react": "^6.1.14",
-    "@fullcalendar/core": "^6.1.14",
-    "@fullcalendar/daygrid": "^6.1.14",
-    "@fullcalendar/timegrid": "^6.1.14",
-    "@fullcalendar/list": "^6.1.14",
-    "@fullcalendar/interaction": "^6.1.14"
+    "dev": "concurrently --kill-others-on-fail --restart-tries 5 --restart-after 1000 --prefix \"[{name}]\" --names \"backend,frontend\" --prefix-colors \"bgCyan.black,bgMagenta.white\" \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "dev:backend": "npm run dev --prefix backend",
+    "dev:frontend": "npm run dev --prefix frontend",
+    "restart": "npm run dev",
+    "install:all": "npm install --prefix backend && npm install --prefix frontend"
   },
   "devDependencies": {
-    "@vitejs/plugin-react": "^4.3.1",
-    "vite": "^5.4.2"
+    "concurrently": "^8.2.2"
   }
 }

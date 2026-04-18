@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#1186c4" />
+    <meta name="description" content="Reserve rooms at Briya Public Charter School locations — Fort Totten, Georgia, Ontario, Shepherd, and Georgia Annex." />
+    <meta name="keywords" content="Briya, Briya Public Charter School, room reservation, book a room, DC charter school, Fort Totten, Georgia, Ontario, Shepherd" />
+    <meta name="robots" content="index, follow" />
+    <title>Briya Room Reservations</title>
+
+    <!-- Open Graph — controls how the link looks when shared on Slack, Teams, iMessage, etc. -->
+    <meta property="og:type"        content="website" />
+    <meta property="og:title"       content="Briya Room Reservations" />
+    <meta property="og:description" content="Reserve rooms at Briya Public Charter School — Fort Totten, Georgia, Ontario, Shepherd, and Georgia Annex." />
+    <meta property="og:image"       content="/briya_logo.png" />
+    <meta property="og:url"         content="https://rooms.briya.org/" />
+    <meta property="og:locale"      content="en_US" />
+
+    <!-- GitHub Pages SPA: restore path after 404 redirect -->
+    <script>
+      ;(function () {
+        var p = new URLSearchParams(window.location.search).get('p')
+        if (p) {
+          // Reconstruct the full URL: keep the base subpath + restore the deep path
+          var base = window.location.pathname.replace(/\/$/, '')
+          window.history.replaceState(null, '', base + p)
+        }
+      })()
+    </script>
+
+    <!-- Preconnect to actual API server (DuckDNS temp — update to api.briyaroomreservations.org after domain purchase) -->
+    <link rel="preconnect" href="https://briya-api.duckdns.org" />
+    <link rel="dns-prefetch" href="https://briya-api.duckdns.org" />
+
+    <!-- Preconnect to Google Fonts origins so the connection is warm before the CSS loads -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
+    <link rel="apple-touch-icon" href="/briya_logo.png" />
+
+    <!--
+      Non-render-blocking font loading:
+      1. media="print" makes the browser fetch it without blocking paint
+      2. onload switches media to "all" so it applies once downloaded
+      3. display=swap means text shows in system font immediately — no invisible text
+      4. <noscript> fallback for JS-disabled browsers
+    -->
+    <link
+      rel="preload"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      as="style"
+      onload="this.onload=null;this.rel='stylesheet'"
+    />
+    <noscript>
+      <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+        rel="stylesheet"
+      />
+    </noscript>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>
