@@ -136,6 +136,13 @@ export default function CalendarPage() {
     }
   }, [siteId, roomId])
 
+  // Auto-refresh: silently re-fetch reservations every 20 seconds so all
+  // open devices stay in sync without anyone having to hit the Refresh button.
+  useEffect(() => {
+    const id = setInterval(() => refreshEvents(true), 20_000)
+    return () => clearInterval(id)
+  }, [refreshEvents])
+
   // Event details / edit states
   const [selectedEvent, setSelectedEvent] = useState(null)
   const [showEventDetails, setShowEventDetails] = useState(false)
