@@ -4,19 +4,20 @@ import './ITSupportWidget.css'
 const FORM_URL =
   'https://forms.office.com/pages/responsepage.aspx?id=hZ48poBPUkS3lYRVetMMFQenKwKFY7hDrfr5AlG3wFFUREo4MkVRM1I3NVo3MTdKRjQxSzhKRzRIUS4u&route=shorturl'
 
+// ── Modal ─────────────────────────────────────────────────────
 function ITSupportModal({ onClose }) {
   const [submitted, setSubmitted] = useState(false)
   const loadCount   = useRef(0)
   const closeTimer  = useRef(null)
 
-  // Detect submission: iframe fires `load` once on initial load, then again
-  // when it navigates to the "Thank you" confirmation page after submit.
+  // Detect submission: iframe fires `load` on initial load, then again when
+  // it navigates to the Microsoft "Thank you" confirmation page after submit.
   function handleIframeLoad() {
     loadCount.current += 1
     if (loadCount.current >= 2) triggerSuccess()
   }
 
-  // Belt-and-suspenders: also catch any postMessage from Microsoft Forms
+  // Belt-and-suspenders: also catch postMessage from Microsoft Forms
   useEffect(() => {
     function onMessage(e) {
       if (!e.origin.includes('forms.office.com') && !e.origin.includes('forms.microsoft.com')) return
@@ -81,18 +82,18 @@ function ITSupportModal({ onClose }) {
   )
 }
 
-export default function ITSupportWidget() {
+// ── ContactITButton — drop-in button that opens the modal ─────
+// Pass variant="outline" for white-outline style (used on blue backgrounds)
+// Pass variant="solid" (default) for the standard filled button
+export default function ContactITButton({ variant = 'solid', className }) {
   const [open, setOpen] = useState(false)
   return (
     <>
       <button
-        className="its-fab"
+        className={className || (variant === 'outline' ? 'its-contact-btn its-contact-btn--outline' : 'its-contact-btn')}
         onClick={() => setOpen(true)}
-        aria-label="Open IT Support form"
-        title="IT Support"
       >
-        <span className="its-fab-icon">?</span>
-        <span className="its-fab-label">IT Support</span>
+        Contact IT
       </button>
       {open && <ITSupportModal onClose={() => setOpen(false)} />}
     </>

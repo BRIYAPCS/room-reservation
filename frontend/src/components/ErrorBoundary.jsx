@@ -1,4 +1,5 @@
 import { Component } from 'react'
+import ContactITButton from './ITSupportWidget'
 
 /**
  * Catches any unhandled React render/lifecycle error and shows a
@@ -86,6 +87,7 @@ export default class ErrorBoundary extends Component {
           >
             ⌂ Go to Home
           </button>
+          <ContactITButton variant="outline" />
         </div>
 
         {/* Collapsible technical details (for IT) */}

@@ -2,57 +2,30 @@
    IT SUPPORT WIDGET
    ════════════════════════════════════════════════════════════════ */
 
-/* ── Floating action button ─────────────────────────────────── */
-.its-fab {
-  position: fixed;
-  bottom: 24px;
-  left: 24px;
-  z-index: 900;
-
-  display: flex;
-  align-items: center;
-  gap: 7px;
-
+/* ── Contact IT button (solid — used in calendar error banner) ─ */
+.its-contact-btn {
   background: #1186c4;
   color: #fff;
   border: none;
-  border-radius: 100px;
-  padding: 9px 16px 9px 12px;
-  cursor: pointer;
-  box-shadow: 0 3px 12px rgba(0,0,0,0.22);
-  transition: background 0.18s, transform 0.15s, box-shadow 0.18s;
-  font-family: inherit;
-  font-size: 0.82rem;
+  border-radius: 8px;
+  padding: 8px 18px;
+  font-size: 0.88rem;
   font-weight: 600;
-  letter-spacing: 0.01em;
+  cursor: pointer;
   white-space: nowrap;
-  user-select: none;
+  transition: background 0.15s;
+  font-family: inherit;
 }
-.its-fab:hover {
-  background: #0e70a0;
-  transform: translateY(-2px);
-  box-shadow: 0 6px 18px rgba(0,0,0,0.26);
-}
-.its-fab:active { transform: translateY(0); }
+.its-contact-btn:hover { background: #0e70a0; }
 
-.its-fab-icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  border: 2px solid rgba(255,255,255,0.7);
-  font-size: 0.78rem;
-  font-weight: 700;
-  line-height: 1;
-  flex-shrink: 0;
+/* ── Outline variant — used on blue backgrounds (HomePage, ErrorBoundary) ─ */
+.its-contact-btn--outline {
+  background: rgba(255,255,255,0.15);
+  color: #fff;
+  border: 1.5px solid rgba(255,255,255,0.6);
 }
-
-/* Hide text label on very small screens — keep icon only */
-@media (max-width: 360px) {
-  .its-fab-label { display: none; }
-  .its-fab { padding: 10px; }
+.its-contact-btn--outline:hover {
+  background: rgba(255,255,255,0.28);
 }
 
 /* ── Modal overlay ──────────────────────────────────────────── */
@@ -214,9 +187,8 @@
   margin: 8px 0 0;
 }
 
-/* ── Mobile adjustments ─────────────────────────────────────── */
+/* ── Mobile ─────────────────────────────────────────────────── */
 @media (max-width: 480px) {
-  .its-fab { bottom: 16px; left: 16px; }
   .its-modal-footer {
     flex-direction: column;
     align-items: stretch;

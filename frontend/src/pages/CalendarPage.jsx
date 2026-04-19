@@ -19,6 +19,7 @@ import { useAuth } from '../context/AuthContext'
 import { useConfig } from '../context/ConfigContext'
 const VisitorCounter = lazy(() => import('../components/VisitorCounter'))
 import * as api from '../services/api'
+import ContactITButton from '../components/ITSupportWidget'
 import ClearableInput from '../components/ClearableInput'
 import './CalendarPage.css'
 
@@ -891,11 +892,13 @@ export default function CalendarPage() {
       <div className="cal-content">
         {eventsLoadError && (
           <div className="cal-load-error" role="alert">
-            <span>⚠ Could not load reservations — check your connection.</span>
-            <button className="cal-load-error-retry" onClick={() => refreshEvents(false)}>
-              ↺ Retry
-            </button>
-            <span className="cal-load-error-contact">If this keeps happening, contact IT.</span>
+            <span className="cal-load-error-msg">⚠ The calendar is currently unavailable — we'll be right back.</span>
+            <div className="cal-load-error-actions">
+              <button className="cal-load-error-retry" onClick={() => refreshEvents(false)}>
+                ↺ Retry
+              </button>
+              <ContactITButton />
+            </div>
           </div>
         )}
         <Breadcrumb

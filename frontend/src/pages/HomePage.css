@@ -124,23 +124,30 @@
   max-width: 520px;
   width: 100%;
 }
-.home-api-error-icon { font-size: 1.1em; }
+.home-api-error-icon { font-size: 1.1em; flex-shrink: 0; }
+.home-api-error-msg  { flex: 1; min-width: 0; }
+.home-api-error-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-top: 2px;
+}
 .home-api-error-retry {
   background: #fff;
   color: #1186c4;
   border: none;
-  border-radius: 5px;
-  padding: 4px 14px;
+  border-radius: 6px;
+  padding: 6px 18px;
   font-size: clamp(0.78rem, 1.2vw, 0.88rem);
   font-weight: 700;
   cursor: pointer;
+  font-family: inherit;
+  transition: background 0.15s;
 }
-.home-api-error-contact {
-  color: rgba(255,255,255,0.7);
-  font-size: clamp(0.75rem, 1.1vw, 0.82rem);
-  width: 100%;
-  text-align: center;
-}
+.home-api-error-retry:hover { background: #e8f4fc; }
 
 /* ── Site Grid ── */
 .site-grid {

@@ -4,7 +4,6 @@ import { AuthProvider } from './context/AuthContext'
 import { ConfigProvider } from './context/ConfigContext'
 import PageTransition from './components/PageTransition'
 import ErrorBoundary from './components/ErrorBoundary'
-import ITSupportWidget from './components/ITSupportWidget'
 
 // Lazy-load all pages — nothing is bundled into the initial JS chunk except
 // the router shell. Each page downloads only when the user navigates to it.
@@ -56,7 +55,6 @@ export default function App() {
           <BrowserRouter basename={basename}>
             <AnimatedRoutes />
           </BrowserRouter>
-          <ITSupportWidget />
         </AuthProvider>
       </ConfigProvider>
     </ErrorBoundary>

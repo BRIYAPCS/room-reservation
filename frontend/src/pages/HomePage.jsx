@@ -14,6 +14,7 @@ import AddSiteModal from '../components/AddSiteModal'
 import EditCardModal from '../components/EditCardModal'
 import ManageActionSheet from '../components/ManageActionSheet'
 import { getSites, getHealth, getRooms, reorderSites, createSite, updateSite, deleteSite } from '../services/api'
+import ContactITButton from '../components/ITSupportWidget'
 import { useConfig } from '../context/ConfigContext'
 import { useAuth } from '../context/AuthContext'
 import comingSoon from '../ComingSoon.jpg'
@@ -144,19 +145,23 @@ export default function HomePage() {
         {apiError && (
           <div className="home-api-error" role="alert">
             <span className="home-api-error-icon">⚠</span>
-            <span>Could not connect to the server. Check your connection.</span>
-            <button
-              className="home-api-error-retry"
-              onClick={() => {
-                setApiError(false)
-                getSites()
-                  .then(data => { setApiError(false); setSites(data) })
-                  .catch(() => setApiError(true))
-              }}
-            >
-              Retry
-            </button>
-            <span className="home-api-error-contact">If the problem persists, contact IT.</span>
+            <span className="home-api-error-msg">
+              The app is currently unavailable — we'll be right back.
+            </span>
+            <div className="home-api-error-actions">
+              <button
+                className="home-api-error-retry"
+                onClick={() => {
+                  setApiError(false)
+                  getSites()
+                    .then(data => { setApiError(false); setSites(data) })
+                    .catch(() => setApiError(true))
+                }}
+              >
+                ↺ Retry
+              </button>
+              <ContactITButton variant="outline" />
+            </div>
           </div>
         )}
 

@@ -128,22 +128,34 @@
   font-weight: 500;
   margin-bottom: 4px;
 }
+.cal-load-error-msg { flex: 1; min-width: 0; }
+.cal-load-error-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
 .cal-load-error-retry {
   background: #664d03;
   color: #fff;
   border: none;
-  border-radius: 5px;
-  padding: 4px 12px;
+  border-radius: 6px;
+  padding: 5px 14px;
   font-size: clamp(0.78rem, 1vw, 0.85rem);
   font-weight: 700;
   cursor: pointer;
   white-space: nowrap;
+  font-family: inherit;
+  transition: background 0.15s;
 }
-.cal-load-error-contact {
-  color: #7a5c00;
-  font-size: clamp(0.75rem, 1vw, 0.82rem);
-  font-style: italic;
+.cal-load-error-retry:hover { background: #4a3700; }
+/* Override ContactITButton solid style inside the amber banner */
+.cal-load-error .its-contact-btn {
+  background: #664d03;
+  font-size: clamp(0.78rem, 1vw, 0.85rem);
+  padding: 5px 14px;
 }
+.cal-load-error .its-contact-btn:hover { background: #4a3700; }
 
 /* ── Action toolbar ── */
 .cal-toolbar {
