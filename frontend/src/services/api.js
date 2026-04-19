@@ -7,17 +7,23 @@ function getStoredToken() {
 }
 
 async function request(path, options = {}) {
+  const { silent401, ...fetchOptions } = options
   const token = getStoredToken()
   const res = await fetch(BASE + path, {
-    ...options,
+    ...fetchOptions,
     headers: {
       'Content-Type': 'application/json',
       // Legacy headers removed after JWT migration
       ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
-      ...(options.headers || {}),
+      ...(fetchOptions.headers || {}),
     },
   })
   if (res.status === 401 && token) {
+    if (silent401) {
+      // Caller opted out of global logout (e.g. optional background requests).
+      // Throw so the caller's .catch() handles it without disrupting auth state.
+      throw new Error('Unauthorized')
+    }
     // Token was present but rejected (expired / invalid) — clear stored auth and
     // signal the React auth context to reset state without a hard page reload.
     localStorage.removeItem('authToken')
@@ -166,7 +172,7 @@ export const checkSession = () =>
 // for the authenticated user's email.  Used to decide whether to show the
 // "Sign out all devices" button: only meaningful when count > 1 (other devices exist).
 export const getTrustedDeviceCount = () =>
-  request('/auth/trusted-devices/count')
+  request('/auth/trusted-devices/count', { silent401: true })
 
 // Used by AuthContext (returns lowercase role)
 // opts: { email?, emailVerified?, deviceSessionId? } — included in JWT payload by server
