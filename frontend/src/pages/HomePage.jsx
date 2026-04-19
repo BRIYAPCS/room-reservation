@@ -63,16 +63,36 @@ export default function HomePage() {
 
   async function handleRetry() {
     setRetrying(true)
+    const start = Date.now()
+    const minDisplay = 1400 // keep reconnecting screen visible long enough to be meaningful
     try {
       const data = await getSites()
+      const wait = minDisplay - (Date.now() - start)
+      if (wait > 0) await new Promise(r => setTimeout(r, wait))
       setApiError(false)
       setSites(data)
     } catch {
+      const wait = minDisplay - (Date.now() - start)
+      if (wait > 0) await new Promise(r => setTimeout(r, wait))
       setApiError(true)
     } finally {
       setRetrying(false)
     }
   }
+
+  // Auto-recovery: silently poll every 15 s while the error screen is showing.
+  // The page restores itself the moment the server comes back — no manual retry needed.
+  useEffect(() => {
+    if (!apiError) return
+    const id = setInterval(async () => {
+      try {
+        const data = await getSites()
+        setApiError(false)
+        setSites(data)
+      } catch { /* still down — keep polling */ }
+    }, 15_000)
+    return () => clearInterval(id)
+  }, [apiError])
 
   useEffect(() => {
     getHealth().then(() => {}).catch(() => {})
@@ -117,7 +137,7 @@ export default function HomePage() {
           className="home-fullpage-logo home-fullpage-logo--still"
         />
         <h2 className="home-fullpage-heading">The app is currently unavailable</h2>
-        <p className="home-fullpage-sub">We'll be right back. Please try again in a moment.</p>
+        <p className="home-fullpage-sub">We'll be right back. The page will restore itself automatically once the connection is re-established.</p>
         <div className="home-fullpage-actions">
           <button className="home-fullpage-retry" onClick={handleRetry}>
             ↺ Retry
