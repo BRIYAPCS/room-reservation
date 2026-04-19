@@ -439,7 +439,7 @@ export default function BookingModal({
                   type="date"
                   name="endDate"
                   value={form.endDate}
-                  min={canBookPast ? undefined : (form.date >= todayStr ? form.date : todayStr)}
+                  min={form.date}
                   onChange={handleChange}
                 />
               </label>
