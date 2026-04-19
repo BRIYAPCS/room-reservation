@@ -157,12 +157,19 @@ function buildOtpHtml(otp, reservationId) {
                 <tr>
                   <td align="center">
                     <div style="display:inline-block;background:#f0f7ff;border:2px solid #1186c4;
-                                border-radius:10px;padding:18px 36px;">
+                                border-radius:10px;padding:18px 36px;margin-bottom:12px;">
                       <span style="font-size:38px;font-family:'Courier New',Courier,monospace;
                                    font-weight:700;letter-spacing:0.45em;color:#1a3557;">
                         ${otp}
                       </span>
                     </div>
+                    <br />
+                    <a href="#"
+                       style="display:inline-block;background:#1186c4;color:#ffffff;font-size:14px;
+                              font-weight:700;text-decoration:none;padding:10px 28px;border-radius:6px;
+                              font-family:Arial,Helvetica,sans-serif;margin-top:4px;">
+                      &#128203;&nbsp;Copy code
+                    </a>
                   </td>
                 </tr>
               </table>
@@ -241,12 +248,19 @@ function buildLoginOtpHtml(otp) {
                 <tr>
                   <td align="center">
                     <div style="display:inline-block;background:#f0f7ff;border:2px solid #1186c4;
-                                border-radius:10px;padding:18px 36px;">
+                                border-radius:10px;padding:18px 36px;margin-bottom:12px;">
                       <span style="font-size:38px;font-family:'Courier New',Courier,monospace;
                                    font-weight:700;letter-spacing:0.45em;color:#1a3557;">
                         ${otp}
                       </span>
                     </div>
+                    <br />
+                    <a href="#"
+                       style="display:inline-block;background:#1186c4;color:#ffffff;font-size:14px;
+                              font-weight:700;text-decoration:none;padding:10px 28px;border-radius:6px;
+                              font-family:Arial,Helvetica,sans-serif;margin-top:4px;">
+                      &#128203;&nbsp;Copy code
+                    </a>
                   </td>
                 </tr>
               </table>
