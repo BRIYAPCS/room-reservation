@@ -157,19 +157,16 @@ function buildOtpHtml(otp, reservationId) {
                 <tr>
                   <td align="center">
                     <div style="display:inline-block;background:#f0f7ff;border:2px solid #1186c4;
-                                border-radius:10px;padding:18px 36px;margin-bottom:12px;">
+                                border-radius:10px;padding:18px 36px;margin-bottom:8px;">
                       <span style="font-size:38px;font-family:'Courier New',Courier,monospace;
                                    font-weight:700;letter-spacing:0.45em;color:#1a3557;">
                         ${otp}
                       </span>
                     </div>
                     <br />
-                    <a href="#"
-                       style="display:inline-block;background:#1186c4;color:#ffffff;font-size:14px;
-                              font-weight:700;text-decoration:none;padding:10px 28px;border-radius:6px;
-                              font-family:Arial,Helvetica,sans-serif;margin-top:4px;">
-                      &#128203;&nbsp;Copy code
-                    </a>
+                    <p style="margin:6px 0 0;font-size:12px;color:#aaa;font-family:Arial,Helvetica,sans-serif;">
+                      Tap and hold the code above to copy
+                    </p>
                   </td>
                 </tr>
               </table>
@@ -248,19 +245,16 @@ function buildLoginOtpHtml(otp) {
                 <tr>
                   <td align="center">
                     <div style="display:inline-block;background:#f0f7ff;border:2px solid #1186c4;
-                                border-radius:10px;padding:18px 36px;margin-bottom:12px;">
+                                border-radius:10px;padding:18px 36px;margin-bottom:8px;">
                       <span style="font-size:38px;font-family:'Courier New',Courier,monospace;
                                    font-weight:700;letter-spacing:0.45em;color:#1a3557;">
                         ${otp}
                       </span>
                     </div>
                     <br />
-                    <a href="#"
-                       style="display:inline-block;background:#1186c4;color:#ffffff;font-size:14px;
-                              font-weight:700;text-decoration:none;padding:10px 28px;border-radius:6px;
-                              font-family:Arial,Helvetica,sans-serif;margin-top:4px;">
-                      &#128203;&nbsp;Copy code
-                    </a>
+                    <p style="margin:6px 0 0;font-size:12px;color:#aaa;font-family:Arial,Helvetica,sans-serif;">
+                      Tap and hold the code above to copy
+                    </p>
                   </td>
                 </tr>
               </table>
@@ -287,4 +281,192 @@ function buildLoginOtpHtml(otp) {
   </table>
 </body>
 </html>`
+}
+
+// ── Reservation confirmation emails ───────────────────────────
+
+const MONTHS_LONG = ['January','February','March','April','May','June','July','August','September','October','November','December']
+const DAYS_LONG   = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday']
+
+function parseDTStr(dt) {
+  const m = String(dt).replace(' ', 'T').match(/^(\d{4})-(\d{2})-(\d{2})(?:T(\d{2}):(\d{2}))?/)
+  if (!m) return null
+  return { y: +m[1], mo: +m[2], d: +m[3], h: +(m[4] || 0), mi: +(m[5] || 0) }
+}
+
+function fmt12(h, mi) {
+  const ampm = h >= 12 ? 'PM' : 'AM'
+  const h12  = h % 12 || 12
+  const mins = mi === 0 ? '' : `:${String(mi).padStart(2, '0')}`
+  return `${h12}${mins} ${ampm}`
+}
+
+function fmtDateParts(p) {
+  const wd = new Date(p.y, p.mo - 1, p.d).getDay()
+  return `${DAYS_LONG[wd]}, ${MONTHS_LONG[p.mo - 1]} ${p.d}, ${p.y}`
+}
+
+function formatBookingDates(startDt, endDt, allDay) {
+  const s = parseDTStr(startDt)
+  const e = parseDTStr(endDt)
+  if (!s) return '—'
+  let ea = e
+  if (allDay && e) {
+    // FullCalendar stores exclusive end for all-day events — subtract 1 day for display
+    const prev = new Date(e.y, e.mo - 1, e.d - 1)
+    ea = { y: prev.getFullYear(), mo: prev.getMonth() + 1, d: prev.getDate(), h: 0, mi: 0 }
+  }
+  const same = ea && s.y === ea.y && s.mo === ea.mo && s.d === ea.d
+  if (allDay) {
+    return same || !ea ? `${fmtDateParts(s)} · All day` : `${fmtDateParts(s)} – ${fmtDateParts(ea)} · All day`
+  }
+  if (!e) return fmtDateParts(s)
+  if (same) return `${fmtDateParts(s)} · ${fmt12(s.h, s.mi)} – ${fmt12(e.h, e.mi)}`
+  return `${fmtDateParts(s)} ${fmt12(s.h, s.mi)} – ${fmtDateParts(e)} ${fmt12(e.h, e.mi)}`
+}
+
+function buildConfirmationHtml(action, details) {
+  const { title, bookedBy, roomName, siteName, startTime, endTime, allDay, description, recurrenceCount } = details
+
+  const cfg = {
+    created: { color: '#16a34a', label: 'Booking Confirmed', heading: 'Your reservation has been confirmed.',  sub: 'The details of your booking are shown below.' },
+    updated: { color: '#1186c4', label: 'Booking Updated',   heading: 'Your reservation has been updated.',    sub: 'The updated details of your booking are shown below.' },
+    deleted: { color: '#dc2626', label: 'Booking Cancelled', heading: 'Your reservation has been cancelled.',  sub: 'Your booking has been removed from the system.' },
+  }[action] || { color: '#1186c4', label: 'Booking Notice', heading: 'Reservation update.', sub: '' }
+
+  const dateStr = formatBookingDates(startTime, endTime, allDay)
+  const descStr = description && description.trim() ? description.trim() : null
+
+  const row = (label, value) => value
+    ? `<tr><td style="padding:8px 0;border-bottom:1px solid #f0f0f0;">
+         <span style="font-size:12px;color:#888;font-family:Arial,Helvetica,sans-serif;">${label}</span><br/>
+         <span style="font-size:14px;color:#1a3557;font-weight:600;font-family:Arial,Helvetica,sans-serif;">${value}</span>
+       </td></tr>`
+    : ''
+
+  const recurrenceRow = recurrenceCount > 1
+    ? row('Occurrences', `${recurrenceCount} recurring reservations`)
+    : ''
+
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>${cfg.label}</title>
+</head>
+<body style="margin:0;padding:0;background:#f4f6f8;font-family:Arial,Helvetica,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f6f8;padding:32px 0;">
+    <tr>
+      <td align="center">
+        <table width="480" cellpadding="0" cellspacing="0"
+               style="background:#ffffff;border-radius:10px;box-shadow:0 4px 16px rgba(0,0,0,0.10);overflow:hidden;max-width:94vw;">
+
+          <!-- Header -->
+          <tr>
+            <td style="background:#1a3557;padding:20px 32px;">
+              <p style="margin:0;font-size:20px;font-weight:700;color:#ffffff;
+                         font-family:Arial,Helvetica,sans-serif;letter-spacing:0.01em;">
+                Briya Room Reservations
+              </p>
+            </td>
+          </tr>
+
+          <!-- Action banner -->
+          <tr>
+            <td style="background:${cfg.color};padding:12px 32px;">
+              <p style="margin:0;font-size:15px;font-weight:700;color:#ffffff;
+                         font-family:Arial,Helvetica,sans-serif;">
+                ${cfg.label}
+              </p>
+            </td>
+          </tr>
+
+          <!-- Body -->
+          <tr>
+            <td style="padding:28px 32px;">
+              <p style="margin:0 0 6px;font-size:16px;color:#1a3557;font-weight:700;line-height:1.4;
+                         font-family:Arial,Helvetica,sans-serif;">
+                ${cfg.heading}
+              </p>
+              <p style="margin:0 0 24px;font-size:14px;color:#666;line-height:1.5;
+                         font-family:Arial,Helvetica,sans-serif;">
+                ${cfg.sub}
+              </p>
+
+              <!-- Details table -->
+              <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:24px;">
+                ${row('Booking title', title || 'Untitled booking')}
+                ${recurrenceRow}
+                ${row('Date &amp; time', dateStr)}
+                ${row('Room', roomName)}
+                ${row('Site / Location', siteName)}
+                ${row('Booked by', bookedBy)}
+                ${descStr ? row('Notes', descStr) : ''}
+              </table>
+
+              <p style="margin:0;font-size:13px;color:#888;line-height:1.6;
+                         font-family:Arial,Helvetica,sans-serif;">
+                If you have any questions about this reservation, please contact your site administrator.
+              </p>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="background:#f8f9fa;padding:16px 32px;border-top:1px solid #e8ecf0;">
+              <p style="margin:0;font-size:11px;color:#aaa;text-align:center;
+                         font-family:Arial,Helvetica,sans-serif;">
+                Briya Public Charter School · Room Reservation System
+              </p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`
+}
+
+/**
+ * Send a booking confirmation / update / cancellation email to the reservation owner.
+ *
+ * @param {string} to   recipient email
+ * @param {'created'|'updated'|'deleted'} action
+ * @param {{ title, bookedBy, roomName, siteName, startTime, endTime, allDay, description, recurrenceCount }} details
+ */
+export async function sendReservationConfirmationEmail(to, action, details) {
+  if (!to) return
+  const client  = getClient()
+  const subjects = {
+    created: `Booking Confirmed — ${details.title || 'Your reservation'}`,
+    updated: `Booking Updated — ${details.title || 'Your reservation'}`,
+    deleted: `Booking Cancelled — ${details.title || 'Your reservation'}`,
+  }
+  const subject = subjects[action] || `Booking Notice — ${details.title || 'Your reservation'}`
+
+  if (!client) {
+    console.log(`\n[CONFIRM] ══════════════════════════════════════`)
+    console.log(`[CONFIRM]  Action : ${action}`)
+    console.log(`[CONFIRM]  To     : ${to}`)
+    console.log(`[CONFIRM]  Title  : ${details.title}`)
+    console.log(`[CONFIRM]  Dates  : ${formatBookingDates(details.startTime, details.endTime, details.allDay)}`)
+    console.log(`[CONFIRM]  (RESEND_API_KEY not set — email not sent)`)
+    console.log(`[CONFIRM] ══════════════════════════════════════\n`)
+    return
+  }
+
+  const html = buildConfirmationHtml(action, details)
+  try {
+    const { data, error } = await client.emails.send({ from: FROM, to: [to], subject, html })
+    if (error) {
+      console.error(`[email] Resend error (confirmation ${action}) for ${to}:`, error)
+    } else {
+      console.log(`[email] Confirmation (${action}) sent to ${to} — id: ${data?.id}`)
+    }
+  } catch (err) {
+    console.error(`[email] Failed to send confirmation to ${to}:`, err.message)
+  }
 }

@@ -4,7 +4,7 @@ import pool from '../config/db.js'
 import { authMiddleware, requireAuth } from '../middleware/authMiddleware.js'
 import { eventWriteLimiter, otpRequestLimiter, otpRequestEmailLimiter, otpVerifyLimiter } from '../middleware/rateLimiter.js'
 import { verifyToken, signTokenWith } from '../utils/jwt.js'
-import { sendOtpEmail } from '../services/emailService.js'
+import { sendOtpEmail, sendReservationConfirmationEmail } from '../services/emailService.js'
 import { writeAuditLog, ACTION_TYPES } from '../services/auditLog.js'
 
 const router = Router()
@@ -45,6 +45,20 @@ function logOtpAttempt(action, reservationId, email, ip, result) {
 async function resolveSiteId(siteCode) {
   const [[site]] = await pool.query('SELECT id FROM sites WHERE code = ?', [siteCode])
   return site ? site.id : null
+}
+
+async function getReservationForEmail(eventId, siteId, roomId) {
+  const [[row]] = await pool.query(
+    `SELECT res.title, res.description, res.start_time, res.end_time, res.all_day,
+            res.created_by_name, res.owner_email,
+            r.name AS roomName, s.name AS siteName
+     FROM reservations res
+     JOIN rooms r ON res.room_id = r.id
+     JOIN sites s ON res.site_id = s.id
+     WHERE res.id = ? AND res.site_id = ? AND res.room_id = ?`,
+    [eventId, siteId, roomId]
+  )
+  return row || null
 }
 
 // GET /api/events/:siteCode/:roomId
@@ -135,6 +149,27 @@ router.post('/:siteCode/:roomId', eventWriteLimiter, authMiddleware, requireAuth
         metadata:        { role: req.user.role, ownershipType, ip: req.ip },
       })
     }
+    // Send confirmation email to the booking owner (fire-and-forget)
+    if (ownerEmail && insertedIds.length) {
+      const firstEv = incoming[0]
+      const ep0     = firstEv.extendedProps || {}
+      const [[names]] = await pool.query(
+        'SELECT r.name AS roomName, s.name AS siteName FROM rooms r JOIN sites s ON r.site_id = s.id WHERE r.id = ? AND s.id = ?',
+        [roomId, siteId]
+      ).catch(() => [[null]])
+      sendReservationConfirmationEmail(ownerEmail, 'created', {
+        title:           firstEv.title,
+        bookedBy:        ep0.bookedBy,
+        roomName:        names?.roomName,
+        siteName:        names?.siteName,
+        startTime:       firstEv.start,
+        endTime:         firstEv.end,
+        allDay:          !!firstEv.allDay,
+        description:     ep0.description,
+        recurrenceCount: incoming.length > 1 ? incoming.length : null,
+      }).catch(() => {})
+    }
+
     res.status(201).json({ ok: true, ids: insertedIds })
   } catch (err) {
     console.error('[events] POST:', err.message)
@@ -199,6 +234,32 @@ router.delete('/:siteCode/:roomId/group/:groupId', authMiddleware, requireAuth, 
       }
     }
 
+    // Fetch sample event + count BEFORE deletion for confirmation email
+    let groupEmailRow   = null
+    let groupEmailCount = 0
+    try {
+      const [[sample]] = await pool.query(
+        `SELECT res.title, res.description, res.start_time, res.end_time, res.all_day,
+                res.created_by_name, res.owner_email,
+                r.name AS roomName, s.name AS siteName
+         FROM reservations res
+         JOIN rooms r ON res.room_id = r.id
+         JOIN sites s ON res.site_id = s.id
+         WHERE res.recurrence_group_id = ? AND res.site_id = ? AND res.room_id = ?
+         ORDER BY res.start_time LIMIT 1`,
+        [groupId, siteId, roomId]
+      )
+      groupEmailRow = sample || null
+      if (sample) {
+        const baseQ   = `FROM reservations WHERE recurrence_group_id = ? AND site_id = ? AND room_id = ?`
+        const cntArgs = scope === 'following'
+          ? [`${baseQ} AND recurrence_index >= ?`, [groupId, siteId, roomId, parseInt(fromIndex, 10)]]
+          : [`${baseQ}`, [groupId, siteId, roomId]]
+        const [[{ cnt }]] = await pool.query(`SELECT COUNT(*) AS cnt ${cntArgs[0]}`, cntArgs[1])
+        groupEmailCount = cnt || 0
+      }
+    } catch (_) {}
+
     if (scope === 'all') {
       await pool.query(
         `DELETE FROM reservations
@@ -214,6 +275,21 @@ router.delete('/:siteCode/:roomId/group/:groupId', authMiddleware, requireAuth, 
         [groupId, siteId, roomId, idx]
       )
     }
+
+    if (groupEmailRow?.owner_email) {
+      sendReservationConfirmationEmail(groupEmailRow.owner_email, 'deleted', {
+        title:           groupEmailRow.title,
+        bookedBy:        groupEmailRow.created_by_name,
+        roomName:        groupEmailRow.roomName,
+        siteName:        groupEmailRow.siteName,
+        startTime:       groupEmailRow.start_time,
+        endTime:         groupEmailRow.end_time,
+        allDay:          !!groupEmailRow.all_day,
+        description:     groupEmailRow.description,
+        recurrenceCount: groupEmailCount > 1 ? groupEmailCount : null,
+      }).catch(() => {})
+    }
+
     // 'this' is handled by the single-event DELETE endpoint
     res.json({ ok: true })
   } catch (err) {
@@ -301,6 +377,33 @@ router.put('/:siteCode/:roomId/group/:groupId', authMiddleware, requireAuth, asy
       return res.status(400).json({ error: 'Invalid scope' })
     }
     await pool.query(sql, params)
+
+    // Send confirmation email (fire-and-forget) — fetch updated sample after write
+    pool.query(
+      `SELECT res.title, res.description, res.start_time, res.end_time, res.all_day,
+              res.created_by_name, res.owner_email,
+              r.name AS roomName, s.name AS siteName
+       FROM reservations res
+       JOIN rooms r ON res.room_id = r.id
+       JOIN sites s ON res.site_id = s.id
+       WHERE res.recurrence_group_id = ? AND res.site_id = ? AND res.room_id = ?
+       ORDER BY res.start_time LIMIT 1`,
+      [groupId, siteId, roomId]
+    ).then(([[r]]) => {
+      if (r?.owner_email) {
+        sendReservationConfirmationEmail(r.owner_email, 'updated', {
+          title:       r.title,
+          bookedBy:    r.created_by_name,
+          roomName:    r.roomName,
+          siteName:    r.siteName,
+          startTime:   r.start_time,
+          endTime:     r.end_time,
+          allDay:      !!r.all_day,
+          description: r.description,
+        }).catch(() => {})
+      }
+    }).catch(() => {})
+
     res.json({ ok: true })
   } catch (err) {
     console.error('[events] PUT group:', err.message)
@@ -886,6 +989,22 @@ router.put('/:siteCode/:roomId/:eventId', authMiddleware, requireAuth, async (re
       },
     })
 
+    // Send confirmation email (fire-and-forget)
+    getReservationForEmail(eventId, siteId, roomId).then(r => {
+      if (r?.owner_email) {
+        sendReservationConfirmationEmail(r.owner_email, 'updated', {
+          title:       r.title,
+          bookedBy:    r.created_by_name,
+          roomName:    r.roomName,
+          siteName:    r.siteName,
+          startTime:   r.start_time,
+          endTime:     r.end_time,
+          allDay:      !!r.all_day,
+          description: r.description,
+        }).catch(() => {})
+      }
+    }).catch(() => {})
+
     res.json({ ok: true })
   } catch (err) {
     console.error('[events] PUT:', err.message)
@@ -960,10 +1079,26 @@ router.delete('/:siteCode/:roomId/:eventId', authMiddleware, requireAuth, async 
       }
     }
 
+    // Fetch full record BEFORE deletion so we can send a confirmation email after
+    const emailRow = await getReservationForEmail(eventId, siteId, roomId).catch(() => null)
+
     await pool.query(
       'DELETE FROM reservations WHERE id = ? AND site_id = ? AND room_id = ?',
       [eventId, siteId, roomId]
     )
+
+    if (emailRow?.owner_email) {
+      sendReservationConfirmationEmail(emailRow.owner_email, 'deleted', {
+        title:       emailRow.title,
+        bookedBy:    emailRow.created_by_name,
+        roomName:    emailRow.roomName,
+        siteName:    emailRow.siteName,
+        startTime:   emailRow.start_time,
+        endTime:     emailRow.end_time,
+        allDay:      !!emailRow.all_day,
+        description: emailRow.description,
+      }).catch(() => {})
+    }
 
     writeAuditLog({
       action:          ACTION_TYPES.RESERVATION_DELETED,
