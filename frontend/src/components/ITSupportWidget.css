@@ -1,0 +1,235 @@
+/* ════════════════════════════════════════════════════════════════
+   IT SUPPORT WIDGET
+   ════════════════════════════════════════════════════════════════ */
+
+/* ── Floating action button ─────────────────────────────────── */
+.its-fab {
+  position: fixed;
+  bottom: 24px;
+  left: 24px;
+  z-index: 900;
+
+  display: flex;
+  align-items: center;
+  gap: 7px;
+
+  background: #1186c4;
+  color: #fff;
+  border: none;
+  border-radius: 100px;
+  padding: 9px 16px 9px 12px;
+  cursor: pointer;
+  box-shadow: 0 3px 12px rgba(0,0,0,0.22);
+  transition: background 0.18s, transform 0.15s, box-shadow 0.18s;
+  font-family: inherit;
+  font-size: 0.82rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  user-select: none;
+}
+.its-fab:hover {
+  background: #0e70a0;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(0,0,0,0.26);
+}
+.its-fab:active { transform: translateY(0); }
+
+.its-fab-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 2px solid rgba(255,255,255,0.7);
+  font-size: 0.78rem;
+  font-weight: 700;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+/* Hide text label on very small screens — keep icon only */
+@media (max-width: 360px) {
+  .its-fab-label { display: none; }
+  .its-fab { padding: 10px; }
+}
+
+/* ── Modal overlay ──────────────────────────────────────────── */
+.its-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  padding: 16px;
+  animation: its-fade-in 0.2s ease both;
+}
+@keyframes its-fade-in {
+  from { opacity: 0 }
+  to   { opacity: 1 }
+}
+
+/* ── Modal box ──────────────────────────────────────────────── */
+.its-modal {
+  background: #fff;
+  border-radius: 14px;
+  box-shadow: 0 12px 48px rgba(0,0,0,0.28);
+  width: min(680px, 100%);
+  max-height: calc(100vh - 32px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: its-slide-up 0.25s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+@keyframes its-slide-up {
+  from { opacity: 0; transform: translateY(24px) scale(0.97) }
+  to   { opacity: 1; transform: translateY(0)    scale(1)    }
+}
+
+/* ── Header ─────────────────────────────────────────────────── */
+.its-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  background: #1186c4;
+  color: #fff;
+  flex-shrink: 0;
+}
+.its-modal-title {
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+.its-modal-close {
+  background: none;
+  border: none;
+  color: rgba(255,255,255,0.85);
+  font-size: 1.1rem;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 6px;
+  line-height: 1;
+  transition: background 0.15s, color 0.15s;
+}
+.its-modal-close:hover {
+  background: rgba(255,255,255,0.2);
+  color: #fff;
+}
+
+/* ── Iframe ─────────────────────────────────────────────────── */
+.its-iframe {
+  flex: 1;
+  width: 100%;
+  border: none;
+  min-height: 480px;
+  display: block;
+}
+
+/* ── Footer ─────────────────────────────────────────────────── */
+.its-modal-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 20px;
+  border-top: 1px solid #e5e7eb;
+  background: #f9fafb;
+  flex-shrink: 0;
+}
+.its-footer-hint {
+  font-size: 0.78rem;
+  color: #6b7280;
+  line-height: 1.4;
+}
+.its-done-btn {
+  background: #1186c4;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s;
+  font-family: inherit;
+  flex-shrink: 0;
+}
+.its-done-btn:hover { background: #0e70a0; }
+
+/* ── Success screen ─────────────────────────────────────────── */
+.its-success {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 32px;
+  gap: 12px;
+  text-align: center;
+  animation: its-success-in 0.35s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+@keyframes its-success-in {
+  from { opacity: 0; transform: scale(0.9) }
+  to   { opacity: 1; transform: scale(1)   }
+}
+.its-success-icon {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: #16a34a;
+  color: #fff;
+  font-size: 2rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 16px rgba(22,163,74,0.35);
+  animation: its-icon-pop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) 0.1s both;
+}
+@keyframes its-icon-pop {
+  from { transform: scale(0) }
+  to   { transform: scale(1) }
+}
+.its-success-heading {
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: #111827;
+  margin: 0;
+}
+.its-success-body {
+  font-size: 0.95rem;
+  color: #374151;
+  max-width: 340px;
+  line-height: 1.6;
+  margin: 0;
+}
+.its-success-closing {
+  font-size: 0.78rem;
+  color: #9ca3af;
+  margin: 8px 0 0;
+}
+
+/* ── Mobile adjustments ─────────────────────────────────────── */
+@media (max-width: 480px) {
+  .its-fab { bottom: 16px; left: 16px; }
+  .its-modal-footer {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+  .its-done-btn { text-align: center; }
+  .its-iframe { min-height: 400px; }
+}
+
+/* ── Reduced motion ─────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .its-overlay,
+  .its-modal,
+  .its-success,
+  .its-success-icon { animation: none; }
+}
