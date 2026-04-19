@@ -137,8 +137,21 @@ export default function RoomsPage() {
     )
   }
 
+  // ── Initial loading screen (request in-flight, no error yet) ──
+  if (site === null && !loadError) {
+    return (
+      <div style={{ position: 'fixed', inset: 0, background: '#1186c4', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <style>{SPINNER_STYLE}</style>
+        <img
+          src={`${import.meta.env.BASE_URL}briya_logo.png`}
+          alt="Loading…"
+          style={{ width: 72, height: 72, filter: 'brightness(0) invert(1)', animation: 'spin 1.2s linear infinite' }}
+        />
+      </div>
+    )
+  }
+
   // ── Full-page error screen ────────────────────────────────────
-  if (site === null && !loadError) return <div className="rooms-page" />
   if (!site) {
     return (
       <div className="app-fullpage-state">

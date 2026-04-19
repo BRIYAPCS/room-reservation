@@ -23,6 +23,8 @@ import ContactITButton from '../components/ITSupportWidget'
 import ClearableInput from '../components/ClearableInput'
 import './CalendarPage.css'
 
+const SPINNER_STYLE = `@keyframes spin { to { transform: rotate(360deg) } }`
+
 export default function CalendarPage() {
   const { siteId, roomId } = useParams()
   const navigate = useNavigate()
@@ -140,12 +142,16 @@ export default function CalendarPage() {
   // Live event state — loaded via /api/reservations
   const [events, setEvents] = useState([])
   const [eventsLoadError, setEventsLoadError] = useState(false)
+  // Stays false until the first reservations request resolves (success or error),
+  // so the calendar is never shown while data is still in-flight.
+  const [calReady, setCalReady] = useState(false)
 
   useEffect(() => {
     setEventsLoadError(false)
+    setCalReady(false)
     api.getReservations(siteId, roomId)
-      .then(data => { setEvents(data); setEventsLoadError(false) })
-      .catch(() => { setEvents([]); setEventsLoadError(true) })
+      .then(data => { setEvents(data); setEventsLoadError(false); setCalReady(true) })
+      .catch(() => { setEvents([]); setEventsLoadError(true); setCalReady(true) })
   }, [siteId, roomId])
 
   // Ref keeps the latest events array accessible inside refreshEvents without
@@ -896,11 +902,25 @@ export default function CalendarPage() {
     return new Date(iso).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })
   }
 
+  // ── Initial loading screen (first request still in-flight) ────
+  if (!calReady) {
+    return (
+      <div style={{ position: 'fixed', inset: 0, background: '#1186c4', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <style>{SPINNER_STYLE}</style>
+        <img
+          src={`${import.meta.env.BASE_URL}briya_logo.png`}
+          alt="Loading…"
+          style={{ width: 72, height: 72, filter: 'brightness(0) invert(1)', animation: 'spin 1.2s linear infinite' }}
+        />
+      </div>
+    )
+  }
+
   // ── Full-page error screens (server completely down) ─────────
   if (retrying) {
     return (
       <div className="app-fullpage-state">
-        <style>{`@keyframes spin { to { transform: rotate(360deg) } }`}</style>
+        <style>{SPINNER_STYLE}</style>
         <img src={`${import.meta.env.BASE_URL}briya_logo.png`} alt="Briya" className="app-fullpage-logo" style={{ animation: 'spin 1.2s linear infinite' }} />
         <p className="app-fullpage-heading">Reconnecting…</p>
         <p className="app-fullpage-sub">Please wait while we try to reach the server.</p>
