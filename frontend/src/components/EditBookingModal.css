@@ -32,6 +32,25 @@
   background: #f8fafc;
 }
 
+.ebm-title-block {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.ebm-room-name {
+  font-size: clamp(1rem, 1.5vw, 1.2rem);
+  font-weight: 700;
+  color: #1a3557;
+  line-height: 1.2;
+}
+
+.ebm-user-name {
+  font-size: clamp(0.75rem, 1vw, 0.85rem);
+  font-weight: 500;
+  color: #5a7fa8;
+}
+
 .ebm-header h2 {
   font-size: clamp(1rem, 1.5vw, 1.2rem);
   font-weight: 700;
@@ -56,7 +75,14 @@
 }
 
 .ebm-form {
-  padding: 22px 24px;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  overflow: hidden;
+}
+
+.ebm-form-body {
+  padding: 22px 24px 0;
   display: flex;
   flex-direction: column;
   gap: 14px;
@@ -201,13 +227,10 @@
 .ebm-actions {
   display: flex;
   gap: 10px;
-  margin-top: 4px;
-  position: sticky;
-  bottom: 0;
   background: #fff;
-  padding-top: 12px;
-  padding-bottom: 4px;
+  padding: 12px 24px 16px;
   border-top: 1px solid #eee;
+  flex-shrink: 0;
 }
 
 .ebm-btn-gold {
@@ -242,6 +265,134 @@
   background: #5a6268;
 }
 
+/* All Day + Recurring checkboxes in one row */
+.ebm-checks-row {
+  display: flex;
+  gap: 20px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+/* Span both columns in the date grid when recurring is on */
+.ebm-span-full {
+  grid-column: 1 / -1;
+}
+
+/* Recurring section container */
+.ebm-recur-section {
+  border: 1.5px solid #d0e4f5;
+  border-radius: 8px;
+  background: #f4faff;
+  padding: 14px 16px;
+}
+
+.ebm-recur-sub {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Daily / Weekly / Bi-Weekly / Monthly radios */
+.ebm-recur-type-row {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.ebm-type-radio {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  cursor: pointer;
+  font-size: clamp(0.82rem, 1.1vw, 0.92rem);
+  font-weight: 600;
+  color: #1a3557;
+  background: #fff;
+  border: 1.5px solid #b8ddf5;
+  border-radius: 6px;
+  padding: 6px 12px;
+  transition: background 0.13s, border-color 0.13s;
+}
+
+.ebm-type-radio input[type="radio"] {
+  accent-color: #1186c4;
+}
+
+.ebm-type-radio:has(input:checked) {
+  background: #ddf0fc;
+  border-color: #1186c4;
+}
+
+/* Weekday picker */
+.ebm-weekday-block {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ebm-field-label {
+  font-size: clamp(0.78rem, 1vw, 0.88rem);
+  font-weight: 600;
+  color: #555;
+}
+
+.ebm-weekday-picker {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.ebm-weekday-btn {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 1.5px solid #b8ddf5;
+  background: #fff;
+  color: #1a3557;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.13s, border-color 0.13s, color 0.13s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ebm-weekday-btn--active {
+  background: #1186c4;
+  border-color: #1186c4;
+  color: #fff;
+}
+
+/* Ends On date + occurrence count */
+.ebm-recur-until-block {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ebm-recur-until-label {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  font-size: clamp(0.82rem, 1.1vw, 0.92rem);
+  font-weight: 600;
+  color: #555;
+}
+
+.ebm-recur-summary {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: clamp(0.78rem, 1vw, 0.88rem);
+  color: #1a7a3f;
+  background: #eafaf0;
+  border: 1px solid #b7e4c7;
+  border-radius: 6px;
+  padding: 6px 12px;
+  margin: 0;
+}
+
 /* ── Mobile ≤ 480px — bottom sheet ── */
 @media (max-width: 480px) {
   .ebm-overlay { align-items: flex-end; }
@@ -253,13 +404,16 @@
   }
   .ebm-header { padding: 14px 16px; }
   .ebm-header h2 { font-size: 0.95rem; }
-  .ebm-form { padding: 14px 16px 16px; gap: 12px; }
+  .ebm-form-body { padding: 14px 16px 0; gap: 12px; }
+  .ebm-actions { padding: 10px 16px 14px; flex-direction: column-reverse; gap: 8px; }
   .ebm-date-time-row { grid-template-columns: 1fr; }
   .ebm-date-grid { grid-template-columns: 1fr; }
   .ebm-time-select { min-width: unset; width: 100%; }
-  .ebm-actions { flex-direction: column-reverse; gap: 8px; }
   .ebm-btn-gold,
   .ebm-btn-cancel { width: 100%; text-align: center; }
+  .ebm-recur-type-row { gap: 4px; }
+  .ebm-type-radio { padding: 5px 10px; font-size: 0.82rem; }
+  .ebm-weekday-btn { width: 30px; height: 30px; font-size: 0.78rem; }
 }
 
 /* ── Tablet 481px – 768px ── */

@@ -480,9 +480,23 @@ export default function CalendarPage() {
 
   const handleUpdateEvent = async (updatedEvent) => {
     const meta = recurEditMeta
-    // Use the in-memory OTP edit token (never persisted to storage)
     const editToken = pendingEditToken
     setPendingEditToken(null)
+
+    if (Array.isArray(updatedEvent)) {
+      // User converted a single booking into a recurring series:
+      // delete the original, then POST the new series
+      await api.deleteEvent(siteId, roomId, selectedEvent.id, editToken).catch(() => {})
+      await api.addEvents(siteId, roomId, updatedEvent).catch(() => {})
+      refreshEvents(true)
+      setShowEditModal(false)
+      setShowEventDetails(false)
+      setSelectedEvent(null)
+      setRecurEditMeta(null)
+      showToast(`${updatedEvent.length} recurring event${updatedEvent.length === 1 ? '' : 's'} created.`)
+      return
+    }
+
     if (meta?.scope && meta?.groupId) {
       await api.updateRecurrenceGroup(siteId, roomId, meta.groupId, meta.scope, meta.fromIndex, updatedEvent).catch(() => {})
     } else {
