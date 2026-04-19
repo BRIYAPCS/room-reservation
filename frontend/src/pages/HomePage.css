@@ -107,6 +107,64 @@
   text-align: center;
 }
 
+/* ── Full-page error / retrying screen ── */
+.home-fullpage-state {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: #1186c4;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 32px 24px;
+  text-align: center;
+  font-family: inherit;
+}
+.home-fullpage-logo {
+  width: 72px;
+  height: 72px;
+  filter: brightness(0) invert(1);
+  opacity: 0.95;
+  margin-bottom: 8px;
+}
+.home-fullpage-logo--still { animation: none !important; }
+.home-fullpage-heading {
+  color: #fff;
+  font-size: clamp(1.2rem, 3vw, 1.6rem);
+  font-weight: 700;
+  margin: 0;
+}
+.home-fullpage-sub {
+  color: rgba(255,255,255,0.8);
+  font-size: clamp(0.88rem, 2vw, 1rem);
+  margin: 0;
+  max-width: 380px;
+  line-height: 1.6;
+}
+.home-fullpage-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin-top: 8px;
+}
+.home-fullpage-retry {
+  background: #fff;
+  color: #1186c4;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 24px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.15s;
+}
+.home-fullpage-retry:hover { background: #e8f4fc; }
+
 /* ── API error banner ── */
 .home-api-error {
   display: flex;

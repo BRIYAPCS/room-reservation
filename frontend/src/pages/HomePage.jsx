@@ -44,6 +44,7 @@ export default function HomePage() {
   const [sites,        setSites]        = useState([])
   const [pageReady,    setPageReady]    = useState(false)
   const [apiError,     setApiError]     = useState(false)
+  const [retrying,     setRetrying]     = useState(false)
   const { weatherEnabled, visitorCounterEnabled, siteManagementEnabled } = useConfig()
 
   const pendingRef = useRef(0)
@@ -60,10 +61,21 @@ export default function HomePage() {
     if (pendingRef.current <= 0) markReady()
   }
 
+  async function handleRetry() {
+    setRetrying(true)
+    try {
+      const data = await getSites()
+      setApiError(false)
+      setSites(data)
+    } catch {
+      setApiError(true)
+    } finally {
+      setRetrying(false)
+    }
+  }
+
   useEffect(() => {
-    getHealth()
-      .then(() => {})
-      .catch(() => {})
+    getHealth().then(() => {}).catch(() => {})
     getSites()
       .then(data => { setApiError(false); setSites(data) })
       .catch(() => { setApiError(true); markReady() })
@@ -77,6 +89,44 @@ export default function HomePage() {
     const fallback = setTimeout(markReady, 6000)
     return () => clearTimeout(fallback)
   }, [sites])
+
+  // ── Full-page retrying screen ────────────────────────────────
+  if (retrying) {
+    return (
+      <div className="home-fullpage-state">
+        <style>{SPINNER_STYLE}</style>
+        <img
+          src={`${import.meta.env.BASE_URL}briya_logo.png`}
+          alt="Briya"
+          className="home-fullpage-logo"
+          style={{ animation: 'spin 1.2s linear infinite' }}
+        />
+        <p className="home-fullpage-heading">Reconnecting…</p>
+        <p className="home-fullpage-sub">Please wait while we try to reach the server.</p>
+      </div>
+    )
+  }
+
+  // ── Full-page error screen ────────────────────────────────────
+  if (apiError && pageReady) {
+    return (
+      <div className="home-fullpage-state">
+        <img
+          src={`${import.meta.env.BASE_URL}briya_logo.png`}
+          alt="Briya"
+          className="home-fullpage-logo home-fullpage-logo--still"
+        />
+        <h2 className="home-fullpage-heading">The app is currently unavailable</h2>
+        <p className="home-fullpage-sub">We'll be right back. Please try again in a moment.</p>
+        <div className="home-fullpage-actions">
+          <button className="home-fullpage-retry" onClick={handleRetry}>
+            ↺ Retry
+          </button>
+          <ContactITButton variant="outline" />
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className={`home-page${pageReady ? ' hp-entered' : ''}`}>
@@ -142,28 +192,6 @@ export default function HomePage() {
         <h1 className="home-title">Briya Room Reservations</h1>
         <div className="home-subtitle-box">Choose a Site</div>
 
-        {apiError && (
-          <div className="home-api-error" role="alert">
-            <span className="home-api-error-icon">⚠</span>
-            <span className="home-api-error-msg">
-              The app is currently unavailable — we'll be right back.
-            </span>
-            <div className="home-api-error-actions">
-              <button
-                className="home-api-error-retry"
-                onClick={() => {
-                  setApiError(false)
-                  getSites()
-                    .then(data => { setApiError(false); setSites(data) })
-                    .catch(() => setApiError(true))
-                }}
-              >
-                ↺ Retry
-              </button>
-              <ContactITButton variant="outline" />
-            </div>
-          </div>
-        )}
 
         <div className="site-grid">
           {sites.map((site, index) => (

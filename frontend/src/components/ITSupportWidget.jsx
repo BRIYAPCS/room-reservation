@@ -42,7 +42,6 @@ function ITSupportModal({ onClose }) {
       role="dialog"
       aria-modal="true"
       aria-label="IT Support Request"
-      onClick={e => { if (e.target === e.currentTarget) onClose() }}
     >
       <div className="its-modal">
         <div className="its-modal-header">
