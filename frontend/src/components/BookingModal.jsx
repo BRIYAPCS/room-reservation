@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from 'react'
 import './BookingModal.css'
 import { useConfig } from '../context/ConfigContext'
 import { useAuth } from '../context/AuthContext'
+import { isAdmin } from '../utils/roles'
 import RichTextEditor from './RichTextEditor'
 import ClearableInput from './ClearableInput'
 
@@ -61,11 +62,15 @@ export default function BookingModal({
     bookingStartHour:    BOOKING_START_HOUR,
     bookingEndHour:      BOOKING_END_HOUR,
     slotDurationMinutes: SLOT_DURATION_MINUTES,
+    allowPastBookings:   ALLOW_PAST_BOOKINGS,
     enableRecurringEvents: ENABLE_RECURRING_EVENTS,
     recurringMaxMonths:  RECURRING_MAX_MONTHS,
   } = useConfig()
 
   const { auth } = useAuth()
+  // Admins/superadmins can always book past dates/times.
+  // Standard users follow the ALLOW_PAST_BOOKINGS config flag.
+  const canBookPast = ALLOW_PAST_BOOKINGS || isAdmin(auth.role)
   const identityLocked = auth.emailVerified === true
 
   const TIME_OPTIONS = useMemo(
@@ -86,15 +91,15 @@ export default function BookingModal({
     return Math.min(Math.max(mins, startBound), endBound)
   }
 
-  // Today in YYYY-MM-DD — used as min for date pickers to prevent past bookings
+  // Today in YYYY-MM-DD — used as min for date pickers for standard users
   const todayStr = toDateStr(new Date())
 
-  // Clamp initial date to today so clicking a past slot on the calendar
-  // still opens the modal defaulting to today, not the past date.
+  // Clamp initial date to today only for users who cannot book past.
+  // Admins and superadmins keep the original date even if it's in the past.
   const rawParsedDate = initialStart
     ? initialStart.split('T')[0]
     : (initialDate || todayStr)
-  const parsedDate = rawParsedDate < todayStr ? todayStr : rawParsedDate
+  const parsedDate = !canBookPast && rawParsedDate < todayStr ? todayStr : rawParsedDate
   const rawStart        = initialStart ? (initialStart.split('T')[1] || '').slice(0, 5) : null
   const rawEnd          = initialEnd   ? (initialEnd.split('T')[1]   || '').slice(0, 5) : null
   const parsedStartMins = clampMins(rawStart ? timeToMins(rawStart) : startBound)
@@ -126,16 +131,17 @@ export default function BookingModal({
   const [error, setError] = useState('')
 
   // ── Past-time cutoff (minutes since midnight) ─────────────────
-  // Only active when form.date === today; -1 means "no cutoff" (future date).
+  // -1 means "no cutoff" (future date, or user is allowed to book past).
   // Floored to the current slot boundary so a partially-elapsed slot
   // (e.g. 3:00–3:15 when the clock reads 3:10) stays selectable —
   // consistent with CalendarPage.findFirstAvailableSlot which does the same.
   const nowMins = useMemo(() => {
+    if (canBookPast) return -1  // admins and "allow past" config skip the cutoff
     if (!form.date || form.date !== toDateStr(new Date())) return -1
     const n = new Date()
     const mins = n.getHours() * 60 + n.getMinutes()
     return Math.floor(mins / SLOT_DURATION_MINUTES) * SLOT_DURATION_MINUTES
-  }, [form.date, SLOT_DURATION_MINUTES])
+  }, [form.date, SLOT_DURATION_MINUTES, canBookPast])
 
   // ── Occupied intervals for form.date ─────────────────────────
   // Each existing event that falls on the selected day becomes a blocked
@@ -418,18 +424,22 @@ export default function BookingModal({
           <div className="bm-datetime-grid">
             <label className={isRecurring ? 'bm-span-full' : ''}>
               Start Date
-              {/* min prevents selecting past dates; the native picker grays them out */}
-              <input type="date" name="date" value={form.date} min={todayStr} onChange={handleChange} />
+              <input
+                type="date"
+                name="date"
+                value={form.date}
+                min={canBookPast ? undefined : todayStr}
+                onChange={handleChange}
+              />
             </label>
             {!isRecurring && (
               <label>
                 End Date
-                {/* min is the greater of today and the selected start date */}
                 <input
                   type="date"
                   name="endDate"
                   value={form.endDate}
-                  min={form.date >= todayStr ? form.date : todayStr}
+                  min={canBookPast ? undefined : (form.date >= todayStr ? form.date : todayStr)}
                   onChange={handleChange}
                 />
               </label>
