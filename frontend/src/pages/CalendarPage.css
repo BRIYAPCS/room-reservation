@@ -1094,7 +1094,51 @@
   animation-delay: 0.14s;
 }
 
+/* ── Auto-sync progress bar ─────────────────────────────────── */
+.cal-sync-bar {
+  height: 2px;
+  background: rgba(17, 134, 196, 0.12);
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.cal-sync-bar-fill {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, #1186c4 0%, #38bdf8 100%);
+  animation: cal-sync-fill 20s linear forwards;
+}
+@keyframes cal-sync-fill {
+  from { width: 0% }
+  to   { width: 100% }
+}
+
+/* ── Toolbar right cluster (Refresh + Updated badge) ─────────── */
+.cal-toolbar-end {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* ── "Updated" pill ──────────────────────────────────────────── */
+.cal-synced-badge {
+  background: #16a34a;
+  color: #fff;
+  padding: 4px 12px;
+  border-radius: 100px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+  animation: badge-pop 0.28s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+@keyframes badge-pop {
+  from { opacity: 0; transform: scale(0.7) translateY(4px); }
+  to   { opacity: 1; transform: scale(1)   translateY(0);   }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .cal-topbar,
   .cal-content { opacity: 1; animation: none; }
+  .cal-sync-bar-fill { animation: none; width: 100%; opacity: 0.3; }
+  .cal-synced-badge  { animation: none; }
 }

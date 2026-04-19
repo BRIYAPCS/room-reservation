@@ -121,12 +121,33 @@ export default function CalendarPage() {
       .catch(() => { setEvents([]); setEventsLoadError(true) })
   }, [siteId, roomId])
 
+  // Ref keeps the latest events array accessible inside refreshEvents without
+  // adding `events` as a dependency (which would restart the polling interval).
+  const eventsRef = useRef([])
+  useEffect(() => { eventsRef.current = events }, [events])
+
+  // Sync bar key — incrementing it remounts the fill div, restarting the CSS animation.
+  const [syncBarKey,   setSyncBarKey]   = useState(0)
+  const [syncedBadge,  setSyncedBadge]  = useState(false)
+  const syncedBadgeTimer = useRef(null)
+
   const [refreshing, setRefreshing] = useState(false)
 
   const refreshEvents = useCallback(async (silent = false) => {
+    if (silent) setSyncBarKey(k => k + 1)
     setRefreshing(true)
     try {
       const data = await api.getReservations(siteId, roomId)
+      if (silent) {
+        const prev    = eventsRef.current
+        const prevIds = new Set(prev.map(e => String(e.id)))
+        const changed = data.length !== prev.length || data.some(e => !prevIds.has(String(e.id)))
+        if (changed) {
+          if (syncedBadgeTimer.current) clearTimeout(syncedBadgeTimer.current)
+          setSyncedBadge(true)
+          syncedBadgeTimer.current = setTimeout(() => setSyncedBadge(false), 2500)
+        }
+      }
       setEvents(data)
       if (!silent) showToast('Calendar refreshed.')
     } catch {
@@ -212,6 +233,7 @@ export default function CalendarPage() {
   }
 
   useEffect(() => () => { if (toastTimer.current) clearTimeout(toastTimer.current) }, [])
+  useEffect(() => () => { if (syncedBadgeTimer.current) clearTimeout(syncedBadgeTimer.current) }, [])
 
   // ── Per-event editable flag ───────────────────────────────────
   const fcEvents = useMemo(() => {
@@ -860,6 +882,11 @@ export default function CalendarPage() {
         </div>
       </div>
 
+      {/* Sync progress bar — fills over 20 s; key remount resets animation each cycle */}
+      <div className="cal-sync-bar" aria-hidden="true">
+        <div key={syncBarKey} className="cal-sync-bar-fill" />
+      </div>
+
       {/* Content area */}
       <div className="cal-content">
         {eventsLoadError && (
@@ -904,13 +931,16 @@ export default function CalendarPage() {
           >
             + New Booking
           </button>
-          <button
-            className={`btn-refresh${refreshing ? ' btn-refresh--loading' : ''}`}
-            onClick={() => refreshEvents(false)}
-            disabled={refreshing}
-          >
-            {refreshing ? '↻ Refreshing…' : '↻ Refresh'}
-          </button>
+          <div className="cal-toolbar-end">
+            {syncedBadge && <span className="cal-synced-badge" aria-live="polite">↺ Updated</span>}
+            <button
+              className={`btn-refresh${refreshing ? ' btn-refresh--loading' : ''}`}
+              onClick={() => refreshEvents(false)}
+              disabled={refreshing}
+            >
+              {refreshing ? '↻ Refreshing…' : '↻ Refresh'}
+            </button>
+          </div>
         </div>
 
         {viewMode === 'calendar' ? (
