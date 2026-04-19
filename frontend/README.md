@@ -2,7 +2,7 @@
 
 A React 18 / Vite single-page application for booking conference rooms and shared spaces at **Briya Public Charter School**. Deployed to GitHub Pages and connected to a Node.js/Express REST API backend hosted on Linode.
 
-**Live URL:** `https://briyapcs.github.io/room-reservation/`  
+**Live URL:** `https://briyapcs.github.io/briya-room-reservation-v2/`  
 **API base (production):** `https://briya-api.duckdns.org/api`  
 **Health check:** `https://briya-api.duckdns.org/api/health`
 
@@ -653,7 +653,7 @@ npm run dev    # backend port 4000 + frontend port 5173
 | Variable | Required | Description | Dev | Prod |
 |---|---|---|---|---|
 | `VITE_API_BASE` | Yes | Backend API base URL | `http://localhost:4000/api` | `https://briya-api.duckdns.org/api` |
-| `VITE_BASE_PATH` | Prod only | GitHub Pages subpath | `/` | `/room-reservation/` |
+| `VITE_BASE_PATH` | Prod only | GitHub Pages subpath | `/` | `/briya-room-reservation-v2/` |
 
 `.env` is gitignored. `.env.production` is committed — public build-time values only, no secrets.
 
@@ -679,7 +679,7 @@ push to main
   → npm ci  (in frontend/)
   → npm run build  (uses GitHub Actions secrets as env vars)
   → upload dist/ as Pages artifact
-  → deploy to https://briyapcs.github.io/room-reservation/
+  → deploy to https://briyapcs.github.io/briya-room-reservation-v2/
 ```
 
 **Required GitHub Actions Secrets** (Settings → Secrets → Actions):
@@ -687,7 +687,7 @@ push to main
 | Secret | Value |
 |---|---|
 | `VITE_API_BASE` | `https://briya-api.duckdns.org/api` |
-| `VITE_BASE_PATH` | `/room-reservation/` |
+| `VITE_BASE_PATH` | `/briya-room-reservation-v2/` |
 
 **GitHub Pages source** must be set to "GitHub Actions" in repo Settings → Pages.
 
@@ -695,4 +695,4 @@ Manual trigger: Actions → Deploy to GitHub Pages → Run workflow.
 
 ---
 
-*Designed & Engineered by the Briya IT Team · © 2025 Briya Public Charter School*
+*Designed & Engineered by the Briya IT Team · © 2026 Briya Public Charter School*

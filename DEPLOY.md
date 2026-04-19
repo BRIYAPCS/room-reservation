@@ -4,11 +4,14 @@
 
 | Component | Where | URL |
 |---|---|---|
-| Frontend | GitHub Pages | `https://briyapcs.github.io/room-reservation/` |
+| Frontend | GitHub Pages | `https://briyapcs.github.io/briya-room-reservation-v2/` |
 | Backend API | Linode VPS (Ubuntu 22.04) | `https://briya-api.duckdns.org/api` |
 | API health check | — | `https://briya-api.duckdns.org/api/health` |
 | Temp domain | DuckDNS (free) | `briya-api.duckdns.org` → `<YOUR_SERVER_IP>` |
 | Final domain | Squarespace (swap in later) | `https://www.briyaroomreservations.org` |
+| GitHub repo | — | `github.com/BRIYAPCS/briya-room-reservation-v2` |
+| Server folder | Linode `/home/briya/` | `Briya-Backend-Room-Reservation/` |
+| PM2 process name | — | `Briya-Backend-Room-Reservation` |
 | SSH private key | Local Windows machine | `<PATH_TO_SSH_KEY>` |
 | SSH PuTTY key | Local Windows machine | `<PATH_TO_SSH_KEY_PPK>` |
 | Linode server IP | — | `<YOUR_SERVER_IP>` |
@@ -32,7 +35,7 @@
 - Image: **Ubuntu 22.04 LTS**
 - Region: closest to Washington DC (Newark or Atlanta)
 - SSH Key: paste your public key (Linode → Settings → SSH Keys)
-- Label: `briya-api`
+- Label: `briya-api-server`
 - IP: `<YOUR_SERVER_IP>`
 
 ### 2.2 First login
@@ -108,19 +111,19 @@ pm2 startup systemd -u briya --hp /home/briya
 ### 3.1 Upload backend code from local Windows machine
 ```powershell
 # From PowerShell — use Windows paths, specify key
-scp -r -i "<PATH_TO_SSH_KEY>" "C:\Users\Briya\Desktop\Room Reservation\backend" briya@<YOUR_SERVER_IP>:/home/briya/briya-api
+scp -r -i "<PATH_TO_SSH_KEY>" "C:\Users\Briya\Desktop\Room Reservation\backend" briya@<YOUR_SERVER_IP>:/home/briya/Briya-Backend-Room-Reservation
 ```
 
 ### 3.2 Install dependencies on server
 ```bash
-cd /home/briya/briya-api
+cd /home/briya/Briya-Backend-Room-Reservation
 npm install --omit=dev
 ```
 
 ### 3.3 Create the .env file ON THE SERVER (never committed to git)
 ```bash
-nano /home/briya/briya-api/.env
-chmod 600 /home/briya/briya-api/.env   # owner-only read
+nano /home/briya/Briya-Backend-Room-Reservation/.env
+chmod 600 /home/briya/Briya-Backend-Room-Reservation/.env   # owner-only read
 ```
 
 Full `.env` template:
@@ -130,10 +133,10 @@ NODE_ENV=production
 APP_TIMEZONE=America/New_York
 
 # Comma-separated allowed frontend origins
-FRONTEND_URL=https://briyapcs.github.io,https://www.briyaroomreservations.org
+FRONTEND_URL=https://briyapcs.github.io,https://briyapcs.github.io/briya-room-reservation-v2,https://www.briyaroomreservations.org
 
 # MySQL
-DB_HOST=<YOUR_SERVER_IP>
+DB_HOST=127.0.0.1
 DB_PORT=3306
 DB_USER=briya
 DB_PASSWORD=YOUR_DB_PASSWORD
@@ -144,9 +147,10 @@ PIN_STANDARD=YOUR_STANDARD_PIN
 PIN_ADMIN=YOUR_ADMIN_PIN
 PIN_SUPER_ADMIN=YOUR_SUPERADMIN_PIN
 
-# Generate fresh JWT secret:
+# Generate fresh JWT secrets:
 # node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"
 JWT_SECRET=YOUR_96_CHAR_HEX_SECRET
+JWT_EDIT_SECRET=YOUR_SECOND_96_CHAR_HEX_SECRET
 
 # Booking window
 BOOKING_START_HOUR=8
@@ -194,28 +198,31 @@ OTP_MAX_ATTEMPTS=5
 # Trusted device TTL
 TRUSTED_DEVICE_DAYS=90
 
-# Power Automate webhook for @briya.org email directory lookup (leave blank to skip)
+# Power Automate webhook for @briya.org email directory lookup
+# CRITICAL: paste the FULL URL from Power Automate including ALL query params:
+#   ?api-version=...&sp=...&sv=...&sig=...
+# Leaving this blank disables email directory validation (login still works).
 POWER_AUTOMATE_WEBHOOK_URL=
 ```
 
 ### 3.4 Create uploads directory structure
 ```bash
-mkdir -p /home/briya/briya-api/uploads/images/Sites
-mkdir -p /home/briya/briya-api/uploads/images/Rooms/Fort_Totten
-mkdir -p /home/briya/briya-api/uploads/images/Rooms/Georgia
-mkdir -p /home/briya/briya-api/uploads/images/Rooms/Georgia_Annex
-mkdir -p /home/briya/briya-api/uploads/images/Rooms/Ontario
-mkdir -p /home/briya/briya-api/uploads/images/Rooms/Shepherd
+mkdir -p /home/briya/Briya-Backend-Room-Reservation/uploads/images/Sites
+mkdir -p /home/briya/Briya-Backend-Room-Reservation/uploads/images/Rooms/Fort_Totten
+mkdir -p /home/briya/Briya-Backend-Room-Reservation/uploads/images/Rooms/Georgia
+mkdir -p /home/briya/Briya-Backend-Room-Reservation/uploads/images/Rooms/Georgia_Annex
+mkdir -p /home/briya/Briya-Backend-Room-Reservation/uploads/images/Rooms/Ontario
+mkdir -p /home/briya/Briya-Backend-Room-Reservation/uploads/images/Rooms/Shepherd
 ```
 
 ### 3.5 Set correct permissions on uploads (CRITICAL)
 nginx runs as `www-data` and needs read access through the entire path.
 ```bash
-chmod 755 /home/briya                                     # must be traversable
-chmod 755 /home/briya/briya-api                           # must be traversable
-chmod 755 /home/briya/briya-api/uploads                   # defaults to 700 — fix this!
-chmod -R 755 /home/briya/briya-api/uploads/images
-find /home/briya/briya-api/uploads/images -name "*.webp" -exec chmod 644 {} \;
+chmod 755 /home/briya                                                         # must be traversable
+chmod 755 /home/briya/Briya-Backend-Room-Reservation                         # must be traversable
+chmod 755 /home/briya/Briya-Backend-Room-Reservation/uploads                 # defaults to 700 — fix this!
+chmod -R 755 /home/briya/Briya-Backend-Room-Reservation/uploads/images
+find /home/briya/Briya-Backend-Room-Reservation/uploads/images -name "*.webp" -exec chmod 644 {} \;
 ```
 
 > **If you get 403 Forbidden on images:** check each directory in the chain with `ls -ld`.
@@ -225,10 +232,10 @@ find /home/briya/briya-api/uploads/images -name "*.webp" -exec chmod 644 {} \;
 Images are NOT in git (`uploads/` is gitignored). Upload manually each time:
 ```powershell
 # Site images
-scp -r -i "<PATH_TO_SSH_KEY>" "C:\Users\Briya\Desktop\Room Reservation\backend\uploads\images\Sites" briya@<YOUR_SERVER_IP>:/home/briya/briya-api/uploads/images/
+scp -r -i "<PATH_TO_SSH_KEY>" "C:\Users\Briya\Desktop\Room Reservation\backend\uploads\images\Sites" briya@<YOUR_SERVER_IP>:/home/briya/Briya-Backend-Room-Reservation/uploads/images/
 
 # Room images (all folders at once)
-scp -r -i "<PATH_TO_SSH_KEY>" "C:\Users\Briya\Desktop\Room Reservation\backend\uploads\images\Rooms" briya@<YOUR_SERVER_IP>:/home/briya/briya-api/uploads/images/
+scp -r -i "<PATH_TO_SSH_KEY>" "C:\Users\Briya\Desktop\Room Reservation\backend\uploads\images\Rooms" briya@<YOUR_SERVER_IP>:/home/briya/Briya-Backend-Room-Reservation/uploads/images/
 ```
 After uploading, re-run the chmod commands from 3.5 to fix permissions on new files.
 
@@ -248,22 +255,27 @@ UPDATE rooms SET image_url = REPLACE(image_url, '.png',  '.webp') WHERE image_ur
 SET SQL_SAFE_UPDATES = 1;
 ```
 
-### 3.8 Start with PM2
+### 3.8 Create log directory and start with PM2
 ```bash
-cd /home/briya/briya-api
-pm2 start src/server.js --name briya-api
+# Create the log directory PM2 expects
+sudo mkdir -p /var/log/Briya-Backend-Room-Reservation
+sudo chown briya:briya /var/log/Briya-Backend-Room-Reservation
+
+# Start using the ecosystem config (cluster mode, 2 workers)
+cd /home/briya/Briya-Backend-Room-Reservation
+pm2 start ecosystem.config.cjs --env production
 pm2 save          # persist across reboots
-pm2 logs briya-api --lines 50   # verify clean startup
+pm2 logs Briya-Backend-Room-Reservation --lines 50   # verify clean startup
 ```
 
-Expected startup log output:
+Expected startup log output (×2 for each cluster worker):
 ```
-[briya-api] Server running on port 4000
-[briya-api] DB connected ✓
-[briya-api] Trusted devices table ready
-[briya-api] Login OTPs table ready
-[briya-api] Users table ready
-[briya-api] Visitor sessions table ready
+Server running on port 4000
+DB connected ✓
+Trusted devices table ready
+Login OTPs table ready
+Users table ready
+Visitor sessions table ready
 ```
 
 ---
@@ -364,7 +376,7 @@ CREATE TABLE audit_logs (
 mysqldump -u briya -p briya_room_reservations > briya_dump_$(date +%Y%m%d).sql
 
 # Import to fresh server
-mysql -u briya -p briya_room_reservations < briya_dump_2025XXXX.sql
+mysql -u briya -p briya_room_reservations < briya_dump_2026XXXX.sql
 ```
 
 ---
@@ -418,10 +430,10 @@ server {
     client_max_body_size 5M;
 
     # Static images served directly by nginx (bypasses Node; 7-day immutable cache)
-    # Files live at: /home/briya/briya-api/uploads/images/
+    # Files live at: /home/briya/Briya-Backend-Room-Reservation/uploads/images/
     # URL pattern:   GET /images/Sites/fort_totten.webp
     location /images/ {
-        alias /home/briya/briya-api/uploads/images/;
+        alias /home/briya/Briya-Backend-Room-Reservation/uploads/images/;
         expires 7d;
         add_header Cache-Control "public, immutable";
         add_header Access-Control-Allow-Origin "*";   # required for cross-origin image loads
@@ -464,9 +476,9 @@ sudo certbot renew --dry-run   # test renewal without actually renewing
 
 ## PART 6 — GitHub Repository Structure
 
-The **single monorepo** at `github.com/BRIYAPCS/room-reservation` contains:
+The **single monorepo** at `github.com/BRIYAPCS/briya-room-reservation-v2` contains:
 ```
-room-reservation/
+briya-room-reservation-v2/
 ├── .github/
 │   └── workflows/
 │       └── deploy.yml        ← MUST be at repo root (not inside frontend/)
@@ -476,7 +488,7 @@ room-reservation/
 └── package.json              ← Root monorepo scripts (concurrently for dev)
 ```
 
-> The backend is **not** auto-deployed. Update it on Linode manually (see Part 8).
+> The backend is **not** auto-deployed. Update it on Linode manually (see Part 9).
 
 ---
 
@@ -493,7 +505,7 @@ Go to: **repo → Settings → Secrets and variables → Actions → New reposit
 | Secret name | Value |
 |---|---|
 | `VITE_API_BASE` | `https://briya-api.duckdns.org/api` |
-| `VITE_BASE_PATH` | `/room-reservation/` |
+| `VITE_BASE_PATH` | `/briya-room-reservation-v2/` |
 
 ### 7.3 Enable GitHub Pages
 - Go to: **repo → Settings → Pages**
@@ -505,7 +517,7 @@ Every `git push` to `main` automatically triggers the workflow:
 2. `npm ci` in `frontend/`
 3. `npm run build` with secrets as env vars → `frontend/dist/`
 4. Upload `dist/` as the Pages artifact
-5. Deploy to `https://briyapcs.github.io/room-reservation/`
+5. Deploy to `https://briyapcs.github.io/briya-room-reservation-v2/`
 
 Manual trigger: **Actions → Deploy to GitHub Pages → Run workflow**
 
@@ -565,30 +577,42 @@ ssh -i "<PATH_TO_SSH_KEY>" briya@<YOUR_SERVER_IP>
 ### Check backend status
 ```bash
 pm2 status
-pm2 logs briya-api --lines 100
+pm2 logs Briya-Backend-Room-Reservation --lines 100
 ```
 
 ### Restart backend after .env change
 ```bash
-pm2 restart briya-api
+pm2 restart Briya-Backend-Room-Reservation
 ```
 
 ### Zero-downtime reload after code change
 ```bash
-pm2 reload briya-api
+pm2 reload Briya-Backend-Room-Reservation
+```
+
+### View live PM2 dashboard
+```bash
+pm2 monit
 ```
 
 ### Update backend code on server
 ```powershell
 # Option A: SCP updated source files
-scp -i "<PATH_TO_SSH_KEY>" -r "C:\Users\Briya\Desktop\Room Reservation\backend\src" briya@<YOUR_SERVER_IP>:/home/briya/briya-api/
-# Then on server: pm2 reload briya-api
+scp -i "<PATH_TO_SSH_KEY>" -r "C:\Users\Briya\Desktop\Room Reservation\backend\src" briya@<YOUR_SERVER_IP>:/home/briya/Briya-Backend-Room-Reservation/
+# Then on server:
+pm2 reload Briya-Backend-Room-Reservation
 ```
 
 ### Check nginx logs
 ```bash
 sudo tail -100 /var/log/nginx/briya-api-error.log
 sudo tail -100 /var/log/nginx/briya-api-access.log
+```
+
+### Check PM2 app logs
+```bash
+sudo tail -100 /var/log/Briya-Backend-Room-Reservation/error.log
+sudo tail -100 /var/log/Briya-Backend-Room-Reservation/out.log
 ```
 
 ### Check server resources
@@ -601,7 +625,7 @@ free -h      # available memory
 ### Add new room or site images
 1. Convert to WebP at quality 75 (squoosh.app)
 2. SCP to the correct subdirectory on Linode
-3. Fix permissions: `chmod 644 /home/briya/briya-api/uploads/images/Rooms/SiteName/*.webp`
+3. Fix permissions: `chmod 644 /home/briya/Briya-Backend-Room-Reservation/uploads/images/Rooms/SiteName/*.webp`
 4. Update `image_url` column in the `rooms` or `sites` table
 5. Nginx serves images immediately — no restart needed
 
@@ -621,15 +645,15 @@ The full directory chain from `/home/briya` to the image file must all be traver
 ```bash
 # Check each directory in the chain
 ls -ld /home/briya
-ls -ld /home/briya/briya-api
-ls -ld /home/briya/briya-api/uploads        # ← most likely culprit (700 by default)
-ls -ld /home/briya/briya-api/uploads/images
-ls -ld /home/briya/briya-api/uploads/images/Sites
+ls -ld /home/briya/Briya-Backend-Room-Reservation
+ls -ld /home/briya/Briya-Backend-Room-Reservation/uploads        # ← most likely culprit (700 by default)
+ls -ld /home/briya/Briya-Backend-Room-Reservation/uploads/images
+ls -ld /home/briya/Briya-Backend-Room-Reservation/uploads/images/Sites
 
 # Fix
-chmod 755 /home/briya/briya-api/uploads
-chmod -R 755 /home/briya/briya-api/uploads/images
-find /home/briya/briya-api/uploads -name "*.webp" -exec chmod 644 {} \;
+chmod 755 /home/briya/Briya-Backend-Room-Reservation/uploads
+chmod -R 755 /home/briya/Briya-Backend-Room-Reservation/uploads/images
+find /home/briya/Briya-Backend-Room-Reservation/uploads -name "*.webp" -exec chmod 644 {} \;
 sudo systemctl reload nginx
 
 # Test
@@ -655,21 +679,35 @@ scp -i "<PATH_TO_SSH_KEY>" -o StrictHostKeyChecking=accept-new -r <source> briya
 
 ### Backend not responding
 ```bash
-pm2 status                                    # check if briya-api is online
-pm2 logs briya-api --lines 50                 # check for startup errors
-sudo nginx -t                                 # verify nginx config is valid
-curl http://127.0.0.1:4000/api/health         # test Node directly, bypassing nginx
+pm2 status                                                       # check if process is online
+pm2 logs Briya-Backend-Room-Reservation --lines 50              # check for startup errors
+sudo nginx -t                                                    # verify nginx config is valid
+curl http://127.0.0.1:4000/api/health                           # test Node directly, bypassing nginx
 ```
 
 ### OTP emails not being received
 ```bash
 # Check server logs for Resend errors
-pm2 logs briya-api --lines 50 | grep resend
-pm2 logs briya-api --lines 50 | grep OTP
+pm2 logs Briya-Backend-Room-Reservation --lines 50 | grep resend
+pm2 logs Briya-Backend-Room-Reservation --lines 50 | grep OTP
 
 # Verify RESEND_API_KEY is set
-grep RESEND_API_KEY /home/briya/briya-api/.env
+grep RESEND_API_KEY /home/briya/Briya-Backend-Room-Reservation/.env
 ```
+
+### "Email not found in Briya directory" error
+Power Automate webhook URL is missing authentication parameters.
+
+```bash
+# Check current value
+grep POWER_AUTOMATE_WEBHOOK_URL /home/briya/Briya-Backend-Room-Reservation/.env
+```
+
+The URL must include **all** query parameters from Power Automate:
+```
+https://prod-XX.westus.logic.azure.com/workflows/.../triggers/manual/paths/invoke?api-version=XXXX&sp=XXX&sv=XXX&sig=XXXXXXXXXXX
+```
+Copy the full URL from Power Automate → HTTP trigger → "Copy URL", then update `.env` and `pm2 restart Briya-Backend-Room-Reservation`.
 
 ### Trusted device not bypassing OTP
 Check backend debug logs — the `check-trusted` endpoint logs the full decision:
@@ -687,6 +725,15 @@ The frontend polls `GET /auth/session` every 30 seconds — forced logout propag
 1. Verify the other device has an email-verified session (`auth.emailVerified === true`)
 2. Guest or PIN-only sessions are not polled (they can't be revoked by logout-all)
 
+### EADDRINUSE — port 4000 already in use
+An old PM2 process is holding the port.
+```bash
+pm2 list                          # find stale process names
+pm2 stop <old-process-name>
+pm2 delete <old-process-name>
+pm2 start ecosystem.config.cjs --env production
+```
+
 ---
 
 ## Pre-Launch Checklist
@@ -700,17 +747,21 @@ The frontend polls `GET /auth/session` every 30 seconds — forced logout propag
 
 ### Backend
 - [x] `.env` on server: `NODE_ENV=production`
-- [x] `.env` on server: fresh `JWT_SECRET` (not the dev placeholder)
+- [x] `.env` on server: fresh `JWT_SECRET` and `JWT_EDIT_SECRET` (not dev placeholders)
 - [x] `.env` on server: `FRONTEND_URL` includes GitHub Pages URL
 - [x] `.env` on server: `RESEND_API_KEY` set (OTP emails working)
+- [x] `.env` on server: `POWER_AUTOMATE_WEBHOOK_URL` is the **full URL** with `sp`, `sv`, `sig` params
 - [x] `.env` permissions: `chmod 600 .env`
-- [x] PM2 running and saved (`pm2 status`, `pm2 save`)
+- [x] PM2 running cluster mode (2 workers): `pm2 status` shows 2× `Briya-Backend-Room-Reservation` online
+- [x] PM2 saved and startup enabled: `pm2 save` + `pm2 startup`
+- [x] Log directory created: `/var/log/Briya-Backend-Room-Reservation/`
 - [x] `uploads/` directory permissions set to `755` (not `700`)
 
 ### Nginx
 - [x] nginx config tested: `sudo nginx -t` → "syntax is ok"
 - [x] SSL cert issued for `briya-api.duckdns.org`
 - [x] Auto-renew active: `sudo systemctl status certbot.timer`
+- [x] `/images/` alias points to `Briya-Backend-Room-Reservation/uploads/images/`
 - [x] `/images/` location has `Access-Control-Allow-Origin "*"` header
 - [x] `client_max_body_size 5M` set
 
@@ -721,14 +772,14 @@ The frontend polls `GET /auth/session` every 30 seconds — forced logout propag
 - [x] Image permissions fixed after upload
 
 ### Frontend / CI-CD
-- [x] GitHub Actions secrets: `VITE_API_BASE`, `VITE_BASE_PATH`
+- [x] GitHub Actions secrets: `VITE_API_BASE`, `VITE_BASE_PATH=/briya-room-reservation-v2/`
 - [x] GitHub Pages source set to "GitHub Actions"
 - [x] Workflow file at repo root `.github/workflows/deploy.yml`
 - [x] Successful Actions deployment: green checkmark
 
 ### End-to-End Tests
 - [x] `https://briya-api.duckdns.org/api/health` → `{"status":"OK"}`
-- [x] `https://briyapcs.github.io/room-reservation/` → app loads, site images visible
+- [x] `https://briyapcs.github.io/briya-room-reservation-v2/` → app loads, site images visible
 - [x] PIN login (standard) → welcome screen → calendar visible
 - [x] OTP login (admin) → email received → code accepted → "Email verified" screen
 - [x] Trusted device login → "Welcome back" (no OTP)
@@ -740,4 +791,4 @@ The frontend polls `GET /auth/session` every 30 seconds — forced logout propag
 
 ---
 
-*Designed & Engineered by the Briya IT Team · © 2025 Briya Public Charter School*
+*Designed & Engineered by the Briya IT Team · © 2026 Briya Public Charter School*

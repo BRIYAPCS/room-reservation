@@ -2,9 +2,12 @@
 
 Node.js/Express REST API for the Briya Public Charter School room reservation system. Hosted on a Linode VPS (Ubuntu 22.04), managed by PM2 in cluster mode, and served behind an Nginx reverse proxy with HTTPS (Let's Encrypt).
 
-**Frontend:** `https://briyapcs.github.io/room-reservation/`  
-**API base (production):** `https://briya-api.duckdns.org/api`  
+**Frontend:** `https://briyapcs.github.io/briya-room-reservation-v2/`
+**API base (production):** `https://briya-api.duckdns.org/api`
 **Health check:** `https://briya-api.duckdns.org/api/health`
+**GitHub repo:** `https://github.com/BRIYAPCS/briya-room-reservation-v2`
+**Server folder:** `/home/briya/Briya-Backend-Room-Reservation/`
+**PM2 process name:** `Briya-Backend-Room-Reservation`
 
 ---
 
@@ -48,7 +51,7 @@ Node.js/Express REST API for the Briya Public Charter School room reservation sy
 - **Weather proxy** — Open-Meteo + OpenStreetMap geocoding; server-side 10-minute cache; WMO code mapping
 - **Live visitor counter** — MySQL-backed session tracking with 90-second stale threshold
 - **Audit logging** — fire-and-forget DB writes for 15+ event types
-- **Rate limiting** — tiered limits (global, PIN, OTP request, OTP verify); only failed requests count toward limits (`skipSuccessfulRequests: true`)
+- **Rate limiting** — tiered limits (global, PIN, OTP request, OTP verify); only failed requests count toward limits (`skipSuccessfulRequests: true`); IPv6-safe via `ipKeyGenerator` helper
 - **Security headers** — Helmet.js; `trust proxy` set for Nginx; CORS origin allowlist
 - **Compression** — gzip/brotli via `compression` middleware
 - **PM2 cluster mode** — 2 worker processes; zero-downtime rolling restart
@@ -82,15 +85,15 @@ backend/
 │   └── config_overrides.json       # Runtime config written by PUT /api/config
 │                                   # Auto-created on first admin dashboard save
 ├── uploads/
-│   └── images/                     # Reservation file attachments (crypto-named)
-│       ├── Sites/                  # Site card images (WebP)
-│       └── Rooms/                  # Room card images (WebP, per-site subfolder)
+│   └── images/                     # Site and room card images (WebP)
+│       ├── Sites/                  # Site card images
+│       └── Rooms/                  # Room card images (per-site subfolder)
 ├── src/
 │   ├── config/
-│   │   └── db.js                   # MySQL connection pool (20 connections, 60s idle timeout)
+│   │   └── db.js                   # MySQL connection pool (UTC timezone, 20 connections, 60s idle timeout)
 │   ├── middleware/
 │   │   ├── authMiddleware.js       # JWT decode + session revocation check
-│   │   ├── rateLimiter.js          # All rate limiter instances
+│   │   ├── rateLimiter.js          # All rate limiter instances (IPv6-safe via ipKeyGenerator)
 │   │   ├── requireAdmin.js         # 403 if role is not admin or superadmin
 │   │   └── requireSuperAdmin.js    # 403 if role is not superadmin
 │   ├── routes/
@@ -99,7 +102,6 @@ backend/
 │   │   ├── rooms.js                # Room CRUD + reorder
 │   │   ├── reservations.js         # Event list (public-facing alias)
 │   │   ├── events.js               # Event create/edit/delete (single + recurring series)
-│   │   ├── attachments.js          # File upload/download/delete per reservation
 │   │   ├── config.js               # GET (public) + PUT (superadmin) config flags
 │   │   ├── weather.js              # Open-Meteo proxy with server-side caching
 │   │   └── visitors.js             # Active session heartbeat + count
@@ -110,7 +112,12 @@ backend/
 │   │   ├── jwt.js                  # signToken(), signTokenWith(), verifyToken()
 │   │   └── envReader.js            # readEnv() — reads .env from disk (hot-reload without restart)
 │   └── server.js                   # Express bootstrap: middleware, routes, static files
-├── .env.example                    # Template with every required variable
+├── migrations/
+│   ├── 001_add_ownership_columns.sql
+│   ├── 002_add_otp_table.sql
+│   └── 003_add_audit_columns.sql
+├── .env                            # Secret config — gitignored, never committed
+├── .env.example                    # Template with every required variable (safe to commit)
 ├── ecosystem.config.cjs            # PM2 cluster config (2 instances, 300MB memory limit)
 └── package.json                    # ESM, Node 20+
 ```
@@ -154,7 +161,7 @@ Body: { pin, name, email?, emailClaimToken?, deviceSessionId? }
 |---|---|---|---|---|---|---|
 | standard | `PIN_STANDARD` | Yes | Yes (future only) | No | No | No |
 | admin | `PIN_ADMIN` | Yes | Yes | Yes | No | No |
-| superadmin | `PIN_SUPERADMIN` | Yes | Yes | Yes | Yes | Yes |
+| superadmin | `PIN_SUPER_ADMIN` | Yes | Yes | Yes | Yes | Yes |
 
 ### Ownership Enforcement (`enforceOwnership()` in events.js)
 
@@ -168,8 +175,6 @@ Decision tree:
    - If a valid OTP `editToken` was supplied and its email matches `row.owner_email` → `allowed`
    - Otherwise → `blocked`
 4. Ended events (past `end_time`) → `blocked` for standard users regardless
-
-This design means an email-verified user can edit their bookings from any device without a second OTP.
 
 ---
 
@@ -194,6 +199,8 @@ This design means an email-verified user can edit their bookings from any device
 | `POST /api/auth/logout-all` | None (requires auth) | Stamps `last_logout_at = NOW()` in `users` table; deletes all trusted devices for that email |
 | `POST /api/auth/validate-email` | None | Calls Power Automate webhook to look up `@briya.org` email; returns `{ valid, name }` |
 
+> **Power Automate webhook:** The `POWER_AUTOMATE_WEBHOOK_URL` in `.env` must be the **full URL** including all query parameters (`api-version`, `sp`, `sv`, `sig`). Copy it directly from Power Automate or Postman. Without the `sig` signature parameter the webhook returns `valid: false`.
+
 ### Trusted Device Logic (`isTrustedDevice()`)
 
 ```
@@ -210,10 +217,6 @@ SELECT from trusted_devices WHERE email = ? AND device_session_id = ? AND expire
 - HTML email template with Briya branding, 6-digit code in a monospace `<code>` block, expiry reminder
 - Falls back to `console.log` in development (if `RESEND_API_KEY` is not set)
 - Never throws — email failures do not block the API response
-
-### Admin/Superadmin: Email OTP Is Mandatory
-
-The frontend enforces this (email required field + hidden skip/bypass buttons), and the JWT payload confirms it on every request. The backend's `enforceOwnership()` uses `emailVerified` from the JWT to grant cross-device edit access, making it both a security requirement and a feature enabler.
 
 ---
 
@@ -240,17 +243,13 @@ if (req.user.emailVerified && req.user.email) {
 }
 ```
 
-Tokens issued before `last_logout_at` are rejected. DB errors during this check fail open (do not block the request) to prevent outages from locking out users.
-
-### Cross-Device Notification (30-second window)
-
-Other active sessions poll `GET /api/auth/session` every 30 seconds. This endpoint runs `authMiddleware` which performs the revocation check. A 401 response triggers the frontend's `ForcedLogoutBanner`.
+Tokens issued before `last_logout_at` are rejected. DB errors during this check fail open to prevent outages.
 
 ---
 
 ## Rate Limiting
 
-All limiters use `skipSuccessfulRequests: true` — **only failed requests count toward the limit**. This means a user who successfully sends an OTP or logs in never burns rate limit quota.
+All limiters use `skipSuccessfulRequests: true` — **only failed requests count toward the limit**. The email-keyed limiter (`otpRequestEmailLimiter`) uses `ipKeyGenerator(req)` as the IP fallback to correctly handle IPv6 addresses.
 
 | Limiter | Window | Max failures | Applied to |
 |---|---|---|---|
@@ -261,18 +260,11 @@ All limiters use `skipSuccessfulRequests: true` — **only failed requests count
 | `otpVerifyLimiter` | 10 minutes | 10 | `POST /api/auth/verify-login-otp` (by IP) |
 | `eventWriteLimiter` | 1 minute | 60 | All event create/edit/delete endpoints |
 
-Rate limit errors return a structured JSON body with a machine-readable `code` field:
-```json
-{ "error": "Too many OTP requests. Please wait before requesting another code.", "code": "OTP_REQUEST_IP" }
-```
-
-The `requireBriyaEmail` middleware validates that submitted emails end with `@briya.org` and writes an audit log entry on rejection.
-
 ---
 
 ## Audit Logging
 
-`src/services/auditLog.js` provides a `writeAuditLog()` function that writes fire-and-forget `INSERT` queries to the `audit_logs` table. It never throws — audit failures must not block the main request flow.
+`src/services/auditLog.js` provides a `writeAuditLog()` function that writes fire-and-forget `INSERT` queries to the `audit_logs` table.
 
 ### Event Types (`ACTION_TYPES`)
 
@@ -293,8 +285,6 @@ The `requireBriyaEmail` middleware validates that submitted emails end with `@br
 | `SERIES_DELETED` | Recurring series deleted |
 | `EMAIL_DOMAIN_REJECTED` | Non-@briya.org email attempted |
 | `SESSION_CHECK` | Session validity probe |
-
-Each record stores: `action_type`, `reservation_id` (nullable), `user_email`, `device_session_id`, `metadata` (JSON), `created_at`.
 
 ---
 
@@ -318,97 +308,32 @@ Authorization: Bearer <jwt_token>
 | POST | `/auth/logout-all` | Required | Revoke all sessions for this email |
 | GET  | `/health` | None | Server health check |
 
-**POST `/auth/verify`**
-```json
-// Request
-{ "pin": "1234", "name": "Jane Smith", "email": "jsmith@briya.org", "emailClaimToken": "eyJ...", "deviceSessionId": "uuid-..." }
-
-// Response
-{ "token": "<24h JWT>", "role": "standard", "name": "Jane Smith", "email": "jsmith@briya.org", "emailVerified": true }
-```
-
-**POST `/auth/request-login-otp`**
-```json
-// Request
-{ "email": "jsmith@briya.org", "deviceSessionId": "uuid-..." }
-
-// Response (untrusted device)
-{ "ok": true, "maskedEmail": "js***@briya.org", "name": "Jane Smith" }
-
-// Response (trusted device — no email sent)
-{ "trusted": true }
-```
-
-**POST `/auth/verify-login-otp`**
-```json
-// Request
-{ "email": "jsmith@briya.org", "otp": "481923", "deviceSessionId": "uuid-..." }
-
-// Response
-{ "ok": true, "emailClaimToken": "eyJ..." }
-```
-
----
-
 ### Sites
 
 | Method | Path | Auth | Description |
 |---|---|---|---|
-| GET | `/sites` | None | List all active sites (cached 60s + 300s CDN) |
+| GET | `/sites` | None | List all active sites |
 | POST | `/sites` | Superadmin | Create new site |
 | PUT | `/sites/reorder` | Superadmin | Batch update sort order |
 | GET | `/sites/:siteCode` | None | Get single site + all its rooms |
 | PUT | `/sites/:siteCode` | Superadmin | Update name/code |
 | DELETE | `/sites/:siteCode` | Superadmin | Soft-delete (sets `is_active = 0`) |
 
-Auto-generates `site_code` from the name if not provided (e.g., "Fort Totten" → `FORT_TOTTEN`). Checks for duplicate codes on update.
-
----
-
 ### Rooms
 
 | Method | Path | Auth | Description |
 |---|---|---|---|
-| GET | `/rooms/:siteCode` | None | List rooms for a site (cached 60s + 300s CDN) |
+| GET | `/rooms/:siteCode` | None | List rooms for a site |
 | POST | `/rooms/:siteCode` | Superadmin | Create new room |
 | PUT | `/rooms/reorder/:siteCode` | Superadmin | Batch update sort order |
 | PUT | `/rooms/:siteCode/:roomId` | Superadmin | Update name/capacity |
 | DELETE | `/rooms/:siteCode/:roomId` | Superadmin | Soft-delete |
-
-Auto-generates `room_code` with numeric suffix if duplicate (e.g., `ROOM`, `ROOM_2`, `ROOM_3`). Max 20 chars, uppercase, underscores only. The reorder route is defined before `/:siteCode/:roomId` to avoid Express path conflicts.
-
----
 
 ### Reservations (Public Alias)
 
 | Method | Path | Auth | Description |
 |---|---|---|---|
 | GET | `/reservations/:siteCode/:roomId` | None | List all events for a room |
-
-Returns FullCalendar-compatible event objects. Supports optional `?from=` and `?to=` ISO date query params.
-
-**Response shape per event:**
-```json
-{
-  "id": 42,
-  "title": "Weekly Staff Meeting",
-  "start": "2025-09-01T09:00:00",
-  "end": "2025-09-01T10:00:00",
-  "allDay": false,
-  "extendedProps": {
-    "bookedBy": "Jane Smith",
-    "description": "<p>Agenda attached</p>",
-    "ownerEmail": "jsmith@briya.org",
-    "ownershipType": "email",
-    "deviceSessionId": "uuid-...",
-    "recurrenceGroupId": "rg-abc123",
-    "recurrenceIndex": 2,
-    "createdAt": "2025-08-15T14:30:00"
-  }
-}
-```
-
----
 
 ### Events
 
@@ -417,18 +342,12 @@ Returns FullCalendar-compatible event objects. Supports optional `?from=` and `?
 | POST | `/events/:siteCode/:roomId` | Standard+ | Create one or more events (accepts array) |
 | PUT | `/events/:siteCode/:roomId/:eventId` | Standard+ | Update a single event |
 | DELETE | `/events/:siteCode/:roomId/:eventId` | Standard+ | Delete a single event |
-| PUT | `/events/:siteCode/:roomId/group/:groupId` | Standard+ | Edit recurring series (`?scope=this\|following\|all&fromIndex=N`) |
-| DELETE | `/events/:siteCode/:roomId/group/:groupId` | Standard+ | Delete recurring series (same scope params) |
+| PUT | `/events/:siteCode/:roomId/group/:groupId` | Standard+ | Edit recurring series |
+| DELETE | `/events/:siteCode/:roomId/group/:groupId` | Standard+ | Delete recurring series |
 | POST | `/events/:siteCode/:roomId/:eventId/request-otp` | None | Send cross-device edit OTP |
 | POST | `/events/:siteCode/:roomId/:eventId/verify-otp` | None | Verify cross-device edit OTP → editToken |
-| POST | `/events/:siteCode/:roomId/:eventId/claim-request-otp` | None | Legacy claim OTP (pre-migration bookings) |
+| POST | `/events/:siteCode/:roomId/:eventId/claim-request-otp` | None | Legacy claim OTP |
 | POST | `/events/:siteCode/:roomId/:eventId/claim-verify-otp` | None | Legacy claim OTP verify |
-
-**Ownership is always extracted from the JWT** — the body `bookedBy`/`email` fields are for display only; they never override `req.user` for authorization decisions.
-
-**Edit token (`X-Edit-Token` header):** Short-lived JWT issued after successful cross-device OTP verification. Accepted instead of (or alongside) `Authorization` for that specific event's PUT/DELETE.
-
----
 
 ### Config
 
@@ -437,72 +356,18 @@ Returns FullCalendar-compatible event objects. Supports optional `?from=` and `?
 | GET | `/config` | None | Merged config (env + overrides) |
 | PUT | `/config` | Superadmin | Update boolean flags |
 
-**GET `/config`** response (partial):
-```json
-{
-  "bookingStartHour": 8,
-  "bookingEndHour": 21,
-  "slotDurationMinutes": 15,
-  "enableRecurringEvents": true,
-  "requireLoginForCalendar": true,
-  "allowDoubleBooking": true,
-  "allowPastBookings": false,
-  "allowWeekendBookings": false,
-  "siteManagementEnabled": true,
-  "roomManagementEnabled": true,
-  "weatherEnabled": true,
-  "visitorCounterEnabled": true,
-  "businessStart": "08:00",
-  "businessEnd": "17:00",
-  "businessDays": "1,2,3,4,5",
-  "recurringMaxMonths": 12,
-  "canCreateRoles": "superadmin,admin,standard",
-  "editOthersRole": "admin",
-  "deleteRole": "admin"
-}
-```
-
-Only keys in the `ALLOWED_KEYS` set in `config.js` can be updated via PUT. Unknown keys are silently ignored.
-
----
-
 ### Weather
 
 | Method | Path | Auth | Description |
 |---|---|---|---|
 | GET | `/weather` | None | Current weather (open-meteo + OSM, cached 10 min) |
-| GET | `/weather?lat=38.9&lon=-77.0` | None | Weather for specific coordinates |
-
-Returns:
-```json
-{ "condition": "Partly Cloudy", "temperature": 74, "humidity": 65, "windSpeed": 8, "city": "Washington DC", "icon": "⛅" }
-```
-
----
 
 ### Visitors
 
 | Method | Path | Auth | Description |
 |---|---|---|---|
-| POST | `/visitors/heartbeat` | None | Register/refresh session (`{ sessionId }`) |
+| POST | `/visitors/heartbeat` | None | Register/refresh session |
 | GET | `/visitors` | None | Returns `{ live: N }` |
-
-Sessions older than 90 seconds are considered stale and excluded. The heartbeat endpoint auto-deletes stale sessions on every call using `INSERT ... ON DUPLICATE KEY UPDATE`.
-
----
-
-### Attachments
-
-| Method | Path | Auth | Description |
-|---|---|---|---|
-| GET | `/attachments/:reservationId` | Standard+ | List attachments for a reservation |
-| POST | `/attachments/:reservationId` | Standard+ | Upload file (multipart/form-data, field: `file`) |
-| GET | `/attachments/file/:id` | None | Stream/download file |
-| DELETE | `/attachments/:id` | Standard+ | Delete file + DB record |
-
-Allowed MIME types: `pdf`, `docx`, `xlsx`, `pptx`, `jpg`/`jpeg`, `png`, `gif`, `webp`.  
-Max size: 20 MB (enforced by multer; also set as `client_max_body_size 22M` in nginx).  
-Files stored in `uploads/` with `crypto.randomBytes(16).toString('hex')` filenames (preserves extension).
 
 ---
 
@@ -511,25 +376,20 @@ Files stored in `uploads/` with `crypto.randomBytes(16).toString('hex')` filenam
 Config is built by merging two sources (later wins):
 
 ```
-.env values  (read via envReader.js — reads from disk on every call, so changes apply without restart)
+.env values  (read via envReader.js — reads from disk on every call, hot-reload without restart)
     ↓ merged with
 data/config_overrides.json   (written by PUT /api/config; created on first save)
     ↓
 Final config object returned by GET /api/config
 ```
 
-`envReader.js` reads the `.env` file from disk on every invocation (not cached). This means `.env` changes apply without a server restart.
-
-The admin dashboard writes to `config_overrides.json` which persists across restarts. These overrides survive PM2 restarts because they live on disk.
-
 ---
 
 ## Database Schema
 
-Database name: `briya_room_reservations` (MySQL 8, timezone forced to `America/New_York`).
+Database name: `briya_room_reservations` (MySQL 8, connection timezone: `+00:00` UTC).
 
 ```sql
--- Sites (e.g. Fort Totten, Riggs Park)
 CREATE TABLE sites (
   id         INT AUTO_INCREMENT PRIMARY KEY,
   name       VARCHAR(100) NOT NULL,
@@ -539,7 +399,6 @@ CREATE TABLE sites (
   is_active  TINYINT(1) DEFAULT 1
 );
 
--- Rooms within a site
 CREATE TABLE rooms (
   id         INT AUTO_INCREMENT PRIMARY KEY,
   site_id    INT NOT NULL REFERENCES sites(id),
@@ -552,7 +411,6 @@ CREATE TABLE rooms (
   UNIQUE (room_code, site_id)
 );
 
--- Individual reservations / recurring series occurrences
 CREATE TABLE reservations (
   id                          INT AUTO_INCREMENT PRIMARY KEY,
   site_id                     INT NOT NULL,
@@ -574,18 +432,6 @@ CREATE TABLE reservations (
   created_at                  DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
--- File attachments per reservation
-CREATE TABLE attachments (
-  id             INT AUTO_INCREMENT PRIMARY KEY,
-  reservation_id INT NOT NULL REFERENCES reservations(id),
-  filename       VARCHAR(255) NOT NULL,   -- crypto-random disk filename
-  original_name  VARCHAR(255),            -- original upload filename shown to user
-  mime_type      VARCHAR(100),
-  file_size      INT,
-  created_at     DATETIME DEFAULT CURRENT_TIMESTAMP
-);
-
--- Audit trail
 CREATE TABLE audit_logs (
   id                INT AUTO_INCREMENT PRIMARY KEY,
   action_type       VARCHAR(60) NOT NULL,
@@ -597,73 +443,36 @@ CREATE TABLE audit_logs (
 );
 
 -- Auto-created by auth.js on startup
-CREATE TABLE IF NOT EXISTS trusted_devices (
-  id                INT AUTO_INCREMENT PRIMARY KEY,
-  email             VARCHAR(255) NOT NULL,
-  device_session_id VARCHAR(128) NOT NULL,
-  user_agent        VARCHAR(512),
-  ip_hash           VARCHAR(64),
-  expires_at        DATETIME NOT NULL,
-  created_at        DATETIME DEFAULT CURRENT_TIMESTAMP,
-  UNIQUE KEY uq_email_dsid (email, device_session_id)
-);
-
-CREATE TABLE IF NOT EXISTS login_otps (
-  id                 INT AUTO_INCREMENT PRIMARY KEY,
-  email              VARCHAR(255) NOT NULL,
-  otp_hash           VARCHAR(128) NOT NULL,
-  device_session_id  VARCHAR(128),
-  expires_at         DATETIME NOT NULL,
-  attempts           INT DEFAULT 0,
-  used               TINYINT(1) DEFAULT 0,
-  claim_jti          VARCHAR(128),
-  claim_token_used   TINYINT(1) DEFAULT 0,
-  created_at         DATETIME DEFAULT CURRENT_TIMESTAMP,
-  INDEX idx_email (email),
-  INDEX idx_jti (claim_jti)
-);
-
-CREATE TABLE IF NOT EXISTS users (
-  email          VARCHAR(255) PRIMARY KEY,
-  last_logout_at DATETIME
-);
+CREATE TABLE IF NOT EXISTS trusted_devices ( ... );
+CREATE TABLE IF NOT EXISTS login_otps ( ... );
+CREATE TABLE IF NOT EXISTS users ( ... );
 
 -- Auto-created by visitors.js on startup
-CREATE TABLE IF NOT EXISTS visitor_sessions (
-  session_id VARCHAR(64) PRIMARY KEY,
-  last_seen  DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-);
+CREATE TABLE IF NOT EXISTS visitor_sessions ( ... );
 ```
 
 ---
 
 ## File Attachments
 
-- **Storage:** `uploads/` directory on the VPS (gitignored; uploaded manually via SCP)
+- **Storage:** `uploads/` directory on the VPS (gitignored; upload manually via WinSCP/SCP)
 - **Filenames:** `crypto.randomBytes(16).toString('hex') + ext` (prevents enumeration)
-- **Serving:** Nginx serves `uploads/images/` directly at `/images/` with 7-day cache and `immutable` header. Attachment files are streamed via `GET /api/attachments/file/:id` through Node (sets correct `Content-Type` and `Content-Disposition`)
-- **DB metadata:** `original_name`, `mime_type`, `file_size` stored in `attachments` table
-- **Deletion:** Removes both the file from disk and the DB row
+- **Serving:** Nginx serves `uploads/images/` directly at `/images/` with 7-day cache. Nginx `alias` points to `/home/briya/Briya-Backend-Room-Reservation/uploads/images/`
 
 ---
 
 ## Weather Proxy
 
-- **Source:** Open-Meteo API (free, no key required) for weather data; OpenStreetMap Nominatim for reverse geocoding
-- **Caching:** Server-side in-memory cache, 10-minute TTL — prevents every client hitting the external APIs
-- **Fallback:** Uses `WEATHER_LAT`/`WEATHER_LON` from `.env` if no coordinates provided
-- **WMO code mapping:** Maps WMO weather codes (0–99) to human-readable labels and emoji icons (e.g., `95` → "Thunderstorm" / `⛈`)
-- **Dev override:** `WEATHER_TEST_CONDITION` env var overrides the live condition for testing UI states
-- **Toggle:** Disabled by setting `weatherEnabled: false` in config — returns 404
+- **Source:** Open-Meteo API (free, no key required); OpenStreetMap Nominatim for reverse geocoding
+- **Caching:** Server-side in-memory cache, 10-minute TTL
+- **Toggle:** Disabled by setting `weatherEnabled: false` in config
 
 ---
 
 ## Visitor Counter
 
-- **Session tracking:** Each browser tab gets a UUID session ID (generated once, stored in React state)
-- **Heartbeat:** `POST /visitors/heartbeat` upserts a row in `visitor_sessions` using `INSERT ... ON DUPLICATE KEY UPDATE last_seen = NOW()`; also deletes all rows where `last_seen < NOW() - INTERVAL 90 SECOND`
-- **Count query:** `SELECT COUNT(*) FROM visitor_sessions WHERE last_seen >= NOW() - INTERVAL 90 SECOND`
-- **Toggle:** Disabled by setting `visitorCounterEnabled: false` — returns `{ live: 0 }` without querying DB
+- **Heartbeat:** `POST /visitors/heartbeat` upserts a row in `visitor_sessions`; also deletes stale rows (`last_seen < NOW() - INTERVAL 90 SECOND`)
+- **Toggle:** Disabled by setting `visitorCounterEnabled: false` — returns `{ live: 0 }`
 
 ---
 
@@ -672,44 +481,18 @@ CREATE TABLE IF NOT EXISTS visitor_sessions (
 **Prerequisites:** Node.js 20+, MySQL 8+, npm.
 
 ```bash
-# Clone the monorepo
-git clone https://github.com/BRIYAPCS/room-reservation.git
-cd "room-reservation/backend"
-
-# Install dependencies
+git clone https://github.com/BRIYAPCS/briya-room-reservation-v2.git
+cd briya-room-reservation-v2/backend
 npm install
-
-# Create the database
-mysql -u root -p -e "CREATE DATABASE briya_room_reservations;"
-# Tables are created automatically on server startup (auth.js, visitors.js)
-# For sites/rooms/reservations, import a seed dump or create them via the API
-
-# Configure environment
 cp .env.example .env
 # Fill in DB_*, JWT_SECRET, PIN_*, and optionally RESEND_API_KEY
-
-# Start the dev server
 npm run dev
 # → http://localhost:4000
 ```
 
 From the monorepo root (runs backend + frontend together):
 ```bash
-npm run dev   # uses concurrently — backend on :4000, frontend on :5173
-```
-
-Test the API:
-```bash
-# Health check
-curl http://localhost:4000/api/health
-
-# Get config
-curl http://localhost:4000/api/config
-
-# Login
-curl -X POST http://localhost:4000/api/auth/verify \
-  -H "Content-Type: application/json" \
-  -d '{"pin":"YOUR_STANDARD_PIN","name":"Test User"}'
+npm run dev   # backend on :4000, frontend on :5173
 ```
 
 ---
@@ -718,74 +501,79 @@ curl -X POST http://localhost:4000/api/auth/verify \
 
 Copy `.env.example` to `.env` and fill in every value.
 
-| Variable | Description | Example |
-|---|---|---|
-| `PORT` | Express listen port | `4000` |
-| `NODE_ENV` | Environment type | `production` |
-| `APP_TIMEZONE` | MySQL/timestamp timezone | `America/New_York` |
-| `FRONTEND_URL` | CORS allowlist (comma-separated) | `https://briyapcs.github.io,https://www.briyaroomreservations.org` |
-| `DB_HOST` | MySQL host | `50.116.47.133` or `localhost` |
-| `DB_PORT` | MySQL port | `3306` |
-| `DB_USER` | MySQL username | `briya` |
-| `DB_PASSWORD` | MySQL password | *(secret)* |
-| `DB_NAME` | MySQL database name | `briya_room_reservations` |
-| `PIN_STANDARD` | Standard user PIN | *(secret)* |
-| `PIN_ADMIN` | Admin user PIN | *(secret)* |
-| `PIN_SUPERADMIN` | Superadmin PIN | *(secret)* |
-| `JWT_SECRET` | 96-char hex secret for JWT HMAC | `node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"` |
-| `BOOKING_START_HOUR` | Earliest bookable hour (24h) | `8` |
-| `BOOKING_END_HOUR` | Latest bookable hour (24h) | `21` |
-| `SLOT_DURATION_MINUTES` | Calendar slot size | `15` |
-| `ALLOW_WEEKENDS` | Show weekend columns | `true` |
-| `ALLOW_WEEKEND_BOOKINGS` | Allow Sat/Sun bookings | `false` |
-| `ALLOW_PAST_BOOKINGS` | Allow past-dated bookings | `false` |
-| `ALLOW_DOUBLE_BOOKING` | Allow overlapping bookings | `true` |
-| `REQUIRE_LOGIN_FOR_CALENDAR` | Gate calendar behind PIN | `true` |
-| `ENABLE_RECURRING_EVENTS` | Enable recurring booking UI | `true` |
-| `RECURRING_MAX_MONTHS` | Max months ahead for a series | `12` |
-| `BUSINESS_START` | Business hours start | `08:00` |
-| `BUSINESS_END` | Business hours end | `17:00` |
-| `BUSINESS_DAYS` | Active day indices (0=Sun) | `1,2,3,4,5` |
-| `CAN_CREATE_ROLES` | Roles allowed to create events | `superadmin,admin,standard` |
-| `EDIT_OTHERS_ROLE` | Min role to edit others' events | `admin` |
-| `DELETE_ROLE` | Min role to delete any event | `admin` |
-| `WEATHER_ENABLED` | Enable weather widget | `true` |
-| `WEATHER_CITY` | Fallback city name for display | `Washington, DC` |
-| `WEATHER_LAT` | Fallback latitude | `38.9072` |
-| `WEATHER_LON` | Fallback longitude | `-77.0369` |
-| `WEATHER_TEST_CONDITION` | Dev override (e.g. `rain`) | *(empty in prod)* |
-| `VISITOR_COUNTER_ENABLED` | Enable visitor counter | `true` |
-| `RESEND_API_KEY` | Resend transactional email key | *(from resend.com)* |
-| `EMAIL_FROM` | Sender address | `Briya Room Reservations <noreply@briya.org>` |
-| `OTP_EXPIRATION_MINUTES` | OTP code TTL | `10` |
-| `OTP_RESEND_COOLDOWN_SECONDS` | Min seconds between OTP requests | `300` |
-| `OTP_MAX_ATTEMPTS` | Max wrong guesses per OTP | `5` |
-| `TRUSTED_DEVICE_DAYS` | Device trust window in days | `90` |
-| `POWER_AUTOMATE_WEBHOOK_URL` | Email directory lookup webhook | *(blank to skip)* |
+| Variable | Description |
+|---|---|
+| `PORT` | Express listen port (`4000`) |
+| `NODE_ENV` | `development` or `production` |
+| `APP_TIMEZONE` | Display timezone (`America/New_York`) — DB connection uses UTC |
+| `FRONTEND_URL` | CORS allowlist, comma-separated |
+| `DB_HOST` | MySQL host |
+| `DB_PORT` | MySQL port (`3306`) |
+| `DB_USER` | MySQL username |
+| `DB_PASSWORD` | MySQL password *(secret)* |
+| `DB_NAME` | MySQL database name (`briya_room_reservations`) |
+| `PIN_STANDARD` | Standard user PIN *(secret)* |
+| `PIN_ADMIN` | Admin user PIN *(secret)* |
+| `PIN_SUPER_ADMIN` | Superadmin PIN *(secret)* |
+| `JWT_SECRET` | 96-char hex — generate: `node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"` |
+| `JWT_EDIT_SECRET` | 128-char hex for short-lived edit tokens |
+| `JWT_EDIT_EXPIRATION` | Edit token TTL (`15m`) |
+| `RESEND_API_KEY` | From resend.com *(secret)* |
+| `EMAIL_FROM` | Sender address |
+| `OTP_EXPIRATION_MINUTES` | OTP code TTL (`10`) |
+| `OTP_RESEND_COOLDOWN_SECONDS` | Min seconds between OTP requests (`300`) |
+| `OTP_MAX_ATTEMPTS` | Max wrong guesses per OTP (`5`) |
+| `TRUSTED_DEVICE_DAYS` | Device trust window in days (`90`) |
+| `POWER_AUTOMATE_WEBHOOK_URL` | **Full URL including sig param** — copy from Postman/Power Automate |
+| `BOOKING_START_HOUR` | Earliest bookable hour (`8`) |
+| `BOOKING_END_HOUR` | Latest bookable hour (`21`) |
+| `SLOT_DURATION_MINUTES` | Calendar slot size (`15`) |
+| `ALLOW_WEEKENDS` | Show weekend columns (`true`) |
+| `ALLOW_WEEKEND_BOOKINGS` | Allow Sat/Sun bookings (`false`) |
+| `ALLOW_PAST_BOOKINGS` | Allow past-dated bookings (`false`) |
+| `ALLOW_DOUBLE_BOOKING` | Allow overlapping bookings (`true`) |
+| `REQUIRE_LOGIN_FOR_CALENDAR` | Gate calendar behind PIN (`true`) |
+| `ENABLE_RECURRING_EVENTS` | Enable recurring booking UI (`true`) |
+| `RECURRING_MAX_MONTHS` | Max months ahead for a series (`12`) |
+| `BUSINESS_START` | Business hours start (`08:00`) |
+| `BUSINESS_END` | Business hours end (`17:00`) |
+| `BUSINESS_DAYS` | Active day indices, 0=Sun (`1,2,3,4,5`) |
+| `CAN_CREATE_ROLES` | Roles allowed to create events |
+| `EDIT_OTHERS_ROLE` | Min role to edit others' events (`admin`) |
+| `DELETE_ROLE` | Min role to delete any event (`admin`) |
+| `WEATHER_ENABLED` | Enable weather widget (`true`) |
+| `WEATHER_CITY` | Fallback city name (`Washington, DC`) |
+| `WEATHER_LAT` | Fallback latitude (`38.9072`) |
+| `WEATHER_LON` | Fallback longitude (`-77.0369`) |
+| `WEATHER_TEST_CONDITION` | Dev override — leave empty in prod |
+| `VISITOR_COUNTER_ENABLED` | Enable visitor counter (`true`) |
 
 ---
 
 ## PM2 Process Manager
 
 Configuration file: `ecosystem.config.cjs`
+Process name: `Briya-Backend-Room-Reservation`
 
 ```
-instances:          2        (cluster mode — 2 workers on a single-core VPS)
-exec_mode:          cluster  (PM2 load-balances requests across workers)
-max_memory_restart: 300M     (auto-restart if worker exceeds 300 MB)
-max_restarts:       10       (back-off protection against crash loops)
+instances:          2        (cluster mode — 2 workers)
+exec_mode:          cluster
+max_memory_restart: 300M
+max_restarts:       10
+log path:           /var/log/Briya-Backend-Room-Reservation/
 ```
 
 Common commands:
 
 ```bash
-pm2 start ecosystem.config.cjs --env production   # First start
-pm2 save                                           # Persist across reboots
-pm2 status                                         # Process list with CPU/memory
-pm2 logs briya-api --lines 100                     # Tail logs
-pm2 reload briya-api                               # Zero-downtime rolling restart
-pm2 monit                                          # Live dashboard
-pm2 flush                                          # Clear accumulated log files
+pm2 start ecosystem.config.cjs --env production          # First start
+pm2 save                                                  # Persist across reboots
+pm2 status                                                # Process list
+pm2 logs Briya-Backend-Room-Reservation --lines 100       # Tail logs
+pm2 reload Briya-Backend-Room-Reservation                 # Zero-downtime rolling restart
+pm2 restart Briya-Backend-Room-Reservation                # Full restart (picks up .env changes)
+pm2 flush Briya-Backend-Room-Reservation                  # Clear accumulated log files
+pm2 monit                                                 # Live dashboard
 ```
 
 ---
@@ -795,7 +583,6 @@ pm2 flush                                          # Clear accumulated log files
 Nginx handles HTTPS termination, HTTP→HTTPS redirect, reverse proxying to Node on port 4000, and direct static image serving.
 
 ```nginx
-# Redirect HTTP → HTTPS
 server {
     listen 80;
     server_name briya-api.duckdns.org;
@@ -814,18 +601,18 @@ server {
     add_header X-Frame-Options DENY always;
     add_header X-Content-Type-Options nosniff always;
 
-    client_max_body_size 22M;   # matches 20MB multer limit + overhead
+    client_max_body_size 22M;
 
-    # Static images served by nginx (faster than Node; 7-day cache)
+    # Static images — served by nginx directly (faster; 7-day immutable cache)
     location /images/ {
-        alias /home/briya/briya-api/uploads/images/;
+        alias /home/briya/Briya-Backend-Room-Reservation/uploads/images/;
         expires 7d;
         add_header Cache-Control "public, immutable";
-        add_header Access-Control-Allow-Origin "*";   # required for cross-origin image load
+        add_header Access-Control-Allow-Origin "*";
         access_log off;
     }
 
-    # All other traffic → PM2/Node
+    # All other traffic → PM2/Node on port 4000
     location / {
         proxy_pass         http://127.0.0.1:4000;
         proxy_http_version 1.1;
@@ -838,12 +625,12 @@ server {
 }
 ```
 
-SSL auto-renewal via Certbot systemd timer (installed automatically by Certbot):
+SSL auto-renewal via Certbot systemd timer:
 ```bash
-sudo certbot renew --dry-run   # test renewal
-sudo systemctl status certbot.timer   # verify timer is active
+sudo certbot renew --dry-run
+sudo systemctl status certbot.timer
 ```
 
 ---
 
-*Designed & Engineered by the Briya IT Team · © 2025 Briya Public Charter School*
+*Designed & Engineered by the Briya IT Team · © 2026 Briya Public Charter School*
