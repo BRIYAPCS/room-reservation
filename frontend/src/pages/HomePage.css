@@ -109,47 +109,6 @@
 
 /* full-page error/retry styles live in index.css (shared) */
 
-/* ── API error banner ── */
-.home-api-error {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
-  justify-content: center;
-  background: rgba(0,0,0,0.25);
-  border: 1.5px solid rgba(255,255,255,0.3);
-  border-radius: 8px;
-  color: #fff;
-  font-size: clamp(0.82rem, 1.4vw, 0.95rem);
-  padding: 10px 18px;
-  margin: 0 auto;
-  max-width: 520px;
-  width: 100%;
-}
-.home-api-error-icon { font-size: 1.1em; flex-shrink: 0; }
-.home-api-error-msg  { flex: 1; min-width: 0; }
-.home-api-error-actions {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  width: 100%;
-  justify-content: center;
-  flex-wrap: wrap;
-  margin-top: 2px;
-}
-.home-api-error-retry {
-  background: #fff;
-  color: #1186c4;
-  border: none;
-  border-radius: 6px;
-  padding: 6px 18px;
-  font-size: clamp(0.78rem, 1.2vw, 0.88rem);
-  font-weight: 700;
-  cursor: pointer;
-  font-family: inherit;
-  transition: background 0.15s;
-}
-.home-api-error-retry:hover { background: #e8f4fc; }
 
 /* ── Site Grid ── */
 .site-grid {

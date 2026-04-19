@@ -17,6 +17,7 @@ import LegacyClaimModal from '../components/LegacyClaimModal'
 import RecurrenceActionSheet from '../components/RecurrenceActionSheet'
 import { useAuth } from '../context/AuthContext'
 import { useConfig } from '../context/ConfigContext'
+import { sanitizeHtml } from '../utils/sanitize'
 const VisitorCounter = lazy(() => import('../components/VisitorCounter'))
 import * as api from '../services/api'
 import ContactITButton from '../components/ITSupportWidget'
@@ -1304,7 +1305,7 @@ export default function CalendarPage() {
                     <td style={{ color: '#1186c4' }}>{formatTime(ev.end)}</td>
                     <td className="list-desc-cell">
                       {ev.extendedProps?.description
-                        ? <span dangerouslySetInnerHTML={{ __html: ev.extendedProps.description }} />
+                        ? <span dangerouslySetInnerHTML={{ __html: sanitizeHtml(ev.extendedProps.description) }} />
                         : ''}
                     </td>
                     <td onClick={e => e.stopPropagation()} className="list-actions-cell">

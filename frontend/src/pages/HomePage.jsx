@@ -61,6 +61,19 @@ export default function HomePage() {
     if (pendingRef.current <= 0) markReady()
   }
 
+  async function handleDeleteSite(site) {
+    if (!window.confirm(`Remove "${site.name}"?\n\nThis hides the site and all its rooms. Existing bookings are preserved.`)) return
+    setDeletingId(site.id)
+    try {
+      await deleteSite(site.id)
+      setSites(prev => prev.filter(s => s.id !== site.id))
+    } catch {
+      alert('Failed to remove site. Please try again.')
+    } finally {
+      setDeletingId(null)
+    }
+  }
+
   async function handleRetry() {
     setRetrying(true)
     const start = Date.now()
@@ -297,19 +310,7 @@ export default function HomePage() {
                   className="site-delete-btn"
                   disabled={deletingId === site.id}
                   title={`Remove ${site.name}`}
-                  onClick={async e => {
-                    e.stopPropagation()
-                    if (!window.confirm(`Remove "${site.name}"?\n\nThis hides the site and all its rooms. Existing bookings are preserved.`)) return
-                    setDeletingId(site.id)
-                    try {
-                      await deleteSite(site.id)
-                      setSites(prev => prev.filter(s => s.id !== site.id))
-                    } catch {
-                      alert('Failed to remove site. Please try again.')
-                    } finally {
-                      setDeletingId(null)
-                    }
-                  }}
+                  onClick={e => { e.stopPropagation(); handleDeleteSite(site) }}
                 >
                   {deletingId === site.id ? '…' : '✕'}
                 </button>
@@ -366,18 +367,7 @@ export default function HomePage() {
         <ManageActionSheet
           name={sheetSite.name}
           onEdit={() => setEditingSite(sheetSite)}
-          onDelete={async () => {
-            if (!window.confirm(`Remove "${sheetSite.name}"?\n\nThis hides the site and all its rooms. Existing bookings are preserved.`)) return
-            setDeletingId(sheetSite.id)
-            try {
-              await deleteSite(sheetSite.id)
-              setSites(prev => prev.filter(s => s.id !== sheetSite.id))
-            } catch {
-              alert('Failed to remove site. Please try again.')
-            } finally {
-              setDeletingId(null)
-            }
-          }}
+          onDelete={() => handleDeleteSite(sheetSite)}
           onClose={() => setSheetSite(null)}
         />
       )}

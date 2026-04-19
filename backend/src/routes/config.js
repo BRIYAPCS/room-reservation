@@ -1,14 +1,17 @@
 import { Router } from 'express'
 import { readFileSync, writeFileSync, existsSync } from 'fs'
-import { resolve } from 'path'
+import { resolve, dirname } from 'path'
+import { fileURLToPath } from 'url'
 import { readEnv } from '../utils/envReader.js'
 import { authMiddleware } from '../middleware/authMiddleware.js'
 import { requireSuperAdmin } from '../middleware/requireSuperAdmin.js'
 
 const router = Router()
+const __dirname = dirname(fileURLToPath(import.meta.url))
 
-// Config overrides written by the admin dashboard live next to .env
-const OVERRIDES_PATH = resolve(process.cwd(), 'config_overrides.json')
+// Config overrides live in the backend root (next to .env), resolved relative
+// to this file so pm2/Docker cwd changes don't affect the path.
+const OVERRIDES_PATH = resolve(__dirname, '../../config_overrides.json')
 
 // Only these boolean keys can be set via the dashboard (never DB/JWT/PIN values)
 const ALLOWED_KEYS = new Set([

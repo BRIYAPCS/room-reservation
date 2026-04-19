@@ -292,8 +292,6 @@ router.post('/request-login-otp', otpRequestLimiter, otpRequestEmailLimiter, req
       [normalizedEmail, otpHash, deviceSessionId || null, expiresAt]
     )
 
-    // TEMP DEBUG — remove before next release
-    console.debug(`[OTP-DEBUG] request-login-otp | namespace="login:${normalizedEmail}" | email=${normalizedEmail} | hash_len=${otpHash.length}`)
 
     // Send OTP email — never throws
     await sendLoginOtpEmail(normalizedEmail, otp)
@@ -339,8 +337,6 @@ router.post('/verify-login-otp', otpVerifyLimiter, requireBriyaEmail, async (req
   const { email, otp, deviceSessionId } = req.body
   // || 5 catches parseInt returning 0 or NaN (e.g. OTP_MAX_ATTEMPTS=0 in .env)
   const OTP_MAX_ATTEMPTS = parseInt(process.env.OTP_MAX_ATTEMPTS || '5', 10) || 5
-  // TEMP DEBUG — remove before next release
-  console.debug(`[OTP-DEBUG] verify-login-otp OTP_MAX_ATTEMPTS=${OTP_MAX_ATTEMPTS} (env="${process.env.OTP_MAX_ATTEMPTS}")`)
 
   if (!email || !otp) {
     return res.status(400).json({ error: 'Email and code are required.' })
@@ -348,8 +344,6 @@ router.post('/verify-login-otp', otpVerifyLimiter, requireBriyaEmail, async (req
   const normalizedEmail = email.trim().toLowerCase()
   const normalizedOtp   = String(otp).replace(/\D/g, '').slice(0, 6)
 
-  // TEMP DEBUG — remove before next release
-  console.debug(`[OTP-DEBUG] verify-login-otp START | namespace="login:${normalizedEmail}" | email=${normalizedEmail} | otp_raw_len=${String(otp).length} | otp_norm_len=${normalizedOtp.length}`)
 
   try {
     // Expiry is checked in SQL via UTC_TIMESTAMP() so the comparison is always in UTC
@@ -363,11 +357,8 @@ router.post('/verify-login-otp', otpVerifyLimiter, requireBriyaEmail, async (req
       [normalizedEmail]
     )
 
-    // TEMP DEBUG — remove before next release
     if (row) {
-      console.debug(`[OTP-DEBUG] verify-login-otp ROW_FOUND | id=${row.id} | expires_at=${row.expires_at} | attempts=${row.attempts} | stored_hash_len=${row.otp_hash?.length}`)
     } else {
-      console.debug(`[OTP-DEBUG] verify-login-otp NO_ROW | email=${normalizedEmail}`)
     }
 
     if (!row) {
@@ -382,7 +373,6 @@ router.post('/verify-login-otp', otpVerifyLimiter, requireBriyaEmail, async (req
       [row.id, OTP_MAX_ATTEMPTS]
     )
     if (updateResult.affectedRows === 0) {
-      console.debug(`[OTP-DEBUG] verify-login-otp ATTEMPTS_EXCEEDED | email=${normalizedEmail}`)
       writeAuditLog({ action: ACTION_TYPES.LOGIN_OTP_FAILED, email: normalizedEmail,
         deviceSessionId: deviceSessionId || null, metadata: { reason: 'ATTEMPTS_EXCEEDED' } })
       return res.status(429).json({ error: 'Too many incorrect attempts. Request a new code.' })
@@ -390,12 +380,9 @@ router.post('/verify-login-otp', otpVerifyLimiter, requireBriyaEmail, async (req
 
     // Hash check — timing-safe to prevent side-channel enumeration
     const expectedHash = hashLoginOtp(normalizedOtp, normalizedEmail)
-    // TEMP DEBUG — remove before next release
-    console.debug(`[OTP-DEBUG] verify-login-otp HASH_CHECK | namespace="login:${normalizedEmail}" | expected_len=${expectedHash.length} | stored_len=${row.otp_hash?.length} | lengths_match=${expectedHash.length === row.otp_hash?.length}`)
 
     // Pre-check buffer lengths — timingSafeEqual throws if lengths differ (e.g., malformed stored hash)
     if (expectedHash.length !== row.otp_hash?.length) {
-      console.debug(`[OTP-DEBUG] verify-login-otp NAMESPACE_MISMATCH | id=${row.id} | expected_len=${expectedHash.length} | stored_len=${row.otp_hash?.length}`)
       writeAuditLog({ action: ACTION_TYPES.LOGIN_OTP_FAILED, email: normalizedEmail,
         deviceSessionId: deviceSessionId || null, metadata: { reason: 'NAMESPACE_MISMATCH' } })
       return res.status(400).json({ error: 'Verification failed. Try again.', code: 'NAMESPACE_MISMATCH' })
@@ -406,7 +393,6 @@ router.post('/verify-login-otp', otpVerifyLimiter, requireBriyaEmail, async (req
       Buffer.from(row.otp_hash,  'hex')
     )
     if (!hashMatch) {
-      console.debug(`[OTP-DEBUG] verify-login-otp HASH_MISMATCH | id=${row.id} | email=${normalizedEmail}`)
       writeAuditLog({ action: ACTION_TYPES.LOGIN_OTP_FAILED, email: normalizedEmail,
         deviceSessionId: deviceSessionId || null, metadata: { reason: 'HASH_MISMATCH' } })
       return res.status(400).json({ error: 'Incorrect code.' })
@@ -421,7 +407,6 @@ router.post('/verify-login-otp', otpVerifyLimiter, requireBriyaEmail, async (req
       [claimJti, row.id]
     )
     if (finalConsume.affectedRows === 0) {
-      console.debug(`[OTP-DEBUG] verify-login-otp USED | id=${row.id} | email=${normalizedEmail}`)
       return res.status(400).json({ error: 'Code has already been used.' })
     }
 
@@ -431,7 +416,6 @@ router.post('/verify-login-otp', otpVerifyLimiter, requireBriyaEmail, async (req
       '5m'
     )
 
-    console.debug(`[OTP-DEBUG] verify-login-otp SUCCESS | id=${row.id} | email=${normalizedEmail}`)
     writeAuditLog({
       action:          ACTION_TYPES.LOGIN_OTP_VERIFIED,
       email:           normalizedEmail,

@@ -366,8 +366,6 @@ router.post('/:siteCode/:roomId/:eventId/request-otp', otpRequestLimiter, otpReq
       [eventId, normalizedEmail, deviceSessionId, otpHash, expiresAt]
     )
 
-    // TEMP DEBUG — remove before next release
-    console.debug(`[OTP-DEBUG] request-otp | namespace="otp:${eventId}" | email=${normalizedEmail} | res=${eventId} | hash_len=${otpHash.length}`)
 
     // Send email (Resend API if configured, console.log fallback otherwise)
     await sendOtpEmail(normalizedEmail, otp, eventId)
@@ -406,8 +404,6 @@ router.post('/:siteCode/:roomId/:eventId/verify-otp', otpVerifyLimiter, authMidd
   // login OTP verify already uses this pattern; reservation verify must be consistent.
   const normalizedOtp   = String(otp).replace(/\D/g, '').slice(0, 6)
 
-  // TEMP DEBUG — remove before next release
-  console.debug(`[OTP-DEBUG] verify-otp START | namespace="otp:${eventId}" | email=${normalizedEmail} | res=${eventId} | otp_raw_len=${String(otp).length} | otp_norm_len=${normalizedOtp.length}`)
 
   try {
     const siteId = await resolveSiteId(siteCode)
@@ -431,11 +427,8 @@ router.post('/:siteCode/:roomId/:eventId/verify-otp', otpVerifyLimiter, authMidd
       [eventId, normalizedEmail]
     )
 
-    // TEMP DEBUG — remove before next release
     if (otpRow) {
-      console.debug(`[OTP-DEBUG] verify-otp ROW_FOUND | id=${otpRow.id} | expires_at=${otpRow.expires_at} | attempts=${otpRow.attempts} | stored_hash_len=${otpRow.otp_hash?.length}`)
     } else {
-      console.debug(`[OTP-DEBUG] verify-otp NO_ROW | email=${normalizedEmail} | res=${eventId}`)
     }
 
     if (!otpRow) {
@@ -449,19 +442,15 @@ router.post('/:siteCode/:roomId/:eventId/verify-otp', otpVerifyLimiter, authMidd
       [otpRow.id]
     )
     if (updateResult.affectedRows === 0) {
-      console.debug(`[OTP-DEBUG] verify-otp ATTEMPTS_EXCEEDED | id=${otpRow.id} | email=${normalizedEmail} | res=${eventId}`)
       logOtpAttempt('verify', eventId, normalizedEmail, clientIp, 'ATTEMPTS_EXCEEDED')
       writeAuditLog({ action: ACTION_TYPES.OTP_FAILED, reservationId: eventId, email: normalizedEmail, metadata: { ip: clientIp, reason: 'ATTEMPTS_EXCEEDED' } })
       return res.status(429).json({ error: 'Too many incorrect attempts. Request a new code.', code: 'MAX_ATTEMPTS' })
     }
 
     const expectedHash = hashOtp(normalizedOtp, eventId)
-    // TEMP DEBUG — remove before next release
-    console.debug(`[OTP-DEBUG] verify-otp HASH_CHECK | namespace="otp:${eventId}" | expected_len=${expectedHash.length} | stored_len=${otpRow.otp_hash?.length} | lengths_match=${expectedHash.length === otpRow.otp_hash?.length}`)
 
     // Pre-check buffer lengths — timingSafeEqual throws if lengths differ (e.g., malformed stored hash)
     if (expectedHash.length !== otpRow.otp_hash?.length) {
-      console.debug(`[OTP-DEBUG] verify-otp NAMESPACE_MISMATCH | id=${otpRow.id} | expected_len=${expectedHash.length} | stored_len=${otpRow.otp_hash?.length}`)
       logOtpAttempt('verify', eventId, normalizedEmail, clientIp, 'NAMESPACE_MISMATCH')
       writeAuditLog({ action: ACTION_TYPES.OTP_FAILED, reservationId: eventId, email: normalizedEmail, metadata: { ip: clientIp, reason: 'NAMESPACE_MISMATCH' } })
       return res.status(400).json({ error: 'Verification failed. Try again.', code: 'NAMESPACE_MISMATCH' })
@@ -473,7 +462,6 @@ router.post('/:siteCode/:roomId/:eventId/verify-otp', otpVerifyLimiter, authMidd
     )
     if (!hashMatch) {
       const remaining = 4 - otpRow.attempts // after increment, attempts = otpRow.attempts + 1
-      console.debug(`[OTP-DEBUG] verify-otp HASH_MISMATCH | id=${otpRow.id} | remaining=${remaining}`)
       logOtpAttempt('verify', eventId, normalizedEmail, clientIp, `HASH_MISMATCH (${remaining} left)`)
       writeAuditLog({
         action:        ACTION_TYPES.OTP_FAILED,
@@ -499,7 +487,6 @@ router.post('/:siteCode/:roomId/:eventId/verify-otp', otpVerifyLimiter, authMidd
       [editJti, otpRow.id]
     )
     if (finalConsume.affectedRows === 0) {
-      console.debug(`[OTP-DEBUG] verify-otp USED | id=${otpRow.id} | email=${normalizedEmail} | res=${eventId}`)
       logOtpAttempt('verify', eventId, normalizedEmail, clientIp, 'USED')
       return res.status(400).json({ error: 'Code has already been used.' })
     }
@@ -510,7 +497,6 @@ router.post('/:siteCode/:roomId/:eventId/verify-otp', otpVerifyLimiter, authMidd
       '15m'
     )
 
-    console.debug(`[OTP-DEBUG] verify-otp SUCCESS | id=${otpRow.id} | email=${normalizedEmail} | res=${eventId}`)
     logOtpAttempt('verify', eventId, normalizedEmail, clientIp, 'SUCCESS')
     writeAuditLog({
       action:        ACTION_TYPES.OTP_VERIFIED,
@@ -575,8 +561,6 @@ router.post('/:siteCode/:roomId/:eventId/claim-request-otp', otpRequestLimiter, 
       [eventId, normalizedEmail, deviceSessionId, otpHash, expiresAt]
     )
 
-    // TEMP DEBUG — remove before next release
-    console.debug(`[OTP-DEBUG] claim-request-otp | namespace="otp:${eventId}" | email=${normalizedEmail} | res=${eventId} | hash_len=${otpHash.length}`)
 
     await sendOtpEmail(normalizedEmail, otp, eventId)
 
@@ -612,8 +596,6 @@ router.post('/:siteCode/:roomId/:eventId/claim-verify-otp', otpVerifyLimiter, au
   // handles mobile email clients that render codes with spaces or NBSP separators.
   const normalizedOtp   = String(otp).replace(/\D/g, '').slice(0, 6)
 
-  // TEMP DEBUG — remove before next release
-  console.debug(`[OTP-DEBUG] claim-verify-otp START | namespace="otp:${eventId}" | email=${normalizedEmail} | res=${eventId} | otp_raw_len=${String(otp).length} | otp_norm_len=${normalizedOtp.length}`)
 
   try {
     const siteId = await resolveSiteId(siteCode)
@@ -639,11 +621,8 @@ router.post('/:siteCode/:roomId/:eventId/claim-verify-otp', otpVerifyLimiter, au
       [eventId, normalizedEmail]
     )
 
-    // TEMP DEBUG — remove before next release
     if (otpRow) {
-      console.debug(`[OTP-DEBUG] claim-verify-otp ROW_FOUND | id=${otpRow.id} | expires_at=${otpRow.expires_at} | attempts=${otpRow.attempts} | stored_hash_len=${otpRow.otp_hash?.length}`)
     } else {
-      console.debug(`[OTP-DEBUG] claim-verify-otp NO_ROW | email=${normalizedEmail} | res=${eventId}`)
     }
 
     if (!otpRow) {
@@ -657,19 +636,15 @@ router.post('/:siteCode/:roomId/:eventId/claim-verify-otp', otpVerifyLimiter, au
       [otpRow.id]
     )
     if (updateResult.affectedRows === 0) {
-      console.debug(`[OTP-DEBUG] claim-verify-otp ATTEMPTS_EXCEEDED | id=${otpRow.id} | email=${normalizedEmail} | res=${eventId}`)
       logOtpAttempt('claim-verify', eventId, normalizedEmail, req.ip, 'ATTEMPTS_EXCEEDED')
       writeAuditLog({ action: ACTION_TYPES.OTP_FAILED, reservationId: eventId, email: normalizedEmail, metadata: { ip: req.ip, reason: 'ATTEMPTS_EXCEEDED', flow: 'legacy-claim' } })
       return res.status(429).json({ error: 'Too many incorrect attempts. Request a new code.', code: 'MAX_ATTEMPTS' })
     }
 
     const expectedHash = hashOtp(normalizedOtp, eventId)
-    // TEMP DEBUG — remove before next release
-    console.debug(`[OTP-DEBUG] claim-verify-otp HASH_CHECK | namespace="otp:${eventId}" | expected_len=${expectedHash.length} | stored_len=${otpRow.otp_hash?.length} | lengths_match=${expectedHash.length === otpRow.otp_hash?.length}`)
 
     // Pre-check buffer lengths — timingSafeEqual throws if lengths differ (e.g., malformed stored hash)
     if (expectedHash.length !== otpRow.otp_hash?.length) {
-      console.debug(`[OTP-DEBUG] claim-verify-otp NAMESPACE_MISMATCH | id=${otpRow.id} | expected_len=${expectedHash.length} | stored_len=${otpRow.otp_hash?.length}`)
       logOtpAttempt('claim-verify', eventId, normalizedEmail, req.ip, 'NAMESPACE_MISMATCH')
       writeAuditLog({ action: ACTION_TYPES.OTP_FAILED, reservationId: eventId, email: normalizedEmail, metadata: { ip: req.ip, reason: 'NAMESPACE_MISMATCH', flow: 'legacy-claim' } })
       return res.status(400).json({ error: 'Verification failed. Try again.', code: 'NAMESPACE_MISMATCH' })
@@ -681,7 +656,6 @@ router.post('/:siteCode/:roomId/:eventId/claim-verify-otp', otpVerifyLimiter, au
     )
     if (!hashMatch) {
       const remaining = 4 - otpRow.attempts
-      console.debug(`[OTP-DEBUG] claim-verify-otp HASH_MISMATCH | id=${otpRow.id} | remaining=${remaining}`)
       logOtpAttempt('claim-verify', eventId, normalizedEmail, req.ip, `HASH_MISMATCH (${remaining} left)`)
       writeAuditLog({
         action:        ACTION_TYPES.OTP_FAILED,
@@ -701,7 +675,6 @@ router.post('/:siteCode/:roomId/:eventId/claim-verify-otp', otpVerifyLimiter, au
     // Atomically mark OTP used — AND used = 0 prevents a second concurrent winner
     const [otpConsume] = await pool.query('UPDATE reservation_otps SET used = 1 WHERE id = ? AND used = 0', [otpRow.id])
     if (otpConsume.affectedRows === 0) {
-      console.debug(`[OTP-DEBUG] claim-verify-otp USED | id=${otpRow.id} | email=${normalizedEmail} | res=${eventId}`)
       logOtpAttempt('claim-verify', eventId, normalizedEmail, req.ip, 'USED')
       return res.status(400).json({ error: 'Code has already been used.' })
     }
@@ -719,7 +692,6 @@ router.post('/:siteCode/:roomId/:eventId/claim-verify-otp', otpVerifyLimiter, au
       return res.status(409).json({ error: 'This booking was just claimed by someone else.', code: 'ALREADY_OWNED' })
     }
 
-    console.debug(`[OTP-DEBUG] claim-verify-otp SUCCESS | id=${otpRow.id} | email=${normalizedEmail} | res=${eventId}`)
     logOtpAttempt('claim-verify', eventId, normalizedEmail, req.ip, 'SUCCESS')
     writeAuditLog({
       action:          ACTION_TYPES.LEGACY_CLAIMED,

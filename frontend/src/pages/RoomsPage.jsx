@@ -94,6 +94,19 @@ export default function RoomsPage() {
     return () => clearInterval(id)
   }, [loadError, siteId])
 
+  async function handleDeleteRoom(room) {
+    if (!window.confirm(`Remove "${room.name}" from ${site.name}?\n\nThis hides the room — existing bookings are preserved.`)) return
+    setDeletingId(room.id)
+    try {
+      await deleteRoom(siteId, room.id)
+      setRooms(prev => prev.filter(r => r.id !== room.id))
+    } catch {
+      alert('Failed to remove room. Please try again.')
+    } finally {
+      setDeletingId(null)
+    }
+  }
+
   async function handleRetry() {
     setRetrying(true)
     const start = Date.now()
@@ -303,19 +316,7 @@ export default function RoomsPage() {
                   className="room-delete-btn"
                   disabled={deletingId === room.id}
                   title={`Remove ${room.name}`}
-                  onClick={async e => {
-                    e.stopPropagation()
-                    if (!window.confirm(`Remove "${room.name}" from ${site.name}?\n\nThis hides the room — existing bookings are preserved.`)) return
-                    setDeletingId(room.id)
-                    try {
-                      await deleteRoom(siteId, room.id)
-                      setRooms(prev => prev.filter(r => r.id !== room.id))
-                    } catch {
-                      alert('Failed to remove room. Please try again.')
-                    } finally {
-                      setDeletingId(null)
-                    }
-                  }}
+                  onClick={e => { e.stopPropagation(); handleDeleteRoom(room) }}
                 >
                   {deletingId === room.id ? '…' : '✕'}
                 </button>
@@ -373,18 +374,7 @@ export default function RoomsPage() {
         <ManageActionSheet
           name={sheetRoom.name}
           onEdit={() => setEditingRoom(sheetRoom)}
-          onDelete={async () => {
-            if (!window.confirm(`Remove "${sheetRoom.name}" from ${site.name}?\n\nThis hides the room — existing bookings are preserved.`)) return
-            setDeletingId(sheetRoom.id)
-            try {
-              await deleteRoom(siteId, sheetRoom.id)
-              setRooms(prev => prev.filter(r => r.id !== sheetRoom.id))
-            } catch {
-              alert('Failed to remove room. Please try again.')
-            } finally {
-              setDeletingId(null)
-            }
-          }}
+          onDelete={() => handleDeleteRoom(sheetRoom)}
           onClose={() => setSheetRoom(null)}
         />
       )}

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { sanitizeHtml } from '../utils/sanitize'
 import './EventDetailsModal.css'
 
 function formatDateTimeRange(start, end) {
@@ -119,7 +120,7 @@ export default function EventDetailsModal({ event, actionState, isAdmin, onEdit,
           <div className="edm-row">
             <span className="edm-label">Description:</span>
             {description
-              ? <span className="edm-value edm-description" dangerouslySetInnerHTML={{ __html: description }} />
+              ? <span className="edm-value edm-description" dangerouslySetInnerHTML={{ __html: sanitizeHtml(description) }} />
               : <span className="edm-value edm-value--empty">No description provided</span>
             }
           </div>
