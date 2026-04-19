@@ -370,8 +370,8 @@ function buildConfirmationHtml(action, details) {
               <table cellpadding="0" cellspacing="0">
                 <tr>
                   <td style="vertical-align:middle;padding-right:14px;">
-                    <img src="${BRIYA_LOGO_B64}"
-                         style="display:block;border-radius:6px;" />
+                    <img src="${BRIYA_LOGO_B64}" alt="Briya" width="40" height="40"
+                         style="display:block;border-radius:6px;width:40px;height:40px;" />
                   </td>
                   <td style="vertical-align:middle;">
                     <p style="margin:0;color:#ffffff;font-size:20px;font-weight:700;letter-spacing:0.5px;
