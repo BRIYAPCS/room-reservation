@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useMemo } from 'react'
 import './EditBookingModal.css'
 import { useConfig } from '../context/ConfigContext'
 import RichTextEditor from './RichTextEditor'
@@ -36,6 +36,8 @@ function toISO(date, time) {
   return `${date}T${time}:00`
 }
 
+function pad2(n) { return String(n).padStart(2, '0') }
+
 export default function EditBookingModal({ event, ownerEmail, roomName, onSave, onClose }) {
   const {
     bookingStartHour:    BOOKING_START_HOUR,
@@ -48,56 +50,60 @@ export default function EditBookingModal({ event, ownerEmail, roomName, onSave, 
     [BOOKING_START_HOUR, BOOKING_END_HOUR, SLOT_DURATION_MINUTES]
   )
 
-  useEffect(() => {
-    const prev = document.body.style.overflow
-    document.body.style.overflow = 'hidden'
-    return () => { document.body.style.overflow = prev }
-  }, [])
-
   if (!event) return null
 
-  const rawTitle = event.title.replace(/\s*\([^)]*\)\s*$/, '').trim()
+  const rawTitle    = event.title.replace(/\s*\([^)]*\)\s*$/, '').trim()
   const startParsed = parseISODateTime(event.start || event.startStr, SLOT_DURATION_MINUTES)
   const endParsed   = parseISODateTime(event.end   || event.endStr,   SLOT_DURATION_MINUTES)
 
-  const originalBookedBy = event.extendedProps?.bookedBy || ''
-
   const [form, setForm] = useState({
-    title: rawTitle,
-    startDate: startParsed.date,
-    startTime: startParsed.time || '09:00',
-    endDate: endParsed.date,
-    endTime: endParsed.time || '10:00',
+    title:       rawTitle,
+    bookedBy:    event.extendedProps?.bookedBy || '',
+    startDate:   startParsed.date,
+    startTime:   startParsed.time || `${pad2(BOOKING_START_HOUR)}:00`,
+    endDate:     endParsed.date   || startParsed.date,
+    endTime:     endParsed.time   || `${pad2(Math.min(BOOKING_START_HOUR + 1, BOOKING_END_HOUR))}:00`,
     description: event.extendedProps?.description || '',
+    allDay:      !!(event.extendedProps?.allDay),
   })
   const [error, setError] = useState('')
 
   function handleChange(e) {
-    setForm(prev => ({ ...prev, [e.target.name]: e.target.value }))
+    const { name, value, type, checked } = e.target
+    setForm(prev => ({
+      ...prev,
+      [name]: type === 'checkbox' ? checked : value,
+      // When start date changes, clamp end date to be >= start date
+      ...(name === 'startDate' && value > prev.endDate ? { endDate: value } : {}),
+    }))
     setError('')
   }
 
   function handleSubmit(e) {
     e.preventDefault()
-    if (!form.title.trim()) { setError('Event title is required.'); return }
-    if (!form.startDate) { setError('Start date is required.'); return }
-    if (!form.endDate) { setError('End date is required.'); return }
+    if (!form.title.trim())   { setError('Event title is required.'); return }
+    if (!form.bookedBy.trim()) { setError('Booked By is required.'); return }
+    if (!form.startDate)      { setError('Start date is required.'); return }
+    if (!form.endDate)        { setError('End date is required.'); return }
 
-    const start = toISO(form.startDate, form.startTime)
-    const end = toISO(form.endDate, form.endTime)
-    if (start >= end) { setError('End must be after start.'); return }
+    const startTime = form.allDay ? `${pad2(BOOKING_START_HOUR)}:00` : form.startTime
+    const endTime   = form.allDay ? `${pad2(BOOKING_END_HOUR)}:00`   : form.endTime
+    const start = toISO(form.startDate, startTime)
+    const end   = toISO(form.endDate,   endTime)
+    if (!form.allDay && start >= end) { setError('End must be after start.'); return }
 
     onSave({
       ...event,
-      id: event.id,
-      title: `${form.title.trim()} (${originalBookedBy})`,
+      id:    event.id,
+      title: `${form.title.trim()} (${form.bookedBy.trim()})`,
       start,
       end,
       extendedProps: {
-        ...event.extendedProps,  // preserve recurrenceGroupId, recurrenceIndex, etc.
-        bookedBy:    originalBookedBy,
+        ...event.extendedProps,
+        bookedBy:    form.bookedBy.trim(),
         description: form.description || null,
-        rawTitle:    form.title.trim(), // keep rawTitle in sync
+        rawTitle:    form.title.trim(),
+        allDay:      form.allDay,
       },
     })
   }
@@ -106,11 +112,12 @@ export default function EditBookingModal({ event, ownerEmail, roomName, onSave, 
     <div className="ebm-overlay">
       <div className="ebm-modal" onMouseDown={e => e.stopPropagation()} onMouseUp={e => e.stopPropagation()}>
         <div className="ebm-header">
-          <h2>Edit Booking for {roomName}</h2>
+          <h2>Edit Booking{roomName ? ` — ${roomName}` : ''}</h2>
           <button className="ebm-close" onClick={onClose}>✕</button>
         </div>
 
         <form onSubmit={handleSubmit} className="ebm-form">
+
           <label className="ebm-label-block">
             Event Title <span className="ebm-required">*</span>
             <ClearableInput
@@ -123,8 +130,34 @@ export default function EditBookingModal({ event, ownerEmail, roomName, onSave, 
           </label>
 
           <label className="ebm-label-block">
-            Start Date <span className="ebm-required">*</span>
-            <div className="ebm-date-time-row">
+            Booked By <span className="ebm-required">*</span>
+            <ClearableInput
+              name="bookedBy"
+              className="ebm-input"
+              value={form.bookedBy}
+              onChange={handleChange}
+              placeholder="Your name"
+            />
+          </label>
+
+          {/* ── All Day toggle ── */}
+          <div className="ebm-allday-row">
+            <label className="ebm-allday-label">
+              <input
+                type="checkbox"
+                name="allDay"
+                checked={form.allDay}
+                onChange={handleChange}
+                className="ebm-allday-check"
+              />
+              <span className="ebm-allday-text">All Day</span>
+            </label>
+          </div>
+
+          {/* ── Dates ── */}
+          <div className="ebm-date-grid">
+            <label className="ebm-label-block">
+              Start Date <span className="ebm-required">*</span>
               <input
                 type="date"
                 name="startDate"
@@ -132,46 +165,49 @@ export default function EditBookingModal({ event, ownerEmail, roomName, onSave, 
                 value={form.startDate}
                 onChange={handleChange}
               />
-              <select
-                name="startTime"
-                className="ebm-time-select"
-                value={form.startTime}
-                onChange={handleChange}
-              >
-                {TIME_OPTIONS.map(opt => (
-                  <option key={opt.value} value={opt.value}>{opt.label}</option>
-                ))}
-              </select>
-            </div>
-          </label>
-
-          <label className="ebm-label-block">
-            End Date <span className="ebm-required">*</span>
-            <div className="ebm-date-time-row">
+            </label>
+            <label className="ebm-label-block">
+              End Date <span className="ebm-required">*</span>
               <input
                 type="date"
                 name="endDate"
                 className="ebm-input"
                 value={form.endDate}
+                min={form.startDate}
                 onChange={handleChange}
               />
-              <select
-                name="endTime"
-                className="ebm-time-select"
-                value={form.endTime}
-                onChange={handleChange}
-              >
-                {TIME_OPTIONS.map(opt => (
-                  <option key={opt.value} value={opt.value}>{opt.label}</option>
-                ))}
-              </select>
-            </div>
-          </label>
+            </label>
+          </div>
 
-          {originalBookedBy && (
-            <div className="ebm-readonly-row">
-              <span className="ebm-readonly-label">Booked By</span>
-              <span className="ebm-readonly-value">{originalBookedBy}</span>
+          {/* ── Times (hidden when All Day) ── */}
+          {!form.allDay && (
+            <div className="ebm-date-grid">
+              <label className="ebm-label-block">
+                Start Time
+                <select
+                  name="startTime"
+                  className="ebm-time-select"
+                  value={form.startTime}
+                  onChange={handleChange}
+                >
+                  {TIME_OPTIONS.map(opt => (
+                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                  ))}
+                </select>
+              </label>
+              <label className="ebm-label-block">
+                End Time
+                <select
+                  name="endTime"
+                  className="ebm-time-select"
+                  value={form.endTime}
+                  onChange={handleChange}
+                >
+                  {TIME_OPTIONS.map(opt => (
+                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                  ))}
+                </select>
+              </label>
             </div>
           )}
 

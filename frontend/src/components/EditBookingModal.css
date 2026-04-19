@@ -104,6 +104,41 @@
   gap: 10px;
 }
 
+/* Two-column grid for dates and times side-by-side */
+.ebm-date-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+/* All-day toggle row */
+.ebm-allday-row {
+  display: flex;
+  align-items: center;
+}
+
+.ebm-allday-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  font-size: clamp(0.82rem, 1.1vw, 0.95rem);
+  font-weight: 600;
+  color: #444;
+  user-select: none;
+}
+
+.ebm-allday-check {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+  accent-color: #1186c4;
+}
+
+.ebm-allday-text {
+  color: #1a3557;
+}
+
 .ebm-time-select {
   min-width: 120px;
   border: 1.5px solid #ddd;
@@ -220,6 +255,7 @@
   .ebm-header h2 { font-size: 0.95rem; }
   .ebm-form { padding: 14px 16px 16px; gap: 12px; }
   .ebm-date-time-row { grid-template-columns: 1fr; }
+  .ebm-date-grid { grid-template-columns: 1fr; }
   .ebm-time-select { min-width: unset; width: 100%; }
   .ebm-actions { flex-direction: column-reverse; gap: 8px; }
   .ebm-btn-gold,

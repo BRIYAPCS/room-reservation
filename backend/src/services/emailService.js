@@ -186,6 +186,9 @@ function buildOtpHtml(otp, reservationId) {
               <p style="margin:0;font-size:11px;color:#aaa;text-align:center;">
                 Briya Public Charter School · Room Reservation System
               </p>
+              <p style="margin:5px 0 0;font-size:11px;color:#aaa;text-align:center;">
+                Please do not reply to this email — this mailbox is not monitored.
+              </p>
             </td>
           </tr>
 
@@ -273,6 +276,9 @@ function buildLoginOtpHtml(otp) {
             <td style="background:#f8f9fa;padding:16px 32px;border-top:1px solid #e8ecf0;">
               <p style="margin:0;font-size:11px;color:#aaa;text-align:center;">
                 Briya Public Charter School · Room Reservation System
+              </p>
+              <p style="margin:5px 0 0;font-size:11px;color:#aaa;text-align:center;">
+                Please do not reply to this email — this mailbox is not monitored.
               </p>
             </td>
           </tr>
@@ -430,6 +436,10 @@ function buildConfirmationHtml(action, details) {
               <p style="margin:0;font-size:11px;color:#aaa;text-align:center;
                          font-family:Arial,Helvetica,sans-serif;">
                 Briya Public Charter School · Room Reservation System
+              </p>
+              <p style="margin:5px 0 0;font-size:11px;color:#aaa;text-align:center;
+                         font-family:Arial,Helvetica,sans-serif;">
+                Please do not reply to this email — this mailbox is not monitored.
               </p>
             </td>
           </tr>

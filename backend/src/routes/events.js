@@ -946,13 +946,16 @@ router.put('/:siteCode/:roomId/:eventId', authMiddleware, requireAuth, async (re
     const ev = req.body
     const ep = ev.extendedProps || {}
 
+    const allDayVal = ep.allDay != null ? (ep.allDay ? 1 : 0) : null
+
     await pool.query(
       `UPDATE reservations SET
          title            = COALESCE(?, title),
          description      = ?,
          start_time       = COALESCE(?, start_time),
          end_time         = COALESCE(?, end_time),
-         created_by_name  = COALESCE(?, created_by_name)
+         created_by_name  = COALESCE(?, created_by_name),
+         all_day          = COALESCE(?, all_day)
        WHERE id = ? AND site_id = ? AND room_id = ?`,
       [
         ev.title          || null,
@@ -960,6 +963,7 @@ router.put('/:siteCode/:roomId/:eventId', authMiddleware, requireAuth, async (re
         ev.start          || null,
         ev.end            || null,
         ep.bookedBy       || null,
+        allDayVal,
         eventId, siteId, roomId,
       ]
     )
