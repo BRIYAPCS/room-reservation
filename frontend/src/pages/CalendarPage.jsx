@@ -72,6 +72,7 @@ export default function CalendarPage() {
 
   const [site, setSite] = useState(null)
   const [room, setRoom] = useState(null)
+  const [retrying, setRetrying] = useState(false)
   const { visitorCounterEnabled } = useConfig()
 
   const [entered, setEntered] = useState(false)
@@ -84,6 +85,31 @@ export default function CalendarPage() {
     api.getSite(siteId).then(setSite).catch(() => {})
     api.getRoom(siteId, roomId).then(setRoom).catch(() => {})
   }, [siteId, roomId])
+
+  async function handleRetry() {
+    setRetrying(true)
+    const start = Date.now()
+    const minDisplay = 1400
+    try {
+      const [siteData, roomData, eventsData] = await Promise.all([
+        api.getSite(siteId),
+        api.getRoom(siteId, roomId),
+        api.getReservations(siteId, roomId),
+      ])
+      const wait = minDisplay - (Date.now() - start)
+      if (wait > 0) await new Promise(r => setTimeout(r, wait))
+      setSite(siteData)
+      setRoom(roomData)
+      setEvents(eventsData)
+      setEventsLoadError(false)
+    } catch {
+      const wait = minDisplay - (Date.now() - start)
+      if (wait > 0) await new Promise(r => setTimeout(r, wait))
+      setEventsLoadError(true)
+    } finally {
+      setRetrying(false)
+    }
+  }
 
   const [showLoginModal, setShowLoginModal] = useState(
     () => REQUIRE_LOGIN_FOR_CALENDAR && auth.role === 'none'
@@ -164,6 +190,16 @@ export default function CalendarPage() {
     const id = setInterval(() => refreshEvents(true), 20_000)
     return () => clearInterval(id)
   }, [refreshEvents])
+
+  // When events auto-recover (eventsLoadError clears), also reload site/room if
+  // they failed on the initial load (server was completely down).
+  useEffect(() => {
+    if (!eventsLoadError && !site) {
+      api.getSite(siteId).then(setSite).catch(() => {})
+      api.getRoom(siteId, roomId).then(setRoom).catch(() => {})
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [eventsLoadError, siteId, roomId])
 
   // Event details / edit states
   const [selectedEvent, setSelectedEvent] = useState(null)
@@ -858,6 +894,32 @@ export default function CalendarPage() {
   function formatTime(iso) {
     if (!iso) return ''
     return new Date(iso).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })
+  }
+
+  // ── Full-page error screens (server completely down) ─────────
+  if (retrying) {
+    return (
+      <div className="app-fullpage-state">
+        <style>{`@keyframes spin { to { transform: rotate(360deg) } }`}</style>
+        <img src={`${import.meta.env.BASE_URL}briya_logo.png`} alt="Briya" className="app-fullpage-logo" style={{ animation: 'spin 1.2s linear infinite' }} />
+        <p className="app-fullpage-heading">Reconnecting…</p>
+        <p className="app-fullpage-sub">Please wait while we try to reach the server.</p>
+      </div>
+    )
+  }
+
+  if (!site && eventsLoadError) {
+    return (
+      <div className="app-fullpage-state">
+        <img src={`${import.meta.env.BASE_URL}briya_logo.png`} alt="Briya" className="app-fullpage-logo app-fullpage-logo--still" />
+        <h2 className="app-fullpage-heading">The app is currently unavailable</h2>
+        <p className="app-fullpage-sub">We'll be right back. The page will restore itself automatically once the connection is re-established.</p>
+        <div className="app-fullpage-actions">
+          <button className="app-fullpage-btn-primary" onClick={handleRetry}>↺ Retry</button>
+          <ContactITButton variant="outline" />
+        </div>
+      </div>
+    )
   }
 
   // ── Render ────────────────────────────────────────────────────

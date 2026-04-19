@@ -12,6 +12,7 @@ import AddRoomModal from '../components/AddRoomModal'
 import EditCardModal from '../components/EditCardModal'
 import ManageActionSheet from '../components/ManageActionSheet'
 import { getSite, getRooms, getReservations, reorderRooms, createRoom, updateRoom, deleteRoom } from '../services/api'
+import ContactITButton from '../components/ITSupportWidget'
 import { useConfig } from '../context/ConfigContext'
 import { useAuth } from '../context/AuthContext'
 import comingSoon from '../ComingSoon.jpg'
@@ -59,27 +60,61 @@ export default function RoomsPage() {
     if (pendingRef.current <= 0) markReady()
   }
 
-  const [loadError, setLoadError] = useState(null) // 'notfound' | 'network'
+  const [loadError,  setLoadError]  = useState(null)  // 'notfound' | 'network'
+  const [retrying,   setRetrying]   = useState(false)
 
+  async function loadData() {
+    try {
+      const [siteData, roomsData] = await Promise.all([getSite(siteId), getRooms(siteId)])
+      setLoadError(null)
+      setSite(siteData)
+      setRooms(roomsData)
+    } catch (err) {
+      const isNotFound = err?.message?.includes('404') || err?.message?.includes('not found')
+      setLoadError(isNotFound ? 'notfound' : 'network')
+      setSite(undefined)
+      markReady()
+    }
+  }
+
+  // Initial load
+  useEffect(() => { loadData() }, [siteId])
+
+  // Auto-recovery: silently retry every 15 s while a network error is showing
   useEffect(() => {
-    async function load() {
+    if (loadError !== 'network') return
+    const id = setInterval(async () => {
       try {
-        const [siteData, roomsData] = await Promise.all([
-          getSite(siteId),
-          getRooms(siteId),
-        ])
+        const [siteData, roomsData] = await Promise.all([getSite(siteId), getRooms(siteId)])
         setLoadError(null)
         setSite(siteData)
         setRooms(roomsData)
-      } catch (err) {
-        const isNotFound = err?.message?.includes('404') || err?.message?.includes('not found')
-        setLoadError(isNotFound ? 'notfound' : 'network')
-        setSite(undefined)
-        markReady()
-      }
+      } catch { /* still down */ }
+    }, 15_000)
+    return () => clearInterval(id)
+  }, [loadError, siteId])
+
+  async function handleRetry() {
+    setRetrying(true)
+    const start = Date.now()
+    const minDisplay = 1400
+    try {
+      const [siteData, roomsData] = await Promise.all([getSite(siteId), getRooms(siteId)])
+      const wait = minDisplay - (Date.now() - start)
+      if (wait > 0) await new Promise(r => setTimeout(r, wait))
+      setLoadError(null)
+      setSite(siteData)
+      setRooms(roomsData)
+    } catch (err) {
+      const wait = minDisplay - (Date.now() - start)
+      if (wait > 0) await new Promise(r => setTimeout(r, wait))
+      const isNotFound = err?.message?.includes('404') || err?.message?.includes('not found')
+      setLoadError(isNotFound ? 'notfound' : 'network')
+      setSite(undefined)
+    } finally {
+      setRetrying(false)
     }
-    load()
-  }, [siteId])
+  }
 
   useEffect(() => {
     if (!rooms.length) return
@@ -90,28 +125,42 @@ export default function RoomsPage() {
     return () => clearTimeout(fallback)
   }, [rooms])
 
+  // ── Reconnecting screen (shown while retry is in flight) ─────
+  if (retrying) {
+    return (
+      <div className="app-fullpage-state">
+        <style>{SPINNER_STYLE}</style>
+        <img src={`${import.meta.env.BASE_URL}briya_logo.png`} alt="Briya" className="app-fullpage-logo" style={{ animation: 'spin 1.2s linear infinite' }} />
+        <p className="app-fullpage-heading">Reconnecting…</p>
+        <p className="app-fullpage-sub">Please wait while we try to reach the server.</p>
+      </div>
+    )
+  }
+
+  // ── Full-page error screen ────────────────────────────────────
   if (site === null && !loadError) return <div className="rooms-page" />
   if (!site) {
     return (
-      <div className="rooms-page" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', gap: 16 }}>
-        <p style={{ color: '#fff', fontSize: '1.1rem', fontWeight: 600 }}>
-          {loadError === 'notfound' ? '404 — Site not found.' : '⚠ Could not load this site. Check your connection.'}
-        </p>
-        {loadError === 'network' && (
-          <button
-            onClick={() => { setSite(null); setLoadError(null); setRooms([]) }}
-            style={{ background: '#fff', color: '#1186c4', border: 'none', borderRadius: 7, padding: '10px 24px', fontWeight: 700, cursor: 'pointer', fontSize: '0.95rem' }}
-          >
-            ↺ Retry
-          </button>
+      <div className="app-fullpage-state">
+        <img src={`${import.meta.env.BASE_URL}briya_logo.png`} alt="Briya" className="app-fullpage-logo app-fullpage-logo--still" />
+        {loadError === 'notfound' ? (
+          <>
+            <h2 className="app-fullpage-heading">Site not found</h2>
+            <p className="app-fullpage-sub">This site doesn't exist or may have been removed.</p>
+            <div className="app-fullpage-actions">
+              <button className="app-fullpage-btn-primary" onClick={() => navigate('/')}>← Back to Home</button>
+            </div>
+          </>
+        ) : (
+          <>
+            <h2 className="app-fullpage-heading">The app is currently unavailable</h2>
+            <p className="app-fullpage-sub">We'll be right back. The page will restore itself automatically once the connection is re-established.</p>
+            <div className="app-fullpage-actions">
+              <button className="app-fullpage-btn-primary" onClick={handleRetry}>↺ Retry</button>
+              <ContactITButton variant="outline" />
+            </div>
+          </>
         )}
-        <button
-          onClick={() => navigate('/')}
-          style={{ background: 'rgba(255,255,255,0.15)', color: '#fff', border: '1.5px solid rgba(255,255,255,0.4)', borderRadius: 7, padding: '10px 24px', fontWeight: 600, cursor: 'pointer', fontSize: '0.9rem' }}
-        >
-          ← Back to Home
-        </button>
-        <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.82rem' }}>If this keeps happening, contact the IT Team.</p>
       </div>
     )
   }

@@ -113,16 +113,16 @@ export default function HomePage() {
   // ── Full-page retrying screen ────────────────────────────────
   if (retrying) {
     return (
-      <div className="home-fullpage-state">
+      <div className="app-fullpage-state">
         <style>{SPINNER_STYLE}</style>
         <img
           src={`${import.meta.env.BASE_URL}briya_logo.png`}
           alt="Briya"
-          className="home-fullpage-logo"
+          className="app-fullpage-logo"
           style={{ animation: 'spin 1.2s linear infinite' }}
         />
-        <p className="home-fullpage-heading">Reconnecting…</p>
-        <p className="home-fullpage-sub">Please wait while we try to reach the server.</p>
+        <p className="app-fullpage-heading">Reconnecting…</p>
+        <p className="app-fullpage-sub">Please wait while we try to reach the server.</p>
       </div>
     )
   }
@@ -130,16 +130,16 @@ export default function HomePage() {
   // ── Full-page error screen ────────────────────────────────────
   if (apiError && pageReady) {
     return (
-      <div className="home-fullpage-state">
+      <div className="app-fullpage-state">
         <img
           src={`${import.meta.env.BASE_URL}briya_logo.png`}
           alt="Briya"
-          className="home-fullpage-logo home-fullpage-logo--still"
+          className="app-fullpage-logo app-fullpage-logo--still"
         />
-        <h2 className="home-fullpage-heading">The app is currently unavailable</h2>
-        <p className="home-fullpage-sub">We'll be right back. The page will restore itself automatically once the connection is re-established.</p>
-        <div className="home-fullpage-actions">
-          <button className="home-fullpage-retry" onClick={handleRetry}>
+        <h2 className="app-fullpage-heading">The app is currently unavailable</h2>
+        <p className="app-fullpage-sub">We'll be right back. The page will restore itself automatically once the connection is re-established.</p>
+        <div className="app-fullpage-actions">
+          <button className="app-fullpage-btn-primary" onClick={handleRetry}>
             ↺ Retry
           </button>
           <ContactITButton variant="outline" />
